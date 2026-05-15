@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build artifacts
+.next/
+out/
+dist/
+build/
+.turbo/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+.cursor/
+*.swp
+.DS_Store
+
+# Vercel
+.vercel
+
+# Coverage
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts

@@ -1,0 +1,7 @@
+{
+  "name": "@client-sites/db",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0",
+  "description": "Supabase migrations for the client-sites monorepo. Applied via the Supabase Management API against the shared zero-risk prod project."
+}
