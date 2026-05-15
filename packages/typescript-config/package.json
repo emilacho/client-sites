@@ -1,7 +1,0 @@
-{
-  "name": "@client-sites/typescript-config",
-  "version": "0.1.0",
-  "private": true,
-  "license": "AGPL-3.0",
-  "files": ["base.json", "nextjs.json", "react-library.json"]
-}
