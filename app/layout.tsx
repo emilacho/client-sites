@@ -1,14 +1,19 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Inter, DM_Serif_Display } from "next/font/google"
 import { cliente } from "@/cliente.config"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
+const displaySerif = DM_Serif_Display({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-display",
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL(cliente.domain),
   title: {
-    default: cliente.name,
+    default: `${cliente.name} · Encebollado y ceviche en Olón`,
     template: `%s · ${cliente.name}`,
   },
   description: cliente.description,
@@ -18,6 +23,7 @@ export const metadata: Metadata = {
     url: cliente.domain,
     siteName: cliente.name,
     type: "website",
+    locale: "es_EC",
   },
 }
 
@@ -26,7 +32,11 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`}>{children}</body>
+      <body
+        className={`${inter.variable} ${displaySerif.variable} font-sans antialiased`}
+      >
+        {children}
+      </body>
     </html>
   )
 }

@@ -1,18 +1,16 @@
 import { HeroSection } from "@/components/sections/HeroSection"
-import { ServicesSection } from "@/components/sections/ServicesSection"
+import { MenuSection } from "@/components/sections/MenuSection"
 import { AboutSection } from "@/components/sections/AboutSection"
 import { CTASection } from "@/components/sections/CTASection"
-import { ContactSection } from "@/components/sections/ContactSection"
 import { Footer } from "@/components/sections/Footer"
 
 export default function LandingPage() {
   return (
     <main>
       <HeroSection />
-      <ServicesSection />
+      <MenuSection />
       <AboutSection />
       <CTASection />
-      <ContactSection />
       <Footer />
     </main>
   )
