@@ -1,3 +1,0 @@
-{
-  "extends": ["@client-sites/eslint-config/next"]
-}
