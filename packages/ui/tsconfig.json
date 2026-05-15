@@ -1,0 +1,9 @@
+{
+  "extends": "@client-sites/typescript-config/react-library.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+  },
+  "include": ["src/**/*", "tailwind.preset.ts"]
+}

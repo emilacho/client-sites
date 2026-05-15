@@ -1,0 +1,24 @@
+{
+  "name": "client-sites",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Zero Risk · client websites monorepo · Next.js 15 + Turborepo · cliente-agnostic template",
+  "license": "AGPL-3.0",
+  "packageManager": "pnpm@10.0.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "type-check": "turbo run type-check",
+    "verify": "pnpm type-check && pnpm lint && pnpm test"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.7.0",
+    "@types/node": "^22.10.0"
+  }
+}
