@@ -257,14 +257,15 @@ function InteractiveAnchor({
         }}
       >
         <sphereGeometry args={[0.55, 16, 16]} />
-        <meshStandardMaterial
-          color="#06b6d4"
-          emissive="#06b6d4"
-          emissiveIntensity={0.4}
-          transparent
-          opacity={0.18}
-          depthWrite={false}
-        />
+        {/* Round 6 single-issue fix · the proxy sphere is now fully
+            invisible (meshBasicMaterial · opacity 0 · depthWrite off).
+            Raycast still hits the geometry so pointer/click events
+            continue to fire · only the visual chrome is gone. The
+            idle-pulse hook upstream still runs (it mutates
+            emissiveIntensity which MeshBasicMaterial silently ignores
+            · cost is one extra property write per frame · cheaper than
+            restructuring the hook). */}
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
       {/* Floating drei <Html> label was removed in round-3 single-issue
           fix · per spec "Interactive object idle pulse" · interactivity
