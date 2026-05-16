@@ -108,8 +108,17 @@ export function Scene({ onAnchorClick }: SceneProps) {
         <PerformanceMonitor onDecline={() => { /* fallback handled via dpr already */ }}>
           <IslandWithCharacter qaMode={qaMode} />
           {/* Sign + surfboard placed near the beach front · purely visual */}
-          <SignModel position={[2.4, 0.0, -0.4]} rotation={[0, -0.5, 0]} />
-          <SurfboardModel position={[-3.0, 0.05, 0.3]} rotation={[0, 0.7, 0.2]} scale={0.7} />
+          {/* Round 7 single-issue fix · sign + surfboard moved onto
+              Island_0 sand (world bbox X[-2.82..2.75], Z[-3.66..1.57]).
+              Old positions [2.4, 0, -0.4] + [-3.0, 0.05, 0.3] put each
+              GLB's extent partly outside the sand · sign right half +
+              surfboard most-of-body floated in water. New coords keep
+              both inside the sand by margin:
+                sign      → X[0.37..2.03] · Z[-1.5..-0.5]
+                surfboard → X[-1.90..-0.90] · Z[0.40..0.80]
+              No rotation / scale change · just position. */}
+          <SignModel position={[1.2, 0.0, -1.0]} rotation={[0, -0.5, 0]} />
+          <SurfboardModel position={[-1.4, 0.05, 0.6]} rotation={[0, 0.7, 0.2]} scale={0.7} />
 
           {(Object.keys(ANCHOR_POSITIONS) as AnchorKind[]).map((kind, idx) => (
             <InteractiveAnchor
