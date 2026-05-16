@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Inter, DM_Serif_Display } from "next/font/google"
+import { Inter, DM_Serif_Display, Permanent_Marker } from "next/font/google"
 import { cliente } from "@/cliente.config"
 import "./globals.css"
 
@@ -8,6 +8,14 @@ const displaySerif = DM_Serif_Display({
   weight: "400",
   subsets: ["latin"],
   variable: "--font-display",
+})
+// Permanent Marker · used by the v2 character speech bubble
+// ("¡Pilas con ese YADO!"). Display: swap so the bubble doesn't FOUC.
+const marker = Permanent_Marker({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-marker",
+  display: "swap",
 })
 
 export const metadata: Metadata = {
@@ -33,7 +41,7 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${displaySerif.variable} font-sans antialiased`}
+        className={`${inter.variable} ${displaySerif.variable} ${marker.variable} font-sans antialiased`}
       >
         {children}
       </body>
