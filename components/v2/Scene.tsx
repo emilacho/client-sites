@@ -18,12 +18,13 @@
  * meshes and use them as interaction surfaces + bubble anchors. This
  * keeps the visual identical to the GLB ground truth.
  */
-import { Suspense, useRef, useState } from "react"
+import { Suspense, useEffect, useRef, useState } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
 import {
   Environment,
   Html,
   PerformanceMonitor,
+  useAnimations,
   useGLTF,
   ContactShadows,
 } from "@react-three/drei"
@@ -168,8 +169,39 @@ function SurfboardModel(props: React.ComponentProps<"group">) {
 }
 
 function CharacterModel(props: React.ComponentProps<"group">) {
-  const { scene } = useGLTF(naufragoAssets.character)
-  return <primitive object={scene} {...props} />
+  // Round 8 single-issue fix · attach the GLB's embedded animation
+  // (Armature|Confused_Scratch|baselayer · 11.53 s · 72 tracks · pinned
+  // via scripts/inspect-glbs.mjs) on infinite seamless loop. The clip
+  // plays unconditionally at mount · no trigger needed.
+  //
+  // NOTE: do NOT `scene.clone(true)` here · the GLB ships SkinnedMesh
+  // nodes whose internal bone references point at the ORIGINAL
+  // armature. THREE.Object3D.clone() does not rebind SkinnedMesh →
+  // Bone references, so a cloned scene appears in T-pose while the
+  // mixer animates the unrendered original. Canonical drei pattern is
+  // to mount the original scene · since this character is rendered
+  // exactly once on the landing, there's nothing to clone for.
+  const { scene, animations } = useGLTF(naufragoAssets.character)
+  const group = useRef<THREE.Group>(null)
+  const { actions, mixer } = useAnimations(animations, group)
+  useEffect(() => {
+    const firstKey = Object.keys(actions)[0]
+    if (!firstKey) return
+    const action = actions[firstKey]
+    if (!action) return
+    action.reset()
+    action.setLoop(THREE.LoopRepeat, Infinity)
+    action.clampWhenFinished = false
+    action.play()
+    return () => {
+      mixer?.stopAllAction()
+    }
+  }, [actions, mixer])
+  return (
+    <group ref={group} {...props}>
+      <primitive object={scene} />
+    </group>
+  )
 }
 
 /**
