@@ -107,7 +107,14 @@ const SUPABASE_BASE =
 const ASSET_BASE = `${SUPABASE_BASE}/storage/v1/object/public/client-websites/naufrago`
 
 export const naufragoAssets = {
-  island:    `${ASSET_BASE}/3d-models/island-low-poly-optimized.glb`,
+  // The `-optimized` variant of the island GLB is corrupt at the
+  // source (buffer offsets misaligned · GLTFLoader throws
+  // "Invalid typed array length: 4281" parsing accessor 0). The
+  // unoptimized canonical variant parses cleanly. Re-export +
+  // re-upload of the optimized version is a follow-up · the size
+  // delta (4 MB → 25 MB) is acceptable for the preview while it's
+  // pending. Diagnostic: `client-sites/scripts/test-glb-parse.mjs`.
+  island:    `${ASSET_BASE}/3d-models/island-low-poly.glb`,
   character: `${ASSET_BASE}/3d-models/character-castaway-confused-scratch.glb`,
   sign:      `${ASSET_BASE}/3d-models/sign-naufrago.glb`,
   surfboard: `${ASSET_BASE}/3d-models/surfboard-old.glb`,

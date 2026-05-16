@@ -20,6 +20,7 @@ import { TopBar } from "./TopBar"
 import { CartDrawer } from "./CartDrawer"
 import { OverlayPanels, type OverlayKind } from "./OverlayPanels"
 import { MenuQuickAdd } from "./MenuQuickAdd"
+import { SceneErrorBoundary } from "./SceneErrorBoundary"
 import type { AnchorKind } from "./Scene"
 
 // The r3f Canvas can't SSR · dynamic import with ssr:false.
@@ -57,9 +58,14 @@ function LandingInner() {
     <main className="relative min-h-[100svh] overflow-hidden bg-slate-950 text-slate-100">
       <TopBar />
 
-      {/* 3D scene · full viewport · hero copy sits over it */}
+      {/* 3D scene · full viewport · hero copy sits over it.
+          Wrapped in SceneErrorBoundary so an unloadable asset doesn't
+          white-screen the page · cart + top bar + overlays sit OUTSIDE
+          the boundary and keep working when the scene fails. */}
       <div className="absolute inset-0 z-0">
-        <Scene onAnchorClick={handleAnchor} />
+        <SceneErrorBoundary>
+          <Scene onAnchorClick={handleAnchor} />
+        </SceneErrorBoundary>
       </div>
 
       {/* Hero copy · floats above the scene with a soft gradient backdrop
