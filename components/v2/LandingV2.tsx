@@ -20,6 +20,7 @@ import { TopBar } from "./TopBar"
 import { CartDrawer } from "./CartDrawer"
 import { OverlayPanels, type OverlayKind } from "./OverlayPanels"
 import { MenuQuickAdd } from "./MenuQuickAdd"
+import { MenuModal } from "./MenuModal"
 import { SceneErrorBoundary } from "./SceneErrorBoundary"
 import type { AnchorKind } from "./Scene"
 
@@ -43,12 +44,19 @@ function SceneFallback() {
 }
 
 function LandingInner() {
-  const cart = useCart()
+  // cart.open() is still used by TopBar (Carrito button) + CartDrawer's
+  // own "Confirmar por WhatsApp" + MenuModal's footer Confirmar CTA.
+  // Round 9 narrows the entry points · cofre + hero CTAs now route to
+  // the catalog instead of the empty cart drawer.
+  useCart()
   const [overlay, setOverlay] = useState<OverlayKind>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  const openMenu = () => setMenuOpen(true)
 
   const handleAnchor = (kind: AnchorKind) => {
     if (kind === "cofre") {
-      cart.open()
+      openMenu()
       return
     }
     setOverlay(kind)
@@ -90,18 +98,19 @@ function LandingInner() {
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={cart.open}
+              onClick={openMenu}
               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-5 py-3 font-semibold text-white shadow-lg shadow-violet-500/30 transition-transform hover:translate-y-[-1px]"
             >
               {naufragoV2.hero.ctaPrimary}
             </button>
-            <a
-              href="#menu"
+            <button
+              type="button"
+              onClick={openMenu}
               className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/60 px-5 py-3 font-medium text-slate-100 backdrop-blur-sm transition-colors hover:bg-slate-800"
             >
               {naufragoV2.hero.ctaSecondary}
               <ChevronDown className="h-4 w-4" />
-            </a>
+            </button>
           </div>
           {/* Round 5 single-issue fix · the hint paragraph
               ("Toca los objetos en la isla · cofre = pedido, barco =
@@ -118,6 +127,7 @@ function LandingInner() {
 
       {/* Drawers + modals · z-40+ to sit above the 3D layer */}
       <CartDrawer />
+      <MenuModal open={menuOpen} onClose={() => setMenuOpen(false)} />
       <OverlayPanels active={overlay} onClose={() => setOverlay(null)} />
     </main>
   )
