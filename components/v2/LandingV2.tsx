@@ -103,10 +103,13 @@ function LandingInner() {
               <ChevronDown className="h-4 w-4" />
             </a>
           </div>
-          <p className="mt-4 text-[12px] text-slate-400 md:text-[13px]">
-            Toca los objetos en la isla · cofre = pedido, barco = historia,
-            cocos = reseñas, palmeras = contacto.
-          </p>
+          {/* Round 5 single-issue fix · the hint paragraph
+              ("Toca los objetos en la isla · cofre = pedido, barco =
+              historia, cocos = reseñas, palmeras = contacto.") was
+              removed here · per forensic findings it was the source of
+              the residual "historia / reseñas / contacto" text Emilio
+              spotted post-revert · the 3D-anchored pill labels were
+              already gone in b2b8cdd. No other change in this commit. */}
         </motion.div>
       </div>
 
