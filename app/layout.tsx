@@ -13,7 +13,7 @@ const displaySerif = DM_Serif_Display({
 export const metadata: Metadata = {
   metadataBase: new URL(cliente.domain),
   title: {
-    default: `${cliente.name} · Encebollado y ceviche en Olón`,
+    default: `${cliente.name} · Fresco como recién salido del mar`,
     template: `%s · ${cliente.name}`,
   },
   description: cliente.description,

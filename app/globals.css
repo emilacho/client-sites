@@ -4,23 +4,37 @@
 @custom-variant dark (&:is(.dark *));
 
 /**
- * Náufrago brand palette · ghost kitchen Olón coastal Ecuador
+ * Náufrago brand palette · sourced from creative-director agent output
+ * (session 11a40082-0f5e-4237-a991-a69ba5308539 · master workflow 7196).
  *
- * Ocean blue (deep · trust + freshness) · sand beige (warmth · approachable)
- * Coral orange accent (appetite + Pacific sunset)
+ *   Pacífico Profundo   #0D5C6B   → primary (ocean depth)
+ *   Arena Olón          #D4A853   → secondary warm (coastal sand)
+ *   Coral Náufrago      #C94B38   → accent energy (ceviche tone)
+ *   Lima Costera        #8FB84A   → tertiary fresh
+ *   Espuma de Mar       #EDE8DF   → background (sea foam)
  */
 
 @layer base {
   :root {
-    --background: 36 33% 97%;
-    --foreground: 207 60% 12%;
-    --primary: 207 70% 22%;
-    --primary-foreground: 36 60% 96%;
-    --muted: 36 30% 92%;
-    --muted-foreground: 207 25% 38%;
-    --accent: 16 84% 56%;
-    --accent-foreground: 36 60% 98%;
-    --border: 36 20% 86%;
+    --background: 38 31% 90%;          /* Espuma de Mar */
+    --foreground: 192 78% 13%;          /* deep Pacífico for body */
+    --card: 38 31% 96%;
+    --card-foreground: 192 78% 13%;
+    --popover: 38 31% 96%;
+    --popover-foreground: 192 78% 13%;
+    --primary: 192 78% 23%;             /* Pacífico Profundo */
+    --primary-foreground: 38 31% 96%;
+    --secondary: 42 56% 58%;            /* Arena Olón */
+    --secondary-foreground: 192 78% 12%;
+    --muted: 38 25% 84%;
+    --muted-foreground: 192 30% 28%;
+    --accent: 9 60% 51%;                /* Coral Náufrago */
+    --accent-foreground: 38 31% 98%;
+    --destructive: 9 70% 45%;
+    --destructive-foreground: 38 31% 98%;
+    --border: 38 22% 78%;
+    --input: 38 22% 78%;
+    --ring: 192 78% 23%;
     --radius: 0.5rem;
   }
 
