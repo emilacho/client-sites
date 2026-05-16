@@ -65,12 +65,11 @@ const ANCHOR_POSITIONS: Record<AnchorKind, [number, number, number]> = {
   palmeras: [-1.6, 1.30, -1.8 ], // back-left palm cluster
 }
 
-const ANCHOR_LABELS: Record<AnchorKind, string> = {
-  cofre: "Carrito",
-  barco: "Historia",
-  cocos: "Reseñas",
-  palmeras: "Contacto",
-}
+// ANCHOR_LABELS removed in round-3 single-issue fix · the 4 drei <Html>
+// floating pill labels ("Carrito" / "Historia" / "Reseñas" / "Contacto")
+// were the only consumers of this map and have been deleted (per spec
+// "Interactive object idle pulse" · interactivity hint is now only the
+// idle pulse + cyan emissive glow).
 
 export function Scene({ onAnchorClick }: SceneProps) {
   const reducedMotion = usePrefersReducedMotion()
@@ -104,7 +103,6 @@ export function Scene({ onAnchorClick }: SceneProps) {
               kind={kind}
               index={idx}
               position={ANCHOR_POSITIONS[kind]}
-              label={ANCHOR_LABELS[kind]}
               hovered={hoveredAnchor === kind}
               reducedMotion={reducedMotion}
               onHover={(h) => setHoveredAnchor(h ? kind : (prev) => (prev === kind ? null : prev as AnchorKind))}
@@ -189,7 +187,8 @@ interface InteractiveAnchorProps {
   kind: AnchorKind
   index: number
   position: [number, number, number]
-  label: string
+  // `label` prop was removed in round-3 single-issue fix (no longer
+  // any consumer · the drei <Html> floating pill is gone).
   hovered: boolean
   reducedMotion: boolean
   onHover: (h: boolean) => void
@@ -199,7 +198,6 @@ interface InteractiveAnchorProps {
 function InteractiveAnchor({
   index,
   position,
-  label,
   hovered,
   reducedMotion,
   onHover,
@@ -246,26 +244,13 @@ function InteractiveAnchor({
           depthWrite={false}
         />
       </mesh>
-      {/* Floating label above the anchor */}
-      <Html
-        center
-        distanceFactor={8}
-        position={[0, 0.9, 0]}
-        zIndexRange={[5, 0]}
-        style={{ pointerEvents: "none" }}
-      >
-        <div
-          className={[
-            "select-none rounded-full border px-2.5 py-0.5 text-[10px] font-mono uppercase tracking-[0.18em]",
-            "transition-all duration-200",
-            hovered
-              ? "border-cyan-300 bg-cyan-500/30 text-cyan-50 shadow-[0_0_18px_-2px_rgba(6,182,212,0.8)]"
-              : "border-white/30 bg-black/40 text-cyan-200",
-          ].join(" ")}
-        >
-          {label}
-        </div>
-      </Html>
+      {/* Floating drei <Html> label was removed in round-3 single-issue
+          fix · per spec "Interactive object idle pulse" · interactivity
+          is hinted ONLY through the idle pulse + cyan glow (the
+          translucent sphere above + emissive intensity oscillation).
+          NO other change in this commit · proxy sphere, anchor
+          positions, water, sky, fog, tone mapping, bloom and all other
+          scene config remain exactly as in 462ec3f. */}
     </group>
   )
 }
