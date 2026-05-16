@@ -20,9 +20,13 @@ const args = Object.fromEntries(
 )
 const phase = args.phase || "before" // "before" | "after"
 const round = args.round || "3"
-const url =
+// Append `?qa=1` so the page freezes the camera + disables idle pulse
+// + disables the speech bubble · screenshots become pixel-comparable
+// across deploys. Pass `--no-qa` to opt out (verify default UX).
+const baseUrl =
   args.url ||
   "https://client-sites-template-git-landing-v2-zero-risk1.vercel.app"
+const url = args["no-qa"] ? baseUrl : `${baseUrl}?qa=1`
 
 const dir = resolve("scripts/qa")
 mkdirSync(dir, { recursive: true })
@@ -38,10 +42,13 @@ const page = await ctx.newPage()
 console.log("→ navigating", url)
 const resp = await page.goto(url, { waitUntil: "networkidle", timeout: 45_000 })
 console.log("  HTTP:", resp?.status())
-// Wait long enough for camera auto-rotate to NOT be at start position
+// Wait for canvas + GLBs to settle. With `?qa=1` the camera is frozen
+// at its initial [9, 4, 0] fov 38 angle, so this delay only covers GLB
+// parsing + first paint — not rotation drift.
 await page.waitForTimeout(3000)
 
-// Frontal default camera · the rig auto-rotates so just take the shot.
+// Frontal default camera · in qa mode this is the same fixed angle
+// every run, so before/after captures are pixel-comparable.
 await page.screenshot({ path: framePath, fullPage: false })
 console.log("  📸", framePath)
 

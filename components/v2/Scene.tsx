@@ -36,6 +36,7 @@ import {
   useInteractiveIdlePulse,
   usePrefersReducedMotion,
 } from "@/lib/v2/use-interactive-idle-pulse"
+import { useQaMode } from "@/lib/v2/use-qa-mode"
 import { naufragoAssets } from "@/lib/v2/naufrago-content"
 
 // Preload the 4 GLBs at module load so the first paint of the canvas
@@ -73,6 +74,13 @@ const ANCHOR_POSITIONS: Record<AnchorKind, [number, number, number]> = {
 
 export function Scene({ onAnchorClick }: SceneProps) {
   const reducedMotion = usePrefersReducedMotion()
+  // QA toggle · when `?qa=1` is set, freeze the camera + suppress idle
+  // pulse + suppress the character speech bubble so screenshots are
+  // pixel-comparable across deploys. Treated as a stronger reduced-
+  // motion · combined into one flag so downstream consumers don't have
+  // to know about both.
+  const qaMode = useQaMode()
+  const motionInhibited = reducedMotion || qaMode
   const [hoveredAnchor, setHoveredAnchor] = useState<AnchorKind | null>(null)
   return (
     <Canvas
@@ -88,11 +96,17 @@ export function Scene({ onAnchorClick }: SceneProps) {
       <directionalLight position={[5, 8, 3]} intensity={1.2} castShadow shadow-mapSize={[1024, 1024]} />
       <directionalLight position={[-4, 5, -3]} intensity={0.35} color="#06b6d4" />
 
-      <CameraRig pausedHover={hoveredAnchor !== null} reducedMotion={reducedMotion} />
+      {/* When qaMode is on we force pausedHover=true so the auto-rotate
+          frame never runs · the camera stays at its initial fixed
+          [9, 4, 0] @ fov 38 angle for the entire session. */}
+      <CameraRig
+        pausedHover={hoveredAnchor !== null || qaMode}
+        reducedMotion={motionInhibited}
+      />
 
       <Suspense fallback={null}>
         <PerformanceMonitor onDecline={() => { /* fallback handled via dpr already */ }}>
-          <IslandWithCharacter />
+          <IslandWithCharacter qaMode={qaMode} />
           {/* Sign + surfboard placed near the beach front · purely visual */}
           <SignModel position={[2.4, 0.0, -0.4]} rotation={[0, -0.5, 0]} />
           <SurfboardModel position={[-3.0, 0.05, 0.3]} rotation={[0, 0.7, 0.2]} scale={0.7} />
@@ -104,7 +118,7 @@ export function Scene({ onAnchorClick }: SceneProps) {
               index={idx}
               position={ANCHOR_POSITIONS[kind]}
               hovered={hoveredAnchor === kind}
-              reducedMotion={reducedMotion}
+              reducedMotion={motionInhibited}
               onHover={(h) => setHoveredAnchor(h ? kind : (prev) => (prev === kind ? null : prev as AnchorKind))}
               onClick={() => onAnchorClick(kind)}
             />
@@ -152,17 +166,25 @@ function CharacterModel(props: React.ComponentProps<"group">) {
 /**
  * IslandWithCharacter · the island base + the castaway character +
  * the character's speech-bubble HTML anchor.
+ *
+ * When `qaMode` is true · the speech bubble stays hidden regardless
+ * of pointer state so QA screenshot captures don't show a bubble that
+ * may have fired from a stray pointer event.
  */
-function IslandWithCharacter() {
+function IslandWithCharacter({ qaMode }: { qaMode: boolean }) {
   const [hovered, setHovered] = useState(false)
+  const setHover = (v: boolean) => {
+    if (qaMode) return
+    setHovered(v)
+  }
   return (
     <group>
       <IslandModel position={[0, 0, 0]} scale={1} />
       <group
         position={[0, 0.05, 0]}
-        onPointerOver={() => setHovered(true)}
-        onPointerOut={() => setHovered(false)}
-        onPointerDown={() => setHovered((v) => !v)} // mobile tap toggle
+        onPointerOver={() => setHover(true)}
+        onPointerOut={() => setHover(false)}
+        onPointerDown={() => setHover(!hovered)} // mobile tap toggle
       >
         <CharacterModel scale={0.6} position={[-0.1, 0, 0.3]} />
         {/* Speech bubble anchored above the character head · uses drei
@@ -175,7 +197,7 @@ function IslandWithCharacter() {
           zIndexRange={[10, 0]}
           style={{ pointerEvents: "none" }}
         >
-          <SpeechBubble visible={hovered} mobileAuto onAutoHide={() => setHovered(false)} />
+          <SpeechBubble visible={hovered && !qaMode} mobileAuto onAutoHide={() => setHover(false)} />
         </Html>
       </group>
     </group>
