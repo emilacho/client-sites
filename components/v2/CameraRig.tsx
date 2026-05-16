@@ -32,6 +32,14 @@ export interface CameraRigProps {
   radius?: number
   /** Initial Y offset (height of the camera). */
   height?: number
+  /**
+   * Round 8.5 · which side of the island the camera starts from.
+   *  - "side"  → [radius, height, 0]  (east side · default UX · matches v1)
+   *  - "front" → [0, height, radius]  (front view · evidence-friendly for QA)
+   * Both views share the same orbit radius · so auto-rotate continues
+   * naturally from whichever side it started on.
+   */
+  initialView?: "side" | "front"
 }
 
 export function CameraRig({
@@ -39,17 +47,22 @@ export function CameraRig({
   reducedMotion,
   radius = 9,
   height = 4,
+  initialView = "side",
 }: CameraRigProps) {
   const { camera } = useThree()
   const controlsRef = useRef<OrbitControlsRef | null>(null)
-  const angleRef = useRef(0) // current azimuth in radians
+  const angleRef = useRef(initialView === "front" ? Math.PI / 2 : 0) // azimuth · seeds auto-rotate continuation
   const userControlUntilRef = useRef<number>(0) // timestamp · auto-rotate suspended until this ms
 
   // Initialize camera position on mount
   useEffect(() => {
-    camera.position.set(radius, height, 0)
+    if (initialView === "front") {
+      camera.position.set(0, height, radius)
+    } else {
+      camera.position.set(radius, height, 0)
+    }
     camera.lookAt(0, 1.2, 0)
-  }, [camera, radius, height])
+  }, [camera, radius, height, initialView])
 
   // Listen to OrbitControls drag events · suspend auto-rotate for
   // RESUME_DELAY_MS after the user releases.

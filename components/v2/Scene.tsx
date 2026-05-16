@@ -98,11 +98,16 @@ export function Scene({ onAnchorClick }: SceneProps) {
       <directionalLight position={[-4, 5, -3]} intensity={0.35} color="#06b6d4" />
 
       {/* When qaMode is on we force pausedHover=true so the auto-rotate
-          frame never runs · the camera stays at its initial fixed
-          [9, 4, 0] @ fov 38 angle for the entire session. */}
+          frame never runs · the camera stays at its initial fixed angle
+          for the entire session. Round 8.5 · QA captures use the
+          front view [0, 4, 9] instead of the side view [9, 4, 0] so
+          the character, chest, sign and surfboard all read clearly in
+          a single frame. Default UX (no qaMode) keeps the side view
+          to match v1 behavior on user-facing loads. */}
       <CameraRig
         pausedHover={hoveredAnchor !== null || qaMode}
         reducedMotion={motionInhibited}
+        initialView={qaMode ? "front" : "side"}
       />
 
       <Suspense fallback={null}>
