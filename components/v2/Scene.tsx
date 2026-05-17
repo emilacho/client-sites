@@ -463,17 +463,18 @@ function IslandModel(props: React.ComponentProps<"group">) {
 
     // ── Round 39.1 · per-coconut taladro · individual intervals
     // (3s ± 1s) · longer 0.9s bursts with a DECAY envelope so the
-    // shake starts at peak amplitude 0.02 rad and drops smoothly
-    // to 0 over the burst. "Animal pequeño y lento tratando salir"
-    // vs the chest's "taladro full power" (uniform 0.05 over 0.4s).
-    //   peak amplitude       = 0.02 (40% of chest)
+    // shake starts at peak amplitude and drops smoothly to 0.
+    // Round 42 · peak doubled 0.02 → 0.04 so the vibration reads
+    // at the default camera distance. Still below the chest's
+    // 0.05 uniform amplitude (chest stays the "alpha animal").
+    //   peak amplitude       = 0.04 (80% of chest peak)
     //   burst duration       = 0.9s (2.25× chest)
     //   amplitude envelope   = peak × (1 − phaseInBurst)²
-    //     phaseInBurst = 0   → amp = 0.02   (peak)
-    //     phaseInBurst = 0.5 → amp = 0.005  (quartered)
+    //     phaseInBurst = 0   → amp = 0.04   (peak)
+    //     phaseInBurst = 0.5 → amp = 0.010  (quartered)
     //     phaseInBurst = 1.0 → amp = 0      (still)
     const COCO_BURST = 0.9
-    const COCO_AMP_MAX = 0.02
+    const COCO_AMP_MAX = 0.04
     for (const c of coconutShakeTargets) {
       const interval = 3 + c.intervalJitter // 2.0–4.0s
       const tAdj = t + c.phaseOffset
