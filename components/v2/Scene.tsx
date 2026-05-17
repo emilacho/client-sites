@@ -209,7 +209,17 @@ export function Scene({ onAnchorClick }: SceneProps) {
               · Y dropped 0.925 → 0.7 so the bottom tip sits at
                 Y=0.035 (sand top is 0.26) · ~0.225u of board buried,
                 as per dispatch "permitir punta enterrada parcial". */}
-          <SurfboardModel position={[-1.57, 0.7, -1.98]} rotation={[0, Math.PI / 2, Math.PI / 2]} scale={0.7} />
+          {/* Round 46 · rotation Y = π/2 to face the NEW front cam
+              at [0, 4, 9] (per the iteration zoom · atan2 = 81.9°).
+              Round 50 · position moved from [-1.57, 0.7, -1.98] to
+              [-1.307, 0.7, -1.7] so the board reads "in front of"
+              the back-left palm trunk (Tree_Trunk_2_30 center
+              -1.307, Z range [-2.14..-1.81]) instead of "to the
+              left side of" it. X matches trunk center · Z bumped
+              forward by ~0.28u so the depth ordering puts the
+              board between cam and trunk in 2D frame. Y / rotation
+              / scale unchanged. */}
+          <SurfboardModel position={[-1.307, 0.7, -1.7]} rotation={[0, Math.PI / 2, Math.PI / 2]} scale={0.7} />
 
           {(Object.keys(ANCHOR_POSITIONS) as AnchorKind[]).map((kind, idx) => (
             <InteractiveAnchor
