@@ -211,15 +211,18 @@ export function Scene({ onAnchorClick }: SceneProps) {
                 as per dispatch "permitir punta enterrada parcial". */}
           {/* Round 46 · rotation Y = π/2 to face the NEW front cam
               at [0, 4, 9] (per the iteration zoom · atan2 = 81.9°).
-              Round 50 · position moved from [-1.57, 0.7, -1.98] to
-              [-1.307, 0.7, -1.7] so the board reads "in front of"
-              the back-left palm trunk (Tree_Trunk_2_30 center
-              -1.307, Z range [-2.14..-1.81]) instead of "to the
-              left side of" it. X matches trunk center · Z bumped
-              forward by ~0.28u so the depth ordering puts the
-              board between cam and trunk in 2D frame. Y / rotation
-              / scale unchanged. */}
-          <SurfboardModel position={[-1.307, 0.7, -1.7]} rotation={[0, Math.PI / 2, Math.PI / 2]} scale={0.7} />
+              Round 50 · X -1.57 → -1.307 + Z -1.98 → -1.7 so board
+              reads "in front of" Tree_Trunk_2_30 instead of "next
+              to" it (front cam reads depth better than X offset).
+              Round 51 · Y dropped 0.7 → 0.4 so the keel plants in
+              the sand at the new forward Z=-1.7. The R30 reference
+              of "sand top = 0.26 at the OLD Z=-1.98" no longer
+              applies · the island mesh rises toward the center
+              and the surface at Z=-1.7 sits higher, leaving the
+              R41 Y=0.7 tip (Y=0.035) floating above sand. At Y=0.4
+              the tip lands at Y=-0.265 · safely embedded, per
+              dispatch "puedes meter la punta en la arena". */}
+          <SurfboardModel position={[-1.307, 0.4, -1.7]} rotation={[0, Math.PI / 2, Math.PI / 2]} scale={0.7} />
 
           {(Object.keys(ANCHOR_POSITIONS) as AnchorKind[]).map((kind, idx) => (
             <InteractiveAnchor
