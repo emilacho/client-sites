@@ -362,6 +362,29 @@ function IslandModel(props: React.ComponentProps<"group">) {
         c.userData.r38Scaled = true
       }
     }
+    // Round 44 · reposition the 3 FALLEN coconuts (10_43, 11_44,
+    // 12_45) along a path between the back-left palm Tree_Trunk_2_30
+    // (X=-1.31, Z=-1.98) and the central palm Tree_Trunk_1_2
+    // (X=0.03, Z=-0.41). Stops at ~25% / 50% / 75% along the line so
+    // the cocos visually trail from one palm to the other across the
+    // sand · all at Y=-0.075 (visible sand surface, chest-base
+    // reference). The user marker on the screenshot put the cluster
+    // in the upper-left/back area where the back-left palm sits.
+    const FALLEN_TARGETS: Array<{
+      name: string
+      pos: [number, number, number]
+    }> = [
+      { name: "Coconut_10_43", pos: [-0.95, -0.075, -0.85] },
+      { name: "Coconut_11_44", pos: [-0.65, -0.075, -0.65] },
+      { name: "Coconut_12_45", pos: [-0.35, -0.075, -0.50] },
+    ]
+    for (const { name, pos } of FALLEN_TARGETS) {
+      const c = scene.getObjectByName(name)
+      if (c && !c.userData.r44Moved) {
+        c.position.set(pos[0], pos[1], pos[2])
+        c.userData.r44Moved = true
+      }
+    }
   }, [scene])
 
   // Round 18 single-issue fix · idle pulse on visible GLB sub-groups
@@ -604,6 +627,23 @@ const COCONUT_REVIEWS: CocoReview[] = [
     name: "Carlos M.",
     location: "Olón",
     review: "Patacones perfectos · sal prieta auténtica.",
+    rating: 5,
+    proxyYOffset: 0.6,
+  },
+  {
+    coconutName: "Coconut_11_44",
+    name: "Lucía F.",
+    location: "Manglaralto",
+    review:
+      "Hicieron mi pedido completo en 25 minutos · calidad como en mesa.",
+    rating: 5,
+    proxyYOffset: 0.6,
+  },
+  {
+    coconutName: "Coconut_12_45",
+    name: "Pablo G.",
+    location: "Olón",
+    review: "Lo pedí para reunión familiar · llegó a tiempo · todos contentos.",
     rating: 5,
     proxyYOffset: 0.6,
   },
