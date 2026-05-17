@@ -276,6 +276,10 @@ function IslandModel(props: React.ComponentProps<"group">) {
   const qaMode = useQaMode()
   const inhibited = reducedMotion || qaMode
 
+  // Round 28 · capture mesh refs + clone materials per target so we
+  // can pulse emissive cyan without leaking onto other meshes that
+  // share the same material instance in the GLB. Materials are
+  // cloned exactly once per mount (userData.r28Cloned guard).
   const pulseTargets = useMemo(() => {
     const get = (name: string) => scene.getObjectByName(name)
     const list = [
@@ -284,32 +288,59 @@ function IslandModel(props: React.ComponentProps<"group">) {
       get("Coconut_10_43"),
       get("Tree_Trunk_1_2"),
     ].filter((o): o is THREE.Object3D => Boolean(o))
-    return list.map((obj) => ({ obj, baseScale: obj.scale.x }))
+    return list.map((obj) => {
+      const meshes: THREE.Mesh[] = []
+      obj.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+          const mesh = child as THREE.Mesh
+          if (!mesh.userData.r28Cloned && mesh.material) {
+            const oldMat = mesh.material as THREE.MeshStandardMaterial
+            const cloned = oldMat.clone()
+            cloned.emissive = new THREE.Color("#4DD4D8")
+            cloned.emissiveIntensity = 0
+            mesh.material = cloned
+            mesh.userData.r28Cloned = true
+          }
+          meshes.push(mesh)
+        }
+      })
+      return { obj, baseScale: obj.scale.x, meshes }
+    })
   }, [scene])
 
   useFrame((state) => {
     if (inhibited) {
-      // Reset to baseline so the QA screenshot is identical to the
-      // pre-pulse layout and reduced-motion users see no drift.
-      for (const { obj, baseScale } of pulseTargets) {
+      // Reset · QA screenshot must stay pixel-comparable, reduced-
+      // motion users get a static scene with no glow leakage.
+      for (const { obj, baseScale, meshes } of pulseTargets) {
         obj.scale.setScalar(baseScale)
+        for (const mesh of meshes) {
+          const mat = mesh.material as THREE.MeshStandardMaterial
+          if (mat && "emissiveIntensity" in mat) mat.emissiveIntensity = 0
+        }
       }
       return
     }
     const t = state.clock.elapsedTime
     const DURATION = 3.5
     const STAGGER = 0.8
-    // Round 23 · amplitude bumped from 0.03 (3%) to 0.06 (6%) so the
-    // idle pulse reads at a glance instead of requiring concentration.
-    // 6% is the sweet spot per Emilio · still smoothstep-eased so it
-    // never feels jarring. 7%+ risks crossing into distracting.
-    const AMPLITUDE = 0.06
+    // Round 28 · amplitude bumped from 0.06 (Round 23) to 0.09 ·
+    // emissive cyan glow added (intensity 0 → 0.5 · same smoothstep
+    // curve) · 4 floor rings added in <IdlePulseRings> for the
+    // "click here" signal Emilio asked to be MUY visible.
+    const AMPLITUDE = 0.09
+    const EMISSIVE_MAX = 0.5
     for (let i = 0; i < pulseTargets.length; i++) {
-      const { obj, baseScale } = pulseTargets[i]
+      const { obj, baseScale, meshes } = pulseTargets[i]
       const phase = ((t + i * STAGGER) % DURATION) / DURATION // 0..1
       const tri = 1 - Math.abs(2 * phase - 1)                 // 0..1..0
       const eased = tri * tri * (3 - 2 * tri)                 // smoothstep
       obj.scale.setScalar(baseScale * (1 + AMPLITUDE * eased))
+      const ei = EMISSIVE_MAX * eased
+      for (const mesh of meshes) {
+        const mat = mesh.material as THREE.MeshStandardMaterial
+        if (mat && "emissiveIntensity" in mat) mat.emissiveIntensity = ei
+      }
     }
   })
 
@@ -363,6 +394,84 @@ function CharacterModel(props: React.ComponentProps<"group">) {
 }
 
 /**
+ * IdlePulseRings · 4 flat cyan rings sitting under the interactive
+ * GLB targets (Round 28). Opacity pulses in sync with the GLB scale
+ * pulse · same 3.5s/0.8s smoothstep curve. Reads as a "click here"
+ * floor halo without modifying any GLB geometry.
+ *
+ * Coordinates account for the Round 25 island drop (-0.4 on
+ * Chest/Coconut/Tree_Trunk) and the boat being exempt (still in
+ * water at the Round 22 Y level).
+ */
+function IdlePulseRings() {
+  const reducedMotion = usePrefersReducedMotion()
+  const qaMode = useQaMode()
+  const inhibited = reducedMotion || qaMode
+  const refs = useRef<(THREE.Mesh | null)[]>([])
+
+  const rings = useMemo(
+    () => [
+      // cofre · world X/Z = (-0.76, 0.18) post-Round-25 (chest dropped)
+      { pos: [-0.76, -0.05, 0.18] as [number, number, number], radius: 0.55 },
+      // barco · world X/Z = (1.31, 1.87), Y at water level (Round 22 boat exempt)
+      { pos: [1.31, -0.39, 1.87] as [number, number, number], radius: 0.85 },
+      // cocos · fallen coconut on sand
+      { pos: [0.24, -0.05, -0.26] as [number, number, number], radius: 0.3 },
+      // palmera central · trunk base
+      { pos: [0.07, -0.05, -0.42] as [number, number, number], radius: 0.55 },
+    ],
+    [],
+  )
+
+  useFrame((state) => {
+    if (inhibited) {
+      for (const mesh of refs.current) {
+        if (mesh) (mesh.material as THREE.MeshBasicMaterial).opacity = 0
+      }
+      return
+    }
+    const t = state.clock.elapsedTime
+    const DURATION = 3.5
+    const STAGGER = 0.8
+    const OPACITY_MIN = 0.2
+    const OPACITY_MAX = 0.75
+    for (let i = 0; i < refs.current.length; i++) {
+      const mesh = refs.current[i]
+      if (!mesh) continue
+      const phase = ((t + i * STAGGER) % DURATION) / DURATION
+      const tri = 1 - Math.abs(2 * phase - 1)
+      const eased = tri * tri * (3 - 2 * tri)
+      const op = OPACITY_MIN + (OPACITY_MAX - OPACITY_MIN) * eased
+      ;(mesh.material as THREE.MeshBasicMaterial).opacity = op
+    }
+  })
+
+  return (
+    <group>
+      {rings.map((r, i) => (
+        <mesh
+          key={i}
+          ref={(el) => {
+            refs.current[i] = el
+          }}
+          position={r.pos}
+          rotation={[-Math.PI / 2, 0, 0]}
+        >
+          <ringGeometry args={[r.radius * 0.78, r.radius, 48]} />
+          <meshBasicMaterial
+            color="#4DD4D8"
+            transparent
+            opacity={0}
+            side={THREE.DoubleSide}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+/**
  * IslandWithCharacter · the island base + the castaway character +
  * the character's speech-bubble HTML anchor.
  *
@@ -379,6 +488,7 @@ function IslandWithCharacter({ qaMode }: { qaMode: boolean }) {
   return (
     <group>
       <IslandModel position={[0, 0, 0]} scale={1} />
+      <IdlePulseRings />
       <group
         /* Round 15 set character outer group Y=0.5 (feet sit on sand
            above visible surface). Round 25 dropped the whole island
