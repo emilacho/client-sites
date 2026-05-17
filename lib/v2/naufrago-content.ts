@@ -4,9 +4,15 @@
  * stays deterministic across deploys. Values came from the cascade
  * verified 19/19 green (CC#2 · 2026-05-17).
  *
- * POV unification · voice is `tú` everywhere · hero / CTAs / menu
- * cards / about / contact. The cascade already lands on tú · this
- * file keeps that contract explicit for the audit.
+ * Round 9.5 · MENU_ITEMS replaced with the canonical 17-item menu
+ * sourced from the real menu photo (`raw/state/2026-05-16-naufrago-
+ * menu-shopping-cart-spec.md`). The previous values shipped in
+ * Round 9 were placeholders · this revision honors the exact ids,
+ * names, ingredient lists, and prices from the spec.
+ *
+ * POV unification · voice is `tú` everywhere · hero / CTAs / about /
+ * contact. The cascade already lands on tú · this file keeps that
+ * contract explicit for the audit.
  */
 
 export type MenuCategoryId =
@@ -22,11 +28,22 @@ export interface MenuItem {
    *  Ceviches 2 · Otros 1 · Bebidas 6 · Extras 5 · spec-pinned 17). */
   category: MenuCategoryId
   name: string
+  /** Round 9.5 · optional secondary label from spec (e.g. "Pequeño"
+   *  on Encebollado Junior). Not rendered by the current MenuModal
+   *  UI · preserved for future surfaces that need it. */
+  subtitle?: string
   description: string
-  /** Round 9 · ingredient line shown on MenuModal cards. */
+  /** Round 9.5 · ingredient line shown on MenuModal cards. Stored as
+   *  a single string joined with " · " so the existing modal markup
+   *  (which renders ingredients as one `<p>` block) keeps working
+   *  without UI changes. */
   ingredients?: string
   tags: string[]
   priceUsd: number
+  /** Round 9.5 · marks items that are service fees (not food) ·
+   *  currently only `para-llevar`. Optional · used by downstream
+   *  consumers that need to exclude service fees from totals. */
+  type?: "service_fee"
   /** Display-only · simple emoji + gradient stand-in until real
    *  food photography lands in `client-websites/naufrago/v2/menu/`. */
   emoji: string
@@ -42,223 +59,201 @@ export const MENU_CATEGORIES: Array<{ id: MenuCategoryId; label: string; emoji: 
   { id: "extras",       label: "Extras",       emoji: "🍌" },
 ]
 
-// ── 17-item menu (3 + 2 + 1 + 6 + 5) · spec-pinned ────────────────────
+// ── Canonical 17-item menu · sourced from raw/state/2026-05-16-
+//    naufrago-menu-shopping-cart-spec.md (foto del menú real). Names,
+//    ingredients, and prices are spec-pinned · descriptions are kept
+//    minimal/factual since the spec doesn't dictate them.
 
-const ENCEBOLLADOS: MenuItem[] = [
+export const MENU_ITEMS: MenuItem[] = [
+  // ── Encebollados (3) ───────────────────────────────────────────────
   {
-    id: "encebollado-clasico",
+    id: "encebollado-naufrago",
     category: "encebollados",
-    name: "Encebollado clásico",
-    description:
-      "Caldo de albacora con yuca, tomate y cebolla morada. El plato del puerto, hecho como debe ser.",
-    ingredients: "Albacora · yuca · cebolla morada · tomate · cilantro · limón",
-    tags: ["Plato fuerte", "Clásico"],
-    priceUsd: 6.5,
+    name: "Encebollado Náufrago",
+    description: "El de la casa · porción estándar.",
+    ingredients: "Pescado 100g · Yuca · Cebolla · Chifle o Pan",
+    tags: [],
+    priceUsd: 4.0,
     emoji: "🍲",
     gradient: "from-amber-700 via-amber-500 to-orange-400",
   },
   {
     id: "encebollado-mixto",
     category: "encebollados",
-    name: "Encebollado mixto",
-    description:
-      "Caldo robusto con albacora + camarón fresco del día. Para los que vienen con hambre seria.",
-    ingredients: "Albacora · camarón · yuca · cebolla morada · tomate · cilantro",
-    tags: ["Plato fuerte", "Mixto", "Del día"],
-    priceUsd: 7.5,
+    name: "Encebollado Mixto",
+    description: "Encebollado con camarón y pescado.",
+    ingredients: "Camarón · Pescado 100g · Yuca · Cebolla · Chifle o Pan",
+    tags: [],
+    priceUsd: 6.0,
     emoji: "🍲",
     gradient: "from-amber-700 via-orange-500 to-rose-400",
   },
   {
-    id: "encebollado-pescado",
+    id: "encebollado-junior",
     category: "encebollados",
-    name: "Encebollado de pescado",
-    description:
-      "Más suave, más limpio. Pescado blanco del día con el mismo caldo costero, sin atajos.",
-    ingredients: "Pescado blanco · yuca · cebolla morada · tomate · cilantro",
-    tags: ["Plato fuerte", "Más suave"],
-    priceUsd: 5.5,
+    name: "Encebollado Junior",
+    subtitle: "Pequeño",
+    description: "Porción pequeña · 45g de pescado.",
+    ingredients: "Pescado 45g · Yuca · Cebolla · Chifle o Pan",
+    tags: [],
+    priceUsd: 3.5,
     emoji: "🥣",
     gradient: "from-amber-600 via-yellow-500 to-amber-300",
   },
-]
 
-const CEVICHES: MenuItem[] = [
+  // ── Ceviches (2) ──────────────────────────────────────────────────
   {
-    id: "ceviche-camaron",
+    id: "ceviche-naufrago",
     category: "ceviches",
-    name: "Ceviche de camarón",
-    description:
-      "Camarón fresco curtido en limón y naranja agria, con cebolla y cilantro. Se sirve con canguil y chifle.",
-    ingredients: "Camarón · limón · naranja agria · cebolla · cilantro · canguil · chifle",
-    tags: ["Fresco", "Marino"],
-    priceUsd: 8.5,
-    emoji: "🦐",
+    name: "Ceviche Náufrago",
+    description: "El de la casa · con leche de tigre y salsa de maní.",
+    ingredients:
+      "Pescado curtido 200g · Leche de tigre · Aguacate · Salsa de maní · Chifle · Tomate cebolla pimiento",
+    tags: [],
+    priceUsd: 7.0,
+    emoji: "🐟",
     gradient: "from-cyan-600 via-emerald-500 to-lime-400",
   },
   {
     id: "ceviche-mixto",
     category: "ceviches",
-    name: "Ceviche mixto",
-    description:
-      "Camarón + concha + pescado blanco · combinación del mar costero. Para los que no se deciden.",
-    ingredients: "Camarón · concha · pescado blanco · limón · cebolla · cilantro",
-    tags: ["Fresco", "Mixto", "Del día"],
-    priceUsd: 9.5,
-    emoji: "🐚",
+    name: "Ceviche Mixto",
+    description: "Camarón + pescado curtido · misma leche de tigre.",
+    ingredients:
+      "Camarón · Pescado curtido 200g · Leche de tigre · Aguacate · Salsa de maní · Chifle · Tomate cebolla pimiento",
+    tags: [],
+    priceUsd: 9.0,
+    emoji: "🦐",
     gradient: "from-emerald-600 via-cyan-500 to-sky-400",
   },
-]
 
-const OTROS: MenuItem[] = [
+  // ── Otros (1) ─────────────────────────────────────────────────────
   {
-    id: "patacones-carne",
+    id: "patacones-naufrago",
     category: "otros",
-    name: "Patacones con carne en salsa",
-    description:
-      "Verde frito dos veces + carne en salsa criolla. El plato para cuando querés algo serio que no sea pescado.",
-    ingredients: "Verde · carne · salsa criolla · cebolla · pimiento · tomate",
-    tags: ["Plato fuerte", "Carne"],
-    priceUsd: 7.5,
-    emoji: "🥩",
-    gradient: "from-amber-700 via-rose-500 to-orange-500",
+    name: "Patacones Náufrago",
+    description: "Verdes fritos con queso, huevo y sal prieta.",
+    ingredients: "12-15 Patacones · Queso · Huevo frito · Sal prieta",
+    tags: [],
+    priceUsd: 4.0,
+    emoji: "🍌",
+    gradient: "from-amber-700 via-yellow-500 to-lime-400",
   },
-]
 
-const BEBIDAS: MenuItem[] = [
+  // ── Bebidas (6) ───────────────────────────────────────────────────
   {
-    id: "cola",
+    id: "jugo-natural",
     category: "bebidas",
-    name: "Cola 500 ml",
-    description: "Coca-Cola personal, fría como debe estar.",
-    ingredients: "Coca-Cola",
-    tags: ["Frío"],
-    priceUsd: 1.5,
+    name: "Jugo natural del día",
+    description: "Sabor del día.",
+    tags: [],
+    priceUsd: 2.0,
+    emoji: "🍹",
+    gradient: "from-orange-700 via-amber-500 to-yellow-300",
+  },
+  {
+    id: "cola-grande",
+    category: "bebidas",
+    name: "Cola grande",
+    description: "",
+    tags: [],
+    priceUsd: 2.0,
     emoji: "🥤",
     gradient: "from-rose-700 via-red-500 to-amber-400",
   },
   {
-    id: "agua-sin-gas",
+    id: "cerveza-grande",
     category: "bebidas",
-    name: "Agua sin gas",
-    description: "Botella 500 ml. Lo básico hecho bien.",
-    ingredients: "Agua sin gas",
-    tags: ["Frío"],
+    name: "Cerveza grande",
+    description: "",
+    tags: [],
+    priceUsd: 3.0,
+    emoji: "🍺",
+    gradient: "from-amber-700 via-yellow-500 to-amber-300",
+  },
+  {
+    id: "agua",
+    category: "bebidas",
+    name: "Agua",
+    description: "",
+    tags: [],
     priceUsd: 1.0,
     emoji: "💧",
     gradient: "from-cyan-700 via-sky-500 to-cyan-300",
   },
   {
-    id: "agua-con-gas",
+    id: "cafe-pasado",
     category: "bebidas",
-    name: "Agua con gas",
-    description: "Botella 500 ml para limpiar el paladar entre cucharadas.",
-    ingredients: "Agua con gas",
-    tags: ["Frío"],
-    priceUsd: 1.25,
-    emoji: "🫧",
-    gradient: "from-sky-700 via-cyan-500 to-teal-300",
-  },
-  {
-    id: "jugo-naranja",
-    category: "bebidas",
-    name: "Jugo de naranja natural",
-    description: "Exprimido del día. Sin azúcar añadida, sin agua extra.",
-    ingredients: "Naranja exprimida",
-    tags: ["Natural", "Del día"],
-    priceUsd: 2.5,
-    emoji: "🍊",
-    gradient: "from-orange-700 via-amber-500 to-yellow-300",
-  },
-  {
-    id: "cerveza-pilsener",
-    category: "bebidas",
-    name: "Cerveza Pilsener",
-    description: "La rubia nacional, helada. El maridaje obvio con ceviche.",
-    ingredients: "Pilsener 330 ml",
-    tags: ["Frío", "Con alcohol"],
-    priceUsd: 2.5,
-    emoji: "🍺",
-    gradient: "from-amber-700 via-yellow-500 to-amber-300",
-  },
-  {
-    id: "limonada",
-    category: "bebidas",
-    name: "Limonada natural",
-    description: "Limón fresco + hielo + cero pretensión. Refresca y limpia.",
-    ingredients: "Limón · agua · azúcar al gusto · hielo",
-    tags: ["Natural", "Frío"],
+    name: "Café pasado",
+    description: "",
+    tags: [],
     priceUsd: 2.0,
-    emoji: "🍋",
-    gradient: "from-lime-600 via-yellow-400 to-amber-300",
+    emoji: "☕",
+    gradient: "from-amber-900 via-amber-700 to-amber-500",
   },
-]
-
-const EXTRAS: MenuItem[] = [
   {
-    id: "patacones",
+    id: "cola-pequena",
+    category: "bebidas",
+    name: "Cola pequeña",
+    description: "",
+    tags: [],
+    priceUsd: 1.25,
+    emoji: "🥤",
+    gradient: "from-rose-600 via-red-500 to-amber-300",
+  },
+
+  // ── Extras (5) ────────────────────────────────────────────────────
+  {
+    id: "extra-chifle",
     category: "extras",
-    name: "Patacones (porción)",
-    description:
-      "Verde aplastado y frito dos veces · corteza crujiente, centro tierno. El acompañante obligado.",
-    ingredients: "Verde · sal · aceite",
-    tags: ["Acompañante"],
-    priceUsd: 3.5,
+    name: "Chifle",
+    description: "",
+    tags: [],
+    priceUsd: 0.5,
     emoji: "🍌",
     gradient: "from-emerald-700 via-lime-500 to-amber-300",
   },
   {
-    id: "arroz-blanco",
+    id: "extra-pan",
     category: "extras",
-    name: "Arroz blanco",
-    description: "Porción extra de arroz para meterle al caldo o comer aparte.",
-    ingredients: "Arroz · sal · agua",
-    tags: ["Acompañante"],
-    priceUsd: 1.5,
-    emoji: "🍚",
-    gradient: "from-slate-300 via-stone-200 to-amber-200",
+    name: "Pan",
+    description: "",
+    tags: [],
+    priceUsd: 0.5,
+    emoji: "🍞",
+    gradient: "from-amber-600 via-yellow-400 to-amber-200",
   },
   {
-    id: "salsa-criolla",
+    id: "extra-huevo",
     category: "extras",
-    name: "Salsa criolla",
-    description: "Encurtido fresco · cebolla, tomate, cilantro, limón. Sube el plato un escalón.",
-    ingredients: "Cebolla · tomate · cilantro · limón · aceite · sal",
-    tags: ["Picante suave"],
-    priceUsd: 1.0,
-    emoji: "🌶",
-    gradient: "from-rose-600 via-orange-500 to-yellow-400",
+    name: "Huevo",
+    description: "",
+    tags: [],
+    priceUsd: 0.5,
+    emoji: "🥚",
+    gradient: "from-yellow-500 via-amber-300 to-stone-200",
   },
   {
-    id: "encurtido",
-    category: "extras",
-    name: "Encurtido extra",
-    description: "Cebolla curtida + cilantro + limón. Porción adicional para amantes del agrio.",
-    ingredients: "Cebolla morada · cilantro · limón · vinagre",
-    tags: ["Acompañante"],
-    priceUsd: 1.5,
-    emoji: "🧅",
-    gradient: "from-rose-700 via-pink-500 to-rose-300",
-  },
-  {
-    id: "aguacate",
+    id: "extra-aguacate",
     category: "extras",
     name: "Aguacate",
-    description: "Medio aguacate maduro · cremoso · cortado al momento.",
-    ingredients: "Aguacate",
-    tags: ["Fresco"],
-    priceUsd: 2.0,
+    description: "",
+    tags: [],
+    priceUsd: 1.0,
     emoji: "🥑",
     gradient: "from-emerald-700 via-lime-500 to-lime-300",
   },
-]
-
-export const MENU_ITEMS: MenuItem[] = [
-  ...ENCEBOLLADOS,
-  ...CEVICHES,
-  ...OTROS,
-  ...BEBIDAS,
-  ...EXTRAS,
+  {
+    id: "para-llevar",
+    category: "extras",
+    name: "Para llevar",
+    description: "Cargo por empaque.",
+    tags: [],
+    priceUsd: 1.0,
+    type: "service_fee",
+    emoji: "🥡",
+    gradient: "from-slate-700 via-stone-600 to-stone-400",
+  },
 ]
 
 export const naufragoV2 = {
@@ -306,12 +301,14 @@ export const naufragoV2 = {
     hoursLabel: "Horario de pedidos",
   },
   /** Legacy 3-item quick list · still consumed by MenuQuickAdd bottom
-   *  strip. The 17-item catalog lives in MENU_ITEMS (above) and powers
-   *  the MenuModal opened from the cofre. */
+   *  strip. Picks one canonical item per plate category (Encebollado
+   *  Náufrago · Ceviche Náufrago · Patacones Náufrago). The 17-item
+   *  catalog lives in MENU_ITEMS (above) and powers the MenuModal
+   *  opened from the cofre. */
   menu: [
-    ENCEBOLLADOS[0],
-    CEVICHES[0],
-    EXTRAS[0],
+    MENU_ITEMS.find((i) => i.id === "encebollado-naufrago")!,
+    MENU_ITEMS.find((i) => i.id === "ceviche-naufrago")!,
+    MENU_ITEMS.find((i) => i.id === "patacones-naufrago")!,
   ] satisfies MenuItem[],
 } as const
 
