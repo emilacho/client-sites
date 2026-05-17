@@ -234,6 +234,16 @@ function IslandModel(props: React.ComponentProps<"group">) {
   const waveBaseRef = useRef<
     Array<{ obj: THREE.Object3D; baseY: number; baseRotX: number; baseRotZ: number }>
   >([])
+  // Round 34 · chest "taladro internal" shake · base rotation captured
+  // post-Round-25 (chest dropped 0.4u but rotation unchanged from GLB).
+  // The shake adds random rotation jitter for ~0.4s every 3s and snaps
+  // back between bursts.
+  const chestShakeRef = useRef<{
+    obj: THREE.Object3D
+    baseRotX: number
+    baseRotY: number
+    baseRotZ: number
+  } | null>(null)
   // Round 13 · Ocean001_57 drop to Y=-0.4 to break shoreline z-fight
   // Round 21 · hide the 4 "shoreline rocks" baked into the GLB at
   //            Z≈1.4-2.1 with Y near 0. The asset designer placed
@@ -308,6 +318,16 @@ function IslandModel(props: React.ComponentProps<"group">) {
       baseRotX: obj.rotation.x,
       baseRotZ: obj.rotation.z,
     }))
+    // Round 34 · capture chest base rotation for the taladro shake.
+    const chest = scene.getObjectByName("Chest_14")
+    if (chest) {
+      chestShakeRef.current = {
+        obj: chest,
+        baseRotX: chest.rotation.x,
+        baseRotY: chest.rotation.y,
+        baseRotZ: chest.rotation.z,
+      }
+    }
   }, [scene])
 
   // Round 18 single-issue fix · idle pulse on visible GLB sub-groups
@@ -329,13 +349,15 @@ function IslandModel(props: React.ComponentProps<"group">) {
 
   // Round 28 · capture mesh refs + clone materials per target so we
   // can pulse emissive cyan without leaking onto other meshes that
-  // share the same material instance in the GLB. Materials are
-  // cloned exactly once per mount (userData.r28Cloned guard).
+  // share the same material instance in the GLB.
+  // Round 34 · narrow the pulse to only the coconut and palm trunk ·
+  // chest gets a taladro shake (no pulse) and boat gets nothing
+  // beyond Round 31 wave bobbing. Pre-cloned chest/boat materials
+  // from Round 28 stay in place with emissiveIntensity=0 · no visible
+  // glow since nothing mutates them now.
   const pulseTargets = useMemo(() => {
     const get = (name: string) => scene.getObjectByName(name)
     const list = [
-      get("Chest_14"),
-      get("Boat_15"),
       get("Coconut_10_43"),
       get("Tree_Trunk_1_2"),
     ].filter((o): o is THREE.Object3D => Boolean(o))
@@ -361,9 +383,8 @@ function IslandModel(props: React.ComponentProps<"group">) {
 
   useFrame((state) => {
     if (inhibited) {
-      // Reset · QA screenshot must stay pixel-comparable, reduced-
-      // motion users get a static scene with no glow leakage and no
-      // bobbing motion.
+      // Reset · QA screenshot stays pixel-comparable, reduced-motion
+      // users get a static scene with no glow, no bobbing, no shake.
       for (const { obj, baseScale, meshes } of pulseTargets) {
         obj.scale.setScalar(baseScale)
         for (const mesh of meshes) {
@@ -376,14 +397,24 @@ function IslandModel(props: React.ComponentProps<"group">) {
         w.obj.rotation.x = w.baseRotX
         w.obj.rotation.z = w.baseRotZ
       }
+      const shake = chestShakeRef.current
+      if (shake) {
+        shake.obj.rotation.x = shake.baseRotX
+        shake.obj.rotation.y = shake.baseRotY
+        shake.obj.rotation.z = shake.baseRotZ
+      }
       return
     }
     const t = state.clock.elapsedTime
-    // ── Round 18/23/28 · idle pulse on the 4 interactive GLB groups
-    const DURATION = 3.5
+    // ── Round 34 · subtle pulse on coconut + palm trunk only.
+    //    DURATION 3.5 → 2.0 (faster cycle)
+    //    STAGGER  unchanged (only 2 targets · noticeable stagger)
+    //    AMPLITUDE 0.09 → 0.045 (apenas perceptible scale change)
+    //    EMISSIVE_MAX 0.5 → 0.2 (sutil halo perimeter)
+    const DURATION = 2.0
     const STAGGER = 0.8
-    const AMPLITUDE = 0.09
-    const EMISSIVE_MAX = 0.5
+    const AMPLITUDE = 0.045
+    const EMISSIVE_MAX = 0.2
     for (let i = 0; i < pulseTargets.length; i++) {
       const { obj, baseScale, meshes } = pulseTargets[i]
       const phase = ((t + i * STAGGER) % DURATION) / DURATION // 0..1
@@ -396,10 +427,7 @@ function IslandModel(props: React.ComponentProps<"group">) {
         if (mat && "emissiveIntensity" in mat) mat.emissiveIntensity = ei
       }
     }
-    // ── Round 31 · boat wave bobbing · 3 different frequencies so
-    // the loop never reads as repetitive · subtle (max ~6cm bob,
-    // ±1.7° roll, ±1.1° pitch) but enough to break the static feel.
-    // Boat scale is independent (Round 28 pulse) and runs on its own.
+    // ── Round 31 · boat wave bobbing (preserved · unchanged)
     const waveY = Math.sin(t * 1.2) * 0.06
     const waveRotZ = Math.sin(t * 0.8) * 0.03
     const waveRotX = Math.cos(t * 1.0) * 0.02
@@ -407,6 +435,26 @@ function IslandModel(props: React.ComponentProps<"group">) {
       w.obj.position.y = w.baseY + waveY
       w.obj.rotation.x = w.baseRotX + waveRotX
       w.obj.rotation.z = w.baseRotZ + waveRotZ
+    }
+    // ── Round 34 · chest "taladro internal" shake · 0.4s burst of
+    // random rotation jitter (±0.05 rad on all three axes) every 3s,
+    // perfectly still between bursts. Vibration only · no position,
+    // no scale, no glow.
+    const shake = chestShakeRef.current
+    if (shake) {
+      const SHAKE_INTERVAL = 3.0
+      const SHAKE_BURST = 0.4
+      const JITTER = 0.05
+      const cyclePos = t % SHAKE_INTERVAL
+      if (cyclePos < SHAKE_BURST) {
+        shake.obj.rotation.x = shake.baseRotX + (Math.random() - 0.5) * 2 * JITTER
+        shake.obj.rotation.y = shake.baseRotY + (Math.random() - 0.5) * 2 * JITTER
+        shake.obj.rotation.z = shake.baseRotZ + (Math.random() - 0.5) * 2 * JITTER
+      } else {
+        shake.obj.rotation.x = shake.baseRotX
+        shake.obj.rotation.y = shake.baseRotY
+        shake.obj.rotation.z = shake.baseRotZ
+      }
     }
   })
 
@@ -475,16 +523,17 @@ function IdlePulseRings() {
   const inhibited = reducedMotion || qaMode
   const refs = useRef<(THREE.Mesh | null)[]>([])
 
+  // Round 34 · only coco + palm rings remain. Chest moved to a
+  // taladro-shake signal (no ring) and boat dropped its ring entirely
+  // (wave bobbing is enough animation). Remaining rings shrunk to
+  // half radius and made thinner (inner ratio 0.85 vs old 0.78) per
+  // the "apenas perceptible" spec.
   const rings = useMemo(
     () => [
-      // cofre · world X/Z = (-0.76, 0.18) post-Round-25 (chest dropped)
-      { pos: [-0.76, -0.05, 0.18] as [number, number, number], radius: 0.55 },
-      // barco · world X/Z = (1.31, 1.87), Y at water level (Round 22 boat exempt)
-      { pos: [1.31, -0.39, 1.87] as [number, number, number], radius: 0.85 },
-      // cocos · fallen coconut on sand
-      { pos: [0.24, -0.05, -0.26] as [number, number, number], radius: 0.3 },
-      // palmera central · trunk base
-      { pos: [0.07, -0.05, -0.42] as [number, number, number], radius: 0.55 },
+      // cocos · fallen coconut on sand · radius halved 0.3 → 0.15
+      { pos: [0.24, -0.05, -0.26] as [number, number, number], radius: 0.15 },
+      // palmera central · trunk base · radius halved 0.55 → 0.275
+      { pos: [0.07, -0.05, -0.42] as [number, number, number], radius: 0.275 },
     ],
     [],
   )
@@ -497,10 +546,13 @@ function IdlePulseRings() {
       return
     }
     const t = state.clock.elapsedTime
-    const DURATION = 3.5
+    // Round 34 · faster cycle (2s) matching the subtle scale pulse,
+    // lower max opacity (0.3 instead of 0.75) so the rings hint
+    // rather than shout.
+    const DURATION = 2.0
     const STAGGER = 0.8
-    const OPACITY_MIN = 0.2
-    const OPACITY_MAX = 0.75
+    const OPACITY_MIN = 0.08
+    const OPACITY_MAX = 0.3
     for (let i = 0; i < refs.current.length; i++) {
       const mesh = refs.current[i]
       if (!mesh) continue
@@ -523,7 +575,8 @@ function IdlePulseRings() {
           position={r.pos}
           rotation={[-Math.PI / 2, 0, 0]}
         >
-          <ringGeometry args={[r.radius * 0.78, r.radius, 48]} />
+          {/* Round 34 · thinner ring (inner 0.85 vs prior 0.78) */}
+          <ringGeometry args={[r.radius * 0.85, r.radius, 48]} />
           <meshBasicMaterial
             color="#4DD4D8"
             transparent
