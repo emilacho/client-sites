@@ -555,6 +555,11 @@ interface CocoReview {
   location: string
   review: string
   rating: number
+  /** Per-coconut Y offset for the hover proxy. Canopy cocos hover
+   *  fine at 0.2 but the fallen Coconut_10_43 (Y=0.06) sits inside
+   *  the sand cylinder · its proxy needs a bigger lift to clear the
+   *  sand mesh raycast. */
+  proxyYOffset: number
 }
 
 const COCONUT_REVIEWS: CocoReview[] = [
@@ -565,6 +570,7 @@ const COCONUT_REVIEWS: CocoReview[] = [
     review:
       "Pedí encebollado a las 11am y llegó a las 11:35am tibio · caldo perfecto.",
     rating: 5,
+    proxyYOffset: 0.2,
   },
   {
     coconutName: "Coconut_2_5",
@@ -573,6 +579,7 @@ const COCONUT_REVIEWS: CocoReview[] = [
     review:
       "El ceviche tiene sabor de mercado · fresco · ácido justo.",
     rating: 5,
+    proxyYOffset: 0.2,
   },
   {
     coconutName: "Coconut_3_4",
@@ -580,6 +587,7 @@ const COCONUT_REVIEWS: CocoReview[] = [
     location: "Punta Blanca",
     review: "Pides por WhatsApp y listo · nada de filas.",
     rating: 5,
+    proxyYOffset: 0.2,
   },
   {
     coconutName: "Coconut_10_43",
@@ -587,6 +595,7 @@ const COCONUT_REVIEWS: CocoReview[] = [
     location: "Olón",
     review: "Patacones perfectos · sal prieta auténtica.",
     rating: 5,
+    proxyYOffset: 0.6,
   },
 ]
 
@@ -730,13 +739,11 @@ function CoconutHoverCards() {
     <group>
       {targets.map(({ review, pos }) => (
         <group key={review.coconutName} position={pos}>
-          {/* Hover-proxy sphere · radius 0.4, offset 0.2u upward.
-              The bump puts the proxy mostly ABOVE the sand cylinder
-              (top Y=0.26) even for the fallen coconut at Y=0.06.
-              Without the offset the sand mesh wins the raycast and
-              swallows pointer events meant for Coconut_10_43. */}
+          {/* Hover-proxy sphere · per-coconut Y offset (canopy 0.2,
+              fallen 0.6 to clear the sand cylinder raycast). Radius
+              0.4u covers the scaled fruit comfortably. */}
           <mesh
-            position={[0, 0.2, 0]}
+            position={[0, review.proxyYOffset, 0]}
             onPointerEnter={(e) => {
               e.stopPropagation()
               document.body.style.cursor = "pointer"
@@ -753,8 +760,7 @@ function CoconutHoverCards() {
             }}
           >
             <sphereGeometry args={[0.4, 16, 16]} />
-            {/* TEMP debug · visible cyan to confirm proxy positions */}
-            <meshBasicMaterial color="#4DD4D8" transparent opacity={0.4} depthWrite={false} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} />
           </mesh>
           {/* Floating review card · above the coconut · ignores
               occlusion so palm leaves can'\''t hide it */}
