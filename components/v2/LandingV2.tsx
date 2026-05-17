@@ -77,11 +77,14 @@ function LandingInner() {
       </div>
 
       {/* Hero copy · floats above the scene with a soft gradient backdrop
-          so it stays readable over the GLB. Round 71 · removed
-          `mx-auto max-w-6xl` and pinned to bottom-LEFT corner per user
-          "cuadra con la esquina inferior izquierda de la pantalla".
-          items-start applies at all breakpoints now (was md:only). */}
-      <div className="pointer-events-none relative z-10 flex min-h-[100svh] flex-col items-start justify-end px-5 pb-32 pt-24 md:pb-40">
+          so it stays readable over the GLB. Round 72 · pushed all the
+          way into the bottom-left corner per user "completamente hacia
+          la esquina inferior izquierda". Lateral padding 20px → 12px
+          and bottom padding 128/160px → 88px so the block sits 8px
+          above the 80px-tall PromoTicker (which is fixed at z-30 ·
+          can't go below it). pt removed · irrelevant under
+          justify-end + min-h-[100svh]. */}
+      <div className="pointer-events-none relative z-10 flex min-h-[100svh] flex-col items-start justify-end px-3 pb-[88px]">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
