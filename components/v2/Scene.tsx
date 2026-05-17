@@ -750,8 +750,11 @@ function CoconutHoverCards() {
       {targets.map(({ review, pos }) => (
         <group key={review.coconutName} position={pos}>
           {/* Hover-proxy sphere · per-coconut Y offset (canopy 0.2,
-              fallen 0.6 to clear the sand cylinder raycast). Radius
-              0.4u covers the scaled fruit comfortably. */}
+              fallen 0.6 to clear the sand cylinder raycast).
+              Round 43 · radius 0.4 → 0.15 so cards fire ONLY when
+              the cursor is on the coconut itself, not on the
+              surrounding air (~18px screen footprint at default
+              cam distance · matches the scaled fruit size). */}
           <mesh
             position={[0, review.proxyYOffset, 0]}
             onPointerEnter={(e) => {
@@ -769,7 +772,7 @@ function CoconutHoverCards() {
               setHover(hovered === review.coconutName ? null : review.coconutName)
             }}
           >
-            <sphereGeometry args={[0.4, 16, 16]} />
+            <sphereGeometry args={[0.15, 12, 12]} />
             <meshBasicMaterial transparent opacity={0} depthWrite={false} />
           </mesh>
           {/* Floating review card · above the coconut · ignores
