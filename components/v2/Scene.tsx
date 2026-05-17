@@ -161,9 +161,24 @@ export function Scene({ onAnchorClick }: SceneProps) {
               X[-2.82..2.75] Z[-3.66..1.57]. No collision with chest,
               character, sign, boat, palms, or remaining rocks.
               Rotation + scale unchanged from Round 17. */}
-          {/* Round 26 surfboard pos · Round 25 -0.4 island drop adjusts
-              Y 0.35 → -0.05 so it rests on the new sand surface. */}
-          <SurfboardModel position={[-1.9, -0.05, -0.2]} rotation={[0, 0.7, 0.2]} scale={0.7} />
+          {/* Round 30 · surfboard stood up vertical against the
+              left-back palm. User marked the zone on a screenshot.
+                rotation [0, 0.7, 0.2] (laying flat)
+                       → [0, 0.3, Math.PI/2] (vertical · 90° tilt
+                         around Z + 17° lean around Y for an angled
+                         "propped against palm" silhouette)
+                position [-1.9, -0.05, -0.2] (horizontal)
+                       → [-1.5, 0.925, -0.7] (probe-confirmed Y)
+                scale  0.7 unchanged
+              Probe (scripts/probe-surfboard-vertical.mjs):
+                Y half-extent post-rotation = 0.665 (board total
+                length 1.329u in world Y · the GLB source bbox is
+                1.9u × scale 0.7 = 1.33u, NOT 0.931u as Round 17
+                math assumed). Required center Y = sand top 0.26 +
+                0.665 = 0.925, so keel lands exactly on the sand
+                AABB top. Footprint X[-1.62..-1.38] Z[-0.90..-0.50]
+                clear of chest, palm trunk, sign, character. */}
+          <SurfboardModel position={[-1.5, 0.925, -0.7]} rotation={[0, 0.3, Math.PI / 2]} scale={0.7} />
 
           {(Object.keys(ANCHOR_POSITIONS) as AnchorKind[]).map((kind, idx) => (
             <InteractiveAnchor
