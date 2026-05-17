@@ -190,10 +190,21 @@ export function Scene({ onAnchorClick }: SceneProps) {
 function IslandModel(props: React.ComponentProps<"group">) {
   const { scene } = useGLTF(naufragoAssets.island)
   // Round 13 · Ocean001_57 drop to Y=-0.4 to break shoreline z-fight
+  // Round 21 · hide the 4 "shoreline rocks" baked into the GLB at
+  //            Z≈1.4-2.1 with Y near 0. The asset designer placed
+  //            them to read as "shallow rocky water" against the
+  //            original Y=0 ocean. After Round 13 dropped the ocean
+  //            to Y=-0.4, those 4 rocks now stand 0.35u above the
+  //            water with no sand beneath = "piedras flotando".
+  //            Solid 6-rock cluster on sand stays intact.
   useEffect(() => {
     const ocean = scene.getObjectByName("Ocean001_57")
     if (ocean && ocean.position.y === 0) {
       ocean.position.y = -0.4
+    }
+    for (const name of ["Rock_1_51", "Rock_2_54", "Rock_3_55", "Rock_4_52"]) {
+      const r = scene.getObjectByName(name)
+      if (r) r.visible = false
     }
   }, [scene])
 
