@@ -380,34 +380,32 @@ function IslandModel(props: React.ComponentProps<"group">) {
         c.userData.r38Scaled = true
       }
     }
-    // Round 44 · reposition the 3 FALLEN coconuts (10_43, 11_44,
-    // 12_45) along a path between the back-left palm Tree_Trunk_2_30
-    // (X=-1.31, Z=-1.98) and the central palm Tree_Trunk_1_2
-    // (X=0.03, Z=-0.41). Stops at ~25% / 50% / 75% along the line so
-    // the cocos visually trail from one palm to the other across the
-    // sand · all at Y=-0.075 (visible sand surface, chest-base
-    // reference). The user marker on the screenshot put the cluster
-    // in the upper-left/back area where the back-left palm sits.
+    // Round 60 · 3 fallen cocos repositioned from the back-left
+    // diagonal (R44/R48) to the FRONT-VISIBLE sand zone per user
+    // "se pierde la visibilidad con la cámara de frente porque
+    // quedan atrás del cofre · sepáralos más · súbelos · solo 20%
+    // del coco dentro de la arena". The chest at X=-0.76, Z=0.18
+    // occluded the back-left cluster from the new R45 front cam.
+    // New layout fans the three cocos across the front sand,
+    // each separated by ~0.9-1.4u so they read as distinct fruits,
+    // not a cluster. Y bumped 0.06 → 0.15 · with coconut radius
+    // ~0.12u (R38 scaled), only the bottom ~0.05u (20%) sits in
+    // the sand, the other 80% is visible.
     const FALLEN_TARGETS: Array<{
       name: string
       pos: [number, number, number]
     }> = [
-      // Round 48 · Y bumped -0.075 → 0.06 (the GLB-native sand-surface
-      // Y for Coconut_10_43 per line 592 comment). At -0.075 the cocos
-      // sat BELOW the sand mesh top and were invisible from the new
-      // R45 front cam · the R44 "chest-base reference" was the wrong
-      // datum. X/Z diagonal preserved.
-      { name: "Coconut_10_43", pos: [-0.95, 0.06, -0.85] },
-      { name: "Coconut_11_44", pos: [-0.65, 0.06, -0.65] },
-      { name: "Coconut_12_45", pos: [-0.35, 0.06, -0.50] },
+      { name: "Coconut_10_43", pos: [ 0.30, 0.15, -0.10] }, // right of chest
+      { name: "Coconut_11_44", pos: [-0.40, 0.15,  0.70] }, // front-center
+      { name: "Coconut_12_45", pos: [-1.10, 0.15,  0.20] }, // front-left
     ]
     for (const { name, pos } of FALLEN_TARGETS) {
       const c = scene.getObjectByName(name)
-      // Flag bumped r44 → r48 so the new Y=0.06 position is applied
-      // even on sessions whose scene cache predates R48.
-      if (c && !c.userData.r48Moved) {
+      // Flag bumped r48 → r60 so the new positions apply on
+      // sessions whose scene cache predates this round.
+      if (c && !c.userData.r60Moved) {
         c.position.set(pos[0], pos[1], pos[2])
-        c.userData.r48Moved = true
+        c.userData.r60Moved = true
       }
     }
   }, [scene])
