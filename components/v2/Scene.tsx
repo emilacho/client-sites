@@ -186,24 +186,23 @@ export function Scene({ onAnchorClick }: SceneProps) {
                 0.665 = 0.925, so keel lands exactly on the sand
                 AABB top. Footprint X[-1.62..-1.38] Z[-0.90..-0.50]
                 clear of chest, palm trunk, sign, character. */}
-          {/* Round 33 REDO · re-aimed contact at the CENTRAL palm
-              (Tree_Trunk_1_2) instead of the back-far Tree_Trunk_2_30
-              used in the first Round 33. Default cam [9, 4, 0] looks
-              at origin and Tree_Trunk_2_30 lives at cam X-dist 10.31u
-              right-back · not visible at a glance. Tree_Trunk_1_2 is
-              at cam X-dist 8.97u left/center · matches the dispatch
-              hint "X > -1.5 · Z near 0".
-              Probe (scripts/probe-trunks-all.mjs · post-Round-25):
-                Tree_Trunk_1_2 center (0.026, 0.661, -0.413)
-                X[-0.122..0.175]  Z[-0.497..-0.330]
-              Target so surfboard Z max touches trunk Z min · palm
-              and surfboard appear side-by-side at the same camera
-              distance, neither occluding the other:
-                X = trunk center X                       =  0.026
-                Z = trunk Z min - SURF_Z_HALF (0.197)    = -0.694
+          {/* Round 33 FINAL · contact Tree_Trunk_2_30 (BACK-LEFT).
+              The annotation-pass overlay in Round 33rrr confirmed
+              with Emilio that the palm he marked in red is the
+              back-left one · NOT the central palm that the Round 33
+              REDO had assumed.
+              Probe (scripts/probe-trunk-contact.mjs · post-Round-25):
+                Tree_Trunk_2_30 center (-1.307, 0.595, -1.976)
+                X[-1.448 .. -1.166]  Z[-2.138 .. -1.814]
+              Target so surfboard X max edge touches trunk X min:
+                X = trunk X min - SURF_X_HALF (0.120) = -1.568
+                Z = trunk center Z                    = -1.976
                 Y = unchanged at 0.925 (keel on sand top)
-              Rotation + scale unchanged. */}
-          <SurfboardModel position={[0.026, 0.925, -0.694]} rotation={[0, 0.3, Math.PI / 2]} scale={0.7} />
+              Rotation + scale unchanged. This matches the position
+              the ORIGINAL Round 33 commit had; the REDO chase was
+              incorrect because the dispatch's "X > -1.5 · Z near 0"
+              heuristic didn'\''t match Emilio'\''s actual marker. */}
+          <SurfboardModel position={[-1.57, 0.925, -1.98]} rotation={[0, 0.3, Math.PI / 2]} scale={0.7} />
 
           {(Object.keys(ANCHOR_POSITIONS) as AnchorKind[]).map((kind, idx) => (
             <InteractiveAnchor
@@ -626,53 +625,6 @@ function IdlePulseRings() {
 }
 
 /**
- * TrunkLabels · TEMPORARY (Round 33rrr) overlay that names every
- * Tree_Trunk_X mesh in world space. Used as evidence frames for
- * Emilio to identify which palm matches his screenshot marker.
- * REMOVED in the follow-up commit once the right trunk is picked.
- */
-function TrunkLabels() {
-  const labels: Array<{ pos: [number, number, number]; name: string }> = [
-    { pos: [0.026, 1.65, -0.413], name: "Tree_Trunk_1_2 · CENTRAL" },
-    { pos: [-1.307, 1.55, -1.976], name: "Tree_Trunk_2_30 · BACK-LEFT" },
-    { pos: [1.347, 1.45, -1.389], name: "Tree_Trunk_3_18 · RIGHT" },
-  ]
-  return (
-    <group>
-      {labels.map((l) => (
-        <Html
-          key={l.name}
-          position={l.pos}
-          center
-          distanceFactor={5}
-          zIndexRange={[100, 0]}
-          style={{ pointerEvents: "none" }}
-        >
-          <div
-            style={{
-              background: "rgba(0,0,0,0.78)",
-              border: "1.5px solid #4DD4D8",
-              color: "#4DD4D8",
-              padding: "5px 12px",
-              fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-              fontSize: "12px",
-              fontWeight: 700,
-              borderRadius: "6px",
-              whiteSpace: "nowrap",
-              letterSpacing: "0.04em",
-              textShadow: "0 1px 2px rgba(0,0,0,0.9)",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
-            }}
-          >
-            {l.name}
-          </div>
-        </Html>
-      ))}
-    </group>
-  )
-}
-
-/**
  * IslandWithCharacter · the island base + the castaway character +
  * the character's speech-bubble HTML anchor.
  *
@@ -690,9 +642,6 @@ function IslandWithCharacter({ qaMode }: { qaMode: boolean }) {
     <group>
       <IslandModel position={[0, 0, 0]} scale={1} />
       <IdlePulseRings />
-      {/* Round 33rrr · TEMPORARY trunk-ID overlay · removed after
-          Emilio picks the right trunk from the screenshots. */}
-      <TrunkLabels />
       <group
         /* Round 32 · character flotante fix · Y 0.1 → -0.075.
            Round 15/25's compromise Y kept feet between visible
