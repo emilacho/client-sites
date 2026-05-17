@@ -374,15 +374,22 @@ function IslandModel(props: React.ComponentProps<"group">) {
       name: string
       pos: [number, number, number]
     }> = [
-      { name: "Coconut_10_43", pos: [-0.95, -0.075, -0.85] },
-      { name: "Coconut_11_44", pos: [-0.65, -0.075, -0.65] },
-      { name: "Coconut_12_45", pos: [-0.35, -0.075, -0.50] },
+      // Round 48 · Y bumped -0.075 → 0.06 (the GLB-native sand-surface
+      // Y for Coconut_10_43 per line 592 comment). At -0.075 the cocos
+      // sat BELOW the sand mesh top and were invisible from the new
+      // R45 front cam · the R44 "chest-base reference" was the wrong
+      // datum. X/Z diagonal preserved.
+      { name: "Coconut_10_43", pos: [-0.95, 0.06, -0.85] },
+      { name: "Coconut_11_44", pos: [-0.65, 0.06, -0.65] },
+      { name: "Coconut_12_45", pos: [-0.35, 0.06, -0.50] },
     ]
     for (const { name, pos } of FALLEN_TARGETS) {
       const c = scene.getObjectByName(name)
-      if (c && !c.userData.r44Moved) {
+      // Flag bumped r44 → r48 so the new Y=0.06 position is applied
+      // even on sessions whose scene cache predates R48.
+      if (c && !c.userData.r48Moved) {
         c.position.set(pos[0], pos[1], pos[2])
-        c.userData.r44Moved = true
+        c.userData.r48Moved = true
       }
     }
   }, [scene])
