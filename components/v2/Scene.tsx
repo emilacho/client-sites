@@ -200,7 +200,16 @@ export function Scene({ onAnchorClick }: SceneProps) {
               the ORIGINAL Round 33 commit had; the REDO chase was
               incorrect because the dispatch's "X > -1.5 · Z near 0"
               heuristic didn'\''t match Emilio'\''s actual marker. */}
-          <SurfboardModel position={[-1.57, 0.925, -1.98]} rotation={[0, 0.3, Math.PI / 2]} scale={0.7} />
+          {/* Round 41 · face-cam + tip buried.
+              · rotation Y bumped by π (3.4416 = π + 0.3) so the flat
+                face normal flips from world (-0.955, 0, 0.296) to
+                (+0.955, 0, -0.296) · now points TOWARD the default
+                side cam at +X (dot product with camera→surfboard
+                direction = -0.89 · face faces camera).
+              · Y dropped 0.925 → 0.7 so the bottom tip sits at
+                Y=0.035 (sand top is 0.26) · ~0.225u of board buried,
+                as per dispatch "permitir punta enterrada parcial". */}
+          <SurfboardModel position={[-1.57, 0.7, -1.98]} rotation={[0, Math.PI + 0.3, Math.PI / 2]} scale={0.7} />
 
           {(Object.keys(ANCHOR_POSITIONS) as AnchorKind[]).map((kind, idx) => (
             <InteractiveAnchor
