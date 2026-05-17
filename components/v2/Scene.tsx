@@ -380,32 +380,33 @@ function IslandModel(props: React.ComponentProps<"group">) {
         c.userData.r38Scaled = true
       }
     }
-    // Round 60 · 3 fallen cocos repositioned from the back-left
-    // diagonal (R44/R48) to the FRONT-VISIBLE sand zone per user
-    // "se pierde la visibilidad con la cámara de frente porque
-    // quedan atrás del cofre · sepáralos más · súbelos · solo 20%
-    // del coco dentro de la arena". The chest at X=-0.76, Z=0.18
-    // occluded the back-left cluster from the new R45 front cam.
-    // New layout fans the three cocos across the front sand,
-    // each separated by ~0.9-1.4u so they read as distinct fruits,
-    // not a cluster. Y bumped 0.06 → 0.15 · with coconut radius
-    // ~0.12u (R38 scaled), only the bottom ~0.05u (20%) sits in
-    // the sand, the other 80% is visible.
+    // Round 61 · 3 fallen cocos moved to the ISLAND PERIPHERY per
+    // user "que queden en la periferia de la isla, cerca del agua
+    // pero sobre la arena · podría decirse que es la orilla". One
+    // coco per visible shore segment (right shore, front shore,
+    // left shore) · maximally separated so they read as three
+    // independent fruits scattered along the coast, not a group.
+    //   Coconut_10_43 · right shore
+    //   Coconut_11_44 · front shore (closest to cam, near water)
+    //   Coconut_12_45 · left shore (between boat and back-left palm)
+    // Y dropped 0.15 → 0.10 · the shore sand mesh sits lower than
+    // the interior sand (it slopes down toward the water at Y=-0.4),
+    // so 0.10 keeps the ~20% bury intent at the lower shore surface.
     const FALLEN_TARGETS: Array<{
       name: string
       pos: [number, number, number]
     }> = [
-      { name: "Coconut_10_43", pos: [ 0.30, 0.15, -0.10] }, // right of chest
-      { name: "Coconut_11_44", pos: [-0.40, 0.15,  0.70] }, // front-center
-      { name: "Coconut_12_45", pos: [-1.10, 0.15,  0.20] }, // front-left
+      { name: "Coconut_10_43", pos: [ 1.40, 0.10,  1.00] }, // right shore
+      { name: "Coconut_11_44", pos: [ 0.10, 0.10,  1.50] }, // front shore
+      { name: "Coconut_12_45", pos: [-1.80, 0.10,  0.50] }, // left shore
     ]
     for (const { name, pos } of FALLEN_TARGETS) {
       const c = scene.getObjectByName(name)
-      // Flag bumped r48 → r60 so the new positions apply on
+      // Flag bumped r60 → r61 so the new positions apply on
       // sessions whose scene cache predates this round.
-      if (c && !c.userData.r60Moved) {
+      if (c && !c.userData.r61Moved) {
         c.position.set(pos[0], pos[1], pos[2])
-        c.userData.r60Moved = true
+        c.userData.r61Moved = true
       }
     }
   }, [scene])
