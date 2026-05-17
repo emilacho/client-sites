@@ -178,7 +178,20 @@ export function Scene({ onAnchorClick }: SceneProps) {
                 0.665 = 0.925, so keel lands exactly on the sand
                 AABB top. Footprint X[-1.62..-1.38] Z[-0.90..-0.50]
                 clear of chest, palm trunk, sign, character. */}
-          <SurfboardModel position={[-1.5, 0.925, -0.7]} rotation={[0, 0.3, Math.PI / 2]} scale={0.7} />
+          {/* Round 33 · surfboard arrimar al árbol · slide back to
+              CONTACT the left-back palm trunk (Tree_Trunk_2_30).
+                Round 30 pos [-1.5, 0.925, -0.7] left 0.85u gap.
+                Probe (scripts/probe-trunk-contact.mjs) measured
+                trunk world bbox post-Round-25:
+                  center (-1.307, 0.595, -1.976)
+                  X[-1.448..-1.166]  Z[-2.138..-1.814]
+                Target so surfboard X max edge touches trunk X min
+                (-1.448) and Z aligns with trunk Z:
+                  X = -1.448 - SURF_X_HALF (0.120) = -1.568
+                  Z = trunk center Z = -1.976
+                Y unchanged (0.925 · keel on sand top). Rotation +
+                scale unchanged. */}
+          <SurfboardModel position={[-1.57, 0.925, -1.98]} rotation={[0, 0.3, Math.PI / 2]} scale={0.7} />
 
           {(Object.keys(ANCHOR_POSITIONS) as AnchorKind[]).map((kind, idx) => (
             <InteractiveAnchor
