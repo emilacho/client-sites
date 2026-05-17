@@ -77,8 +77,11 @@ function LandingInner() {
       </div>
 
       {/* Hero copy · floats above the scene with a soft gradient backdrop
-          so it stays readable over the GLB */}
-      <div className="pointer-events-none relative z-10 mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-end px-5 pb-32 pt-24 md:items-start md:pb-40">
+          so it stays readable over the GLB. Round 71 · removed
+          `mx-auto max-w-6xl` and pinned to bottom-LEFT corner per user
+          "cuadra con la esquina inferior izquierda de la pantalla".
+          items-start applies at all breakpoints now (was md:only). */}
+      <div className="pointer-events-none relative z-10 flex min-h-[100svh] flex-col items-start justify-end px-5 pb-32 pt-24 md:pb-40">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
