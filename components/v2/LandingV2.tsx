@@ -3,7 +3,7 @@
  * LandingV2 · the root client component for the v2 Náufrago landing.
  *
  *  - mounts the CartProvider context
- *  - composes the 3D scene + TopBar + MenuQuickAdd + CartDrawer +
+ *  - composes the 3D scene + TopBar + PromoTicker + CartDrawer +
  *    OverlayPanels (historia · reseñas · contacto)
  *  - cofre anchor opens the cart · the other 3 anchors open the
  *    corresponding overlay panel
@@ -19,7 +19,7 @@ import { naufragoV2 } from "@/lib/v2/naufrago-content"
 import { TopBar } from "./TopBar"
 import { CartDrawer } from "./CartDrawer"
 import { OverlayPanels, type OverlayKind } from "./OverlayPanels"
-import { MenuQuickAdd } from "./MenuQuickAdd"
+import { PromoTicker } from "./PromoTicker"
 import { MenuModal } from "./MenuModal"
 import { SceneErrorBoundary } from "./SceneErrorBoundary"
 import type { AnchorKind } from "./Scene"
@@ -127,8 +127,8 @@ function LandingInner() {
         </motion.div>
       </div>
 
-      {/* Bottom menu strip · floats with quick-add buttons */}
-      <MenuQuickAdd />
+      {/* Round 19 · bottom sticky promo strip (was MenuQuickAdd) */}
+      <PromoTicker />
 
       {/* Drawers + modals · z-40+ to sit above the 3D layer */}
       <CartDrawer />
