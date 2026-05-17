@@ -374,57 +374,37 @@ function IslandModel(props: React.ComponentProps<"group">) {
   const qaMode = useQaMode()
   const inhibited = reducedMotion || qaMode
 
-  // Round 28 · capture mesh refs + clone materials per target so we
-  // can pulse emissive cyan without leaking onto other meshes that
-  // share the same material instance in the GLB.
-  // Round 34 · narrow the pulse to only coconut + palm trunk · chest
-  // gets a taladro shake (no pulse) · boat gets nothing beyond Round
-  // 31 wave bobbing.
-  // Round 38 · remove the palm trunk pulse · the trunk is not a
-  // clickable affordance, the coconuts are. Pulse target set becomes
-  // the central palm coconut CLUSTER (Coconut_1_3, 2_5, 3_4) plus the
-  // fallen-on-sand Coconut_10_43 already in the list. The IdlePulseRings
-  // floor halo at the central palm base (Y=-0.05) stays · it now
-  // reads as the coconut-cluster halo (the canopy hangs above it).
-  const pulseTargets = useMemo(() => {
-    const get = (name: string) => scene.getObjectByName(name)
-    const list = [
-      get("Coconut_1_3"),
-      get("Coconut_2_5"),
-      get("Coconut_3_4"),
-      get("Coconut_10_43"),
-    ].filter((o): o is THREE.Object3D => Boolean(o))
-    return list.map((obj) => {
-      const meshes: THREE.Mesh[] = []
-      obj.traverse((child) => {
-        if ((child as THREE.Mesh).isMesh) {
-          const mesh = child as THREE.Mesh
-          if (!mesh.userData.r28Cloned && mesh.material) {
-            const oldMat = mesh.material as THREE.MeshStandardMaterial
-            const cloned = oldMat.clone()
-            cloned.emissive = new THREE.Color("#4DD4D8")
-            cloned.emissiveIntensity = 0
-            mesh.material = cloned
-            mesh.userData.r28Cloned = true
-          }
-          meshes.push(mesh)
-        }
-      })
-      return { obj, baseScale: obj.scale.x, meshes }
-    })
+  // Round 39 · pulse target set retired · coconuts moved to a per-
+  // coconut taladro shake (see coconutShakeTargets below). Chest
+  // taladro (R34) and boat wave (R31) run independently. The R28
+  // material clones for chest/boat/coconuts remain attached but with
+  // emissiveIntensity=0 · no visible glow, no further mutation.
+
+  // Round 39 · per-coconut taladro · 4 cocos vibrate at their own
+  // random intervals (3s ± 1s) with 0.2s bursts and a random phase
+  // offset 0-3s. Math.random() runs ONCE per scene mount (useMemo
+  // deps [scene]) · stable across renders, decorrelated between
+  // coconuts. Amplitude ±0.02 rad · half the chest shake (R34).
+  const coconutShakeTargets = useMemo(() => {
+    const names = ["Coconut_1_3", "Coconut_2_5", "Coconut_3_4", "Coconut_10_43"]
+    return names
+      .map((name) => scene.getObjectByName(name))
+      .filter((o): o is THREE.Object3D => Boolean(o))
+      .map((obj) => ({
+        obj,
+        baseRotX: obj.rotation.x,
+        baseRotY: obj.rotation.y,
+        baseRotZ: obj.rotation.z,
+        // Random per-coconut · phase 0-3s, interval 2-4s
+        phaseOffset: Math.random() * 3,
+        intervalJitter: (Math.random() - 0.5) * 2,
+      }))
   }, [scene])
 
   useFrame((state) => {
     if (inhibited) {
       // Reset · QA screenshot stays pixel-comparable, reduced-motion
-      // users get a static scene with no glow, no bobbing, no shake.
-      for (const { obj, baseScale, meshes } of pulseTargets) {
-        obj.scale.setScalar(baseScale)
-        for (const mesh of meshes) {
-          const mat = mesh.material as THREE.MeshStandardMaterial
-          if (mat && "emissiveIntensity" in mat) mat.emissiveIntensity = 0
-        }
-      }
+      // users get a static scene with no shake, no bobbing.
       for (const w of waveBaseRef.current) {
         w.obj.position.y = w.baseY
         w.obj.rotation.x = w.baseRotX
@@ -436,31 +416,16 @@ function IslandModel(props: React.ComponentProps<"group">) {
         shake.obj.rotation.y = shake.baseRotY
         shake.obj.rotation.z = shake.baseRotZ
       }
+      for (const c of coconutShakeTargets) {
+        c.obj.rotation.x = c.baseRotX
+        c.obj.rotation.y = c.baseRotY
+        c.obj.rotation.z = c.baseRotZ
+      }
       return
     }
     const t = state.clock.elapsedTime
-    // ── Round 34 · subtle pulse on coconut + palm trunk only.
-    //    DURATION 3.5 → 2.0 (faster cycle)
-    //    STAGGER  unchanged (only 2 targets · noticeable stagger)
-    //    AMPLITUDE 0.09 → 0.045 (apenas perceptible scale change)
-    //    EMISSIVE_MAX 0.5 → 0.2 (sutil halo perimeter)
-    const DURATION = 2.0
-    const STAGGER = 0.8
-    const AMPLITUDE = 0.045
-    const EMISSIVE_MAX = 0.2
-    for (let i = 0; i < pulseTargets.length; i++) {
-      const { obj, baseScale, meshes } = pulseTargets[i]
-      const phase = ((t + i * STAGGER) % DURATION) / DURATION // 0..1
-      const tri = 1 - Math.abs(2 * phase - 1)                 // 0..1..0
-      const eased = tri * tri * (3 - 2 * tri)                 // smoothstep
-      obj.scale.setScalar(baseScale * (1 + AMPLITUDE * eased))
-      const ei = EMISSIVE_MAX * eased
-      for (const mesh of meshes) {
-        const mat = mesh.material as THREE.MeshStandardMaterial
-        if (mat && "emissiveIntensity" in mat) mat.emissiveIntensity = ei
-      }
-    }
-    // ── Round 31 · boat wave bobbing (preserved · unchanged)
+
+    // ── Round 31 · boat wave bobbing (unchanged)
     const waveY = Math.sin(t * 1.2) * 0.06
     const waveRotZ = Math.sin(t * 0.8) * 0.03
     const waveRotX = Math.cos(t * 1.0) * 0.02
@@ -469,24 +434,44 @@ function IslandModel(props: React.ComponentProps<"group">) {
       w.obj.rotation.x = w.baseRotX + waveRotX
       w.obj.rotation.z = w.baseRotZ + waveRotZ
     }
-    // ── Round 34 · chest "taladro internal" shake · 0.4s burst of
-    // random rotation jitter (±0.05 rad on all three axes) every 3s,
-    // perfectly still between bursts. Vibration only · no position,
-    // no scale, no glow.
+
+    // ── Round 34 · chest "taladro internal" · 0.4s burst every 3s,
+    //              still between bursts, ±0.05 rad jitter
     const shake = chestShakeRef.current
     if (shake) {
-      const SHAKE_INTERVAL = 3.0
-      const SHAKE_BURST = 0.4
-      const JITTER = 0.05
-      const cyclePos = t % SHAKE_INTERVAL
-      if (cyclePos < SHAKE_BURST) {
-        shake.obj.rotation.x = shake.baseRotX + (Math.random() - 0.5) * 2 * JITTER
-        shake.obj.rotation.y = shake.baseRotY + (Math.random() - 0.5) * 2 * JITTER
-        shake.obj.rotation.z = shake.baseRotZ + (Math.random() - 0.5) * 2 * JITTER
+      const CHEST_INTERVAL = 3.0
+      const CHEST_BURST = 0.4
+      const CHEST_JITTER = 0.05
+      const cyclePos = t % CHEST_INTERVAL
+      if (cyclePos < CHEST_BURST) {
+        shake.obj.rotation.x = shake.baseRotX + (Math.random() - 0.5) * 2 * CHEST_JITTER
+        shake.obj.rotation.y = shake.baseRotY + (Math.random() - 0.5) * 2 * CHEST_JITTER
+        shake.obj.rotation.z = shake.baseRotZ + (Math.random() - 0.5) * 2 * CHEST_JITTER
       } else {
         shake.obj.rotation.x = shake.baseRotX
         shake.obj.rotation.y = shake.baseRotY
         shake.obj.rotation.z = shake.baseRotZ
+      }
+    }
+
+    // ── Round 39 · per-coconut taladro · individual intervals
+    // 3s ± 1s, 0.2s bursts, ±0.02 rad jitter (half the chest amp).
+    // Each coconut has its own phaseOffset + intervalJitter (set
+    // once in coconutShakeTargets useMemo) so bursts decorrelate.
+    const COCO_BURST = 0.2
+    const COCO_JITTER = 0.02
+    for (const c of coconutShakeTargets) {
+      const interval = 3 + c.intervalJitter // 2.0–4.0s
+      const tAdj = t + c.phaseOffset
+      const cyclePos = tAdj % interval
+      if (cyclePos < COCO_BURST) {
+        c.obj.rotation.x = c.baseRotX + (Math.random() - 0.5) * 2 * COCO_JITTER
+        c.obj.rotation.y = c.baseRotY + (Math.random() - 0.5) * 2 * COCO_JITTER
+        c.obj.rotation.z = c.baseRotZ + (Math.random() - 0.5) * 2 * COCO_JITTER
+      } else {
+        c.obj.rotation.x = c.baseRotX
+        c.obj.rotation.y = c.baseRotY
+        c.obj.rotation.z = c.baseRotZ
       }
     }
   })
@@ -540,89 +525,11 @@ function CharacterModel(props: React.ComponentProps<"group">) {
   )
 }
 
-/**
- * IdlePulseRings · 4 flat cyan rings sitting under the interactive
- * GLB targets (Round 28). Opacity pulses in sync with the GLB scale
- * pulse · same 3.5s/0.8s smoothstep curve. Reads as a "click here"
- * floor halo without modifying any GLB geometry.
- *
- * Coordinates account for the Round 25 island drop (-0.4 on
- * Chest/Coconut/Tree_Trunk) and the boat being exempt (still in
- * water at the Round 22 Y level).
+/* IdlePulseRings · removed in Round 39 · cocos moved to per-coconut
+ * taladro shake (no rings, no emissive, just internal vibration).
+ * Chest taladro (R34) and boat wave bobbing (R31) remain on their
+ * own loops inside the IslandModel useFrame.
  */
-function IdlePulseRings() {
-  const reducedMotion = usePrefersReducedMotion()
-  const qaMode = useQaMode()
-  const inhibited = reducedMotion || qaMode
-  const refs = useRef<(THREE.Mesh | null)[]>([])
-
-  // Round 34 · only coco + palm rings remain.
-  // Round 38 · same two ring positions but conceptually both indicate
-  // COCONUT clusters now (the palm-base ring sits directly under the
-  // central canopy where Coconut_1_3/2_5/3_4 hang · the other ring is
-  // under the fallen Coconut_10_43). Palm trunk pulse was removed in
-  // Round 38 but its floor halo stays as the cluster indicator.
-  const rings = useMemo(
-    () => [
-      // fallen coconut on sand · Coconut_10_43
-      { pos: [0.24, -0.05, -0.26] as [number, number, number], radius: 0.15 },
-      // central palm canopy cluster · directly under Coconut_1_3/2_5/3_4
-      { pos: [0.07, -0.05, -0.42] as [number, number, number], radius: 0.275 },
-    ],
-    [],
-  )
-
-  useFrame((state) => {
-    if (inhibited) {
-      for (const mesh of refs.current) {
-        if (mesh) (mesh.material as THREE.MeshBasicMaterial).opacity = 0
-      }
-      return
-    }
-    const t = state.clock.elapsedTime
-    // Round 34 · faster cycle (2s) matching the subtle scale pulse,
-    // lower max opacity (0.3 instead of 0.75) so the rings hint
-    // rather than shout.
-    const DURATION = 2.0
-    const STAGGER = 0.8
-    const OPACITY_MIN = 0.08
-    const OPACITY_MAX = 0.3
-    for (let i = 0; i < refs.current.length; i++) {
-      const mesh = refs.current[i]
-      if (!mesh) continue
-      const phase = ((t + i * STAGGER) % DURATION) / DURATION
-      const tri = 1 - Math.abs(2 * phase - 1)
-      const eased = tri * tri * (3 - 2 * tri)
-      const op = OPACITY_MIN + (OPACITY_MAX - OPACITY_MIN) * eased
-      ;(mesh.material as THREE.MeshBasicMaterial).opacity = op
-    }
-  })
-
-  return (
-    <group>
-      {rings.map((r, i) => (
-        <mesh
-          key={i}
-          ref={(el) => {
-            refs.current[i] = el
-          }}
-          position={r.pos}
-          rotation={[-Math.PI / 2, 0, 0]}
-        >
-          {/* Round 34 · thinner ring (inner 0.85 vs prior 0.78) */}
-          <ringGeometry args={[r.radius * 0.85, r.radius, 48]} />
-          <meshBasicMaterial
-            color="#4DD4D8"
-            transparent
-            opacity={0}
-            side={THREE.DoubleSide}
-            depthWrite={false}
-          />
-        </mesh>
-      ))}
-    </group>
-  )
-}
 
 /**
  * IslandWithCharacter · the island base + the castaway character +
@@ -641,7 +548,6 @@ function IslandWithCharacter({ qaMode }: { qaMode: boolean }) {
   return (
     <group>
       <IslandModel position={[0, 0, 0]} scale={1} />
-      <IdlePulseRings />
       <group
         /* Round 32 · character flotante fix · Y 0.1 → -0.075.
            Round 15/25's compromise Y kept feet between visible
