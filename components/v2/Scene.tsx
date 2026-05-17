@@ -547,7 +547,12 @@ function IslandModel(props: React.ComponentProps<"group">) {
     // sync · the chest itself rattles in unison while the cocos
     // pop sequentially.
     const COCO_BURST = 0.4 // matches chest CHEST_BURST
-    const COCO_JITTER = 0.05 // matches chest CHEST_JITTER
+    // Round 57 · per user "que los cocos vibren más fuerte" ·
+    // amplitude doubled from chest baseline 0.05 → 0.10. The cocos
+    // now out-rattle the chest by 2× · intentional, since the user
+    // wants the canopy motion to read clearly even with the cam
+    // farther / smaller fruit silhouettes.
+    const COCO_JITTER = 0.1
     for (const c of coconutShakeTargets) {
       const interval = 3 + c.intervalJitter // 2.0–4.0s
       const tAdj = t + c.phaseOffset
@@ -704,12 +709,17 @@ const COCONUT_REVIEWS: CocoReview[] = [
 ]
 
 function ReviewCard({ review }: { review: CocoReview }) {
+  // Round 57 · palette retuned to the NÁUFRAGO chest sign · cream
+  // wooden plank background + deep wine-red headers (#7F1D1D, the
+  // same red used by PromoTicker · matches the painted letters on
+  // the cofre face). Avatar bg + secondary text use wood-brown
+  // shades. Stars stay gold.
   const avatarUrl = `https://api.dicebear.com/7.x/micah/svg?seed=${encodeURIComponent(review.name)}&size=80`
   return (
     <div
       style={{
-        background: "rgba(15, 23, 42, 0.95)",
-        border: "1px solid rgba(124, 58, 237, 0.45)",
+        background: "rgba(245, 230, 203, 0.97)",
+        border: "1px solid rgba(127, 29, 29, 0.55)",
         backdropFilter: "blur(8px)",
         borderRadius: "10px",
         padding: "12px",
@@ -718,9 +728,9 @@ function ReviewCard({ review }: { review: CocoReview }) {
         display: "flex",
         gap: "12px",
         alignItems: "flex-start",
-        color: "#f1f5f9",
+        color: "#2D1810",
         fontFamily: 'var(--font-inter), system-ui, -apple-system, sans-serif',
-        boxShadow: "0 12px 32px rgba(0, 0, 0, 0.45)",
+        boxShadow: "0 12px 32px rgba(45, 24, 16, 0.45)",
       }}
     >
       <img
@@ -733,15 +743,15 @@ function ReviewCard({ review }: { review: CocoReview }) {
           height: "80px",
           borderRadius: "8px",
           flexShrink: 0,
-          background: "rgba(30, 41, 59, 0.8)",
+          background: "rgba(74, 42, 26, 0.18)",
         }}
       />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
             fontSize: "14px",
-            fontWeight: 600,
-            color: "#f1f5f9",
+            fontWeight: 700,
+            color: "#7F1D1D",
             lineHeight: "1.2",
           }}
         >
@@ -750,7 +760,7 @@ function ReviewCard({ review }: { review: CocoReview }) {
         <div
           style={{
             fontSize: "11px",
-            color: "#94a3b8",
+            color: "#5B3A24",
             marginTop: "1px",
             marginBottom: "6px",
             letterSpacing: "0.02em",
@@ -763,7 +773,7 @@ function ReviewCard({ review }: { review: CocoReview }) {
             fontSize: "12.5px",
             fontStyle: "italic",
             lineHeight: "1.45",
-            color: "#cbd5e1",
+            color: "#2D1810",
             margin: 0,
             marginBottom: "6px",
           }}
@@ -774,13 +784,13 @@ function ReviewCard({ review }: { review: CocoReview }) {
           style={{
             display: "flex",
             gap: "1px",
-            color: "#fbbf24",
+            color: "#D97706",
             fontSize: "13px",
             letterSpacing: "0.02em",
           }}
         >
           {"★".repeat(review.rating)}
-          <span style={{ color: "#334155" }}>
+          <span style={{ color: "rgba(91, 58, 36, 0.35)" }}>
             {"★".repeat(5 - review.rating)}
           </span>
         </div>
@@ -870,11 +880,15 @@ function CoconutHoverCards() {
             <meshBasicMaterial transparent opacity={0} depthWrite={false} />
           </mesh>
           {/* Floating review card · above the coconut · ignores
-              occlusion so palm leaves can'\''t hide it */}
+              occlusion so palm leaves can'\''t hide it. Round 57 ·
+              Y offset 0.35 → 1.1 + distanceFactor 5 → 7 so the
+              card floats well above the coco and reads smaller ·
+              user "que se abra a una distancia más grande así no
+              tapa el click ni el resto de elementos cercanos". */}
           <Html
-            position={[0, 0.35, 0]}
+            position={[0, 1.1, 0]}
             center
-            distanceFactor={5}
+            distanceFactor={7}
             zIndexRange={[120, 0]}
             style={{ pointerEvents: "none" }}
           >
