@@ -709,17 +709,19 @@ const COCONUT_REVIEWS: CocoReview[] = [
 ]
 
 function ReviewCard({ review }: { review: CocoReview }) {
-  // Round 57 · palette retuned to the NÁUFRAGO chest sign · cream
-  // wooden plank background + deep wine-red headers (#7F1D1D, the
-  // same red used by PromoTicker · matches the painted letters on
-  // the cofre face). Avatar bg + secondary text use wood-brown
-  // shades. Stars stay gold.
+  // Round 58 · palette corrected to match the SignModel sign on the
+  // sand (the wooden NÁUFRAGO panel staked in the beach), NOT the
+  // chest face the R57 attempt used. The actual sign has TWO colors
+  // only: morado (purple plank · #7c3aed, the same violet as the
+  // SpeechBubble) and celeste (light cyan letters · #4DD4D8, the
+  // same cyan as the hero NÁUFRAGO highlight). Card recolored
+  // strictly to those two.
   const avatarUrl = `https://api.dicebear.com/7.x/micah/svg?seed=${encodeURIComponent(review.name)}&size=80`
   return (
     <div
       style={{
-        background: "rgba(245, 230, 203, 0.97)",
-        border: "1px solid rgba(127, 29, 29, 0.55)",
+        background: "rgba(124, 58, 237, 0.96)",
+        border: "1px solid rgba(77, 212, 216, 0.7)",
         backdropFilter: "blur(8px)",
         borderRadius: "10px",
         padding: "12px",
@@ -728,9 +730,9 @@ function ReviewCard({ review }: { review: CocoReview }) {
         display: "flex",
         gap: "12px",
         alignItems: "flex-start",
-        color: "#2D1810",
+        color: "#4DD4D8",
         fontFamily: 'var(--font-inter), system-ui, -apple-system, sans-serif',
-        boxShadow: "0 12px 32px rgba(45, 24, 16, 0.45)",
+        boxShadow: "0 12px 32px rgba(91, 33, 182, 0.55)",
       }}
     >
       <img
@@ -743,7 +745,7 @@ function ReviewCard({ review }: { review: CocoReview }) {
           height: "80px",
           borderRadius: "8px",
           flexShrink: 0,
-          background: "rgba(74, 42, 26, 0.18)",
+          background: "rgba(77, 212, 216, 0.15)",
         }}
       />
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -751,7 +753,7 @@ function ReviewCard({ review }: { review: CocoReview }) {
           style={{
             fontSize: "14px",
             fontWeight: 700,
-            color: "#7F1D1D",
+            color: "#4DD4D8",
             lineHeight: "1.2",
           }}
         >
@@ -760,7 +762,7 @@ function ReviewCard({ review }: { review: CocoReview }) {
         <div
           style={{
             fontSize: "11px",
-            color: "#5B3A24",
+            color: "rgba(77, 212, 216, 0.75)",
             marginTop: "1px",
             marginBottom: "6px",
             letterSpacing: "0.02em",
@@ -773,7 +775,7 @@ function ReviewCard({ review }: { review: CocoReview }) {
             fontSize: "12.5px",
             fontStyle: "italic",
             lineHeight: "1.45",
-            color: "#2D1810",
+            color: "#4DD4D8",
             margin: 0,
             marginBottom: "6px",
           }}
@@ -784,13 +786,13 @@ function ReviewCard({ review }: { review: CocoReview }) {
           style={{
             display: "flex",
             gap: "1px",
-            color: "#D97706",
+            color: "#4DD4D8",
             fontSize: "13px",
             letterSpacing: "0.02em",
           }}
         >
           {"★".repeat(review.rating)}
-          <span style={{ color: "rgba(91, 58, 36, 0.35)" }}>
+          <span style={{ color: "rgba(77, 212, 216, 0.3)" }}>
             {"★".repeat(5 - review.rating)}
           </span>
         </div>
