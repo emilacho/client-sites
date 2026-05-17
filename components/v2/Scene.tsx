@@ -454,20 +454,29 @@ function IslandModel(props: React.ComponentProps<"group">) {
       }
     }
 
-    // ── Round 39 · per-coconut taladro · individual intervals
-    // 3s ± 1s, 0.2s bursts, ±0.02 rad jitter (half the chest amp).
-    // Each coconut has its own phaseOffset + intervalJitter (set
-    // once in coconutShakeTargets useMemo) so bursts decorrelate.
-    const COCO_BURST = 0.2
-    const COCO_JITTER = 0.02
+    // ── Round 39.1 · per-coconut taladro · individual intervals
+    // (3s ± 1s) · longer 0.9s bursts with a DECAY envelope so the
+    // shake starts at peak amplitude 0.02 rad and drops smoothly
+    // to 0 over the burst. "Animal pequeño y lento tratando salir"
+    // vs the chest's "taladro full power" (uniform 0.05 over 0.4s).
+    //   peak amplitude       = 0.02 (40% of chest)
+    //   burst duration       = 0.9s (2.25× chest)
+    //   amplitude envelope   = peak × (1 − phaseInBurst)²
+    //     phaseInBurst = 0   → amp = 0.02   (peak)
+    //     phaseInBurst = 0.5 → amp = 0.005  (quartered)
+    //     phaseInBurst = 1.0 → amp = 0      (still)
+    const COCO_BURST = 0.9
+    const COCO_AMP_MAX = 0.02
     for (const c of coconutShakeTargets) {
       const interval = 3 + c.intervalJitter // 2.0–4.0s
       const tAdj = t + c.phaseOffset
       const cyclePos = tAdj % interval
       if (cyclePos < COCO_BURST) {
-        c.obj.rotation.x = c.baseRotX + (Math.random() - 0.5) * 2 * COCO_JITTER
-        c.obj.rotation.y = c.baseRotY + (Math.random() - 0.5) * 2 * COCO_JITTER
-        c.obj.rotation.z = c.baseRotZ + (Math.random() - 0.5) * 2 * COCO_JITTER
+        const phaseInBurst = cyclePos / COCO_BURST
+        const amp = COCO_AMP_MAX * Math.pow(1 - phaseInBurst, 2)
+        c.obj.rotation.x = c.baseRotX + (Math.random() - 0.5) * 2 * amp
+        c.obj.rotation.y = c.baseRotY + (Math.random() - 0.5) * 2 * amp
+        c.obj.rotation.z = c.baseRotZ + (Math.random() - 0.5) * 2 * amp
       } else {
         c.obj.rotation.x = c.baseRotX
         c.obj.rotation.y = c.baseRotY
