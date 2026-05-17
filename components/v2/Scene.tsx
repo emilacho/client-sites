@@ -709,6 +709,14 @@ function CoconutHoverCards() {
         t !== null,
     )
     setTargets(computed)
+    // Round 40 debug · expose captured positions via document title so
+    // the playwright capture script can read them back. Will be
+    // removed once the hover wiring is verified live.
+    if (typeof document !== "undefined") {
+      document.title = `cocos:${computed.length}|${computed
+        .map((c) => `${c.review.coconutName}=${c.pos.map((n) => n.toFixed(2)).join(",")}`)
+        .join("|")}`
+    }
   }, [scene])
 
   const setHover = (key: string | null) => {
