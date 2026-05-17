@@ -90,8 +90,16 @@ export function Scene({ onAnchorClick }: SceneProps) {
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       dpr={[1, 2]}
     >
-      <color attach="background" args={["#06080f"]} />
-      <fog attach="fog" args={["#06080f", 12, 28]} />
+      {/* Round 11 single-issue fix · removed
+          `<color attach="background" args={["#06080f"]} />`
+          `<fog   attach="fog"        args={["#06080f", 12, 28]} />`
+          The island GLB ships its own skybox (`Cube_59` · emissive
+          MeshPhysicalMaterial with embedded sky texture) and an ocean
+          plane (`Ocean001_57` · #2170ff). The previous fog faded both
+          to #06080f at distance > 28u because the skybox lives ~30u
+          out from the origin · GLB sky never rendered. Removing the
+          two lines lets the asset's native sky + ocean show through.
+          Environment preset="sunset" kept · only used for PBR refl. */}
 
       <ambientLight intensity={0.55} />
       <directionalLight position={[5, 8, 3]} intensity={1.2} castShadow shadow-mapSize={[1024, 1024]} />
