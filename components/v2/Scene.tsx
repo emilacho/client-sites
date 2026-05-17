@@ -168,6 +168,20 @@ export function Scene({ onAnchorClick }: SceneProps) {
 
 function IslandModel(props: React.ComponentProps<"group">) {
   const { scene } = useGLTF(naufragoAssets.island)
+  // Round 13 single-issue fix · Ocean001_57 ships at Y=0 inside the
+  // GLB but the sand disc Object_4 spans Y[-0.36..0.66] (sand center
+  // 0.15, height 1.02 · per scripts/inspect-island-sky.mjs). The
+  // water plane bisects the sand vertically · coplanar shoreline
+  // pixels caused per-frame z-fighting that read as flicker on
+  // camera rotation. Drop the ocean to Y=-0.4 (just under sand
+  // bottom Y=-0.36) once on mount. Guarded against re-application
+  // because useGLTF returns a cached shared scene.
+  useEffect(() => {
+    const ocean = scene.getObjectByName("Ocean001_57")
+    if (ocean && ocean.position.y === 0) {
+      ocean.position.y = -0.4
+    }
+  }, [scene])
   return <primitive object={scene} {...props} />
 }
 
