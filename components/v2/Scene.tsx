@@ -429,13 +429,20 @@ function IslandModel(props: React.ComponentProps<"group">) {
   // material clones for chest/boat/coconuts remain attached but with
   // emissiveIntensity=0 · no visible glow, no further mutation.
 
-  // Round 39 · per-coconut taladro · 4 cocos vibrate at their own
-  // random intervals (3s ± 1s) with 0.2s bursts and a random phase
-  // offset 0-3s. Math.random() runs ONCE per scene mount (useMemo
-  // deps [scene]) · stable across renders, decorrelated between
-  // coconuts. Amplitude ±0.02 rad · half the chest shake (R34).
+  // Round 39 · per-coconut taladro · cocos vibrate at their own
+  // random intervals with bursts and a random phase offset.
+  // Math.random() runs ONCE per scene mount (useMemo deps [scene])
+  // · stable across renders, decorrelated between coconuts.
+  // Round 55 · expanded from 4 to ALL 12 coconuts (3 canopy palms +
+  // 3 fallen) · per user "que todos los cocos vibren igual que el
+  // cofre".
   const coconutShakeTargets = useMemo(() => {
-    const names = ["Coconut_1_3", "Coconut_2_5", "Coconut_3_4", "Coconut_10_43"]
+    const names = [
+      "Coconut_1_3", "Coconut_2_5", "Coconut_3_4",       // central palm
+      "Coconut_7_21", "Coconut_8_19", "Coconut_9_20",    // right palm
+      "Coconut_4_33", "Coconut_5_32", "Coconut_6_31",    // back-left palm
+      "Coconut_10_43", "Coconut_11_44", "Coconut_12_45", // fallen on sand
+    ]
     return names
       .map((name) => scene.getObjectByName(name))
       .filter((o): o is THREE.Object3D => Boolean(o))
@@ -526,29 +533,23 @@ function IslandModel(props: React.ComponentProps<"group">) {
     //     phaseInBurst = 0   → amp = 0.06   (peak)
     //     phaseInBurst = 0.5 → amp = 0.015  (quartered)
     //     phaseInBurst = 1.0 → amp = 0      (still)
-    // Round 54 · within-burst motion changed from random jitter to
-    // smooth wind-sway. The burst window + decay envelope are
-    // unchanged · only the per-frame value generator. Each coco
-    // gets a continuous sin oscillation on Z (lateral sway) +
-    // cos on X (forward-back tilt) at a slightly different
-    // frequency, modulated by the burst decay envelope. Reads as
-    // "a gust catches the coco" instead of the previous
-    // mechanical-shake / taladro feel.
-    const COCO_BURST = 0.9
-    const COCO_AMP_MAX = 0.06
-    const SWAY_FREQ = 9 // ~1.4 cycles per 0.9s burst
+    // Round 55 · cocos shake like the chest · random Math.random()
+    // per-frame jitter through a 0.4s burst window with uniform
+    // amplitude 0.05 rad. R54's smooth sin/cos sway replaced with
+    // chest pattern (R34) verbatim, except each coco has its OWN
+    // interval (3s ± 1s) + phase offset so the 12 cocos don't
+    // sync · the chest itself rattles in unison while the cocos
+    // pop sequentially.
+    const COCO_BURST = 0.4 // matches chest CHEST_BURST
+    const COCO_JITTER = 0.05 // matches chest CHEST_JITTER
     for (const c of coconutShakeTargets) {
       const interval = 3 + c.intervalJitter // 2.0–4.0s
       const tAdj = t + c.phaseOffset
       const cyclePos = tAdj % interval
       if (cyclePos < COCO_BURST) {
-        const phaseInBurst = cyclePos / COCO_BURST
-        const amp = COCO_AMP_MAX * Math.pow(1 - phaseInBurst, 2)
-        const sway = Math.sin(tAdj * SWAY_FREQ) * amp
-        const tilt = Math.cos(tAdj * SWAY_FREQ * 0.85) * amp * 0.6
-        c.obj.rotation.x = c.baseRotX + tilt
-        c.obj.rotation.y = c.baseRotY
-        c.obj.rotation.z = c.baseRotZ + sway
+        c.obj.rotation.x = c.baseRotX + (Math.random() - 0.5) * 2 * COCO_JITTER
+        c.obj.rotation.y = c.baseRotY + (Math.random() - 0.5) * 2 * COCO_JITTER
+        c.obj.rotation.z = c.baseRotZ + (Math.random() - 0.5) * 2 * COCO_JITTER
       } else {
         c.obj.rotation.x = c.baseRotX
         c.obj.rotation.y = c.baseRotY
@@ -637,6 +638,12 @@ interface CocoReview {
 }
 
 const COCONUT_REVIEWS: CocoReview[] = [
+  // Round 55 · hover proxies centered on the coco mesh (proxyYOffset
+  // 0 / small) for precise hit-testing per user "ubica bien el area
+  // de hover · hasla bien precisa". Canopy cocos: offset = 0
+  // (sphere center matches coco center). Fallen cocos: offset = 0.1
+  // (small lift to clear the sand mesh raycast · sphere bottom
+  // tangent at sand level Y=0.06 + 0 = -0.09, well clear).
   {
     coconutName: "Coconut_1_3",
     name: "María C.",
@@ -644,7 +651,7 @@ const COCONUT_REVIEWS: CocoReview[] = [
     review:
       "Pedí encebollado a las 11am y llegó a las 11:35am tibio · caldo perfecto.",
     rating: 5,
-    proxyYOffset: 0.2,
+    proxyYOffset: 0,
   },
   {
     coconutName: "Coconut_2_5",
@@ -653,7 +660,7 @@ const COCONUT_REVIEWS: CocoReview[] = [
     review:
       "El ceviche tiene sabor de mercado · fresco · ácido justo.",
     rating: 5,
-    proxyYOffset: 0.2,
+    proxyYOffset: 0,
   },
   {
     coconutName: "Coconut_3_4",
@@ -661,7 +668,7 @@ const COCONUT_REVIEWS: CocoReview[] = [
     location: "Punta Blanca",
     review: "Pides por WhatsApp y listo · nada de filas.",
     rating: 5,
-    proxyYOffset: 0.2,
+    proxyYOffset: 0,
   },
   {
     coconutName: "Coconut_10_43",
@@ -669,7 +676,7 @@ const COCONUT_REVIEWS: CocoReview[] = [
     location: "Olón",
     review: "Patacones perfectos · sal prieta auténtica.",
     rating: 5,
-    proxyYOffset: 0.6,
+    proxyYOffset: 0.1,
   },
   {
     coconutName: "Coconut_11_44",
@@ -678,7 +685,7 @@ const COCONUT_REVIEWS: CocoReview[] = [
     review:
       "Hicieron mi pedido completo en 25 minutos · calidad como en mesa.",
     rating: 5,
-    proxyYOffset: 0.6,
+    proxyYOffset: 0.1,
   },
   {
     coconutName: "Coconut_12_45",
@@ -686,7 +693,7 @@ const COCONUT_REVIEWS: CocoReview[] = [
     location: "Olón",
     review: "Lo pedí para reunión familiar · llegó a tiempo · todos contentos.",
     rating: 5,
-    proxyYOffset: 0.6,
+    proxyYOffset: 0.1,
   },
 ]
 
