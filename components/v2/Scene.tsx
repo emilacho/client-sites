@@ -18,7 +18,7 @@
  * meshes and use them as interaction surfaces + bubble anchors. This
  * keeps the visual identical to the GLB ground truth.
  */
-import { Suspense, useEffect, useRef, useState } from "react"
+import { Suspense, useEffect, useMemo, useRef, useState } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
 import {
   Environment,
@@ -189,20 +189,64 @@ export function Scene({ onAnchorClick }: SceneProps) {
 
 function IslandModel(props: React.ComponentProps<"group">) {
   const { scene } = useGLTF(naufragoAssets.island)
-  // Round 13 single-issue fix · Ocean001_57 ships at Y=0 inside the
-  // GLB but the sand disc Object_4 spans Y[-0.36..0.66] (sand center
-  // 0.15, height 1.02 · per scripts/inspect-island-sky.mjs). The
-  // water plane bisects the sand vertically · coplanar shoreline
-  // pixels caused per-frame z-fighting that read as flicker on
-  // camera rotation. Drop the ocean to Y=-0.4 (just under sand
-  // bottom Y=-0.36) once on mount. Guarded against re-application
-  // because useGLTF returns a cached shared scene.
+  // Round 13 · Ocean001_57 drop to Y=-0.4 to break shoreline z-fight
   useEffect(() => {
     const ocean = scene.getObjectByName("Ocean001_57")
     if (ocean && ocean.position.y === 0) {
       ocean.position.y = -0.4
     }
   }, [scene])
+
+  // Round 18 single-issue fix · idle pulse on visible GLB sub-groups
+  // (Round 6 made the proxy spheres opacity-0, so the existing
+  // useInteractiveIdlePulse signal was being painted into an
+  // invisible mesh). Pulse the actual GLB groups that the four
+  // anchors map to:
+  //   cofre    → Chest_14
+  //   barco    → Boat_15
+  //   cocos    → Coconut_10_43 (fallen coconut on sand · most visible)
+  //   palmeras → Tree_Trunk_1_2 (central palm trunk)
+  // Pulse curve · scale baseline × (1 + 0.03 × smoothstep(triangle))
+  // over duration 3.5s, stagger 0.8s per index. Inhibited by
+  // prefers-reduced-motion and the ?qa=1 query toggle so the QA
+  // screenshot suite stays pixel-comparable.
+  const reducedMotion = usePrefersReducedMotion()
+  const qaMode = useQaMode()
+  const inhibited = reducedMotion || qaMode
+
+  const pulseTargets = useMemo(() => {
+    const get = (name: string) => scene.getObjectByName(name)
+    const list = [
+      get("Chest_14"),
+      get("Boat_15"),
+      get("Coconut_10_43"),
+      get("Tree_Trunk_1_2"),
+    ].filter((o): o is THREE.Object3D => Boolean(o))
+    return list.map((obj) => ({ obj, baseScale: obj.scale.x }))
+  }, [scene])
+
+  useFrame((state) => {
+    if (inhibited) {
+      // Reset to baseline so the QA screenshot is identical to the
+      // pre-pulse layout and reduced-motion users see no drift.
+      for (const { obj, baseScale } of pulseTargets) {
+        obj.scale.setScalar(baseScale)
+      }
+      return
+    }
+    const t = state.clock.elapsedTime
+    const DURATION = 3.5
+    const STAGGER = 0.8
+    const AMPLITUDE = 0.03
+    for (let i = 0; i < pulseTargets.length; i++) {
+      const { obj, baseScale } = pulseTargets[i]
+      const phase = ((t + i * STAGGER) % DURATION) / DURATION // 0..1
+      const tri = 1 - Math.abs(2 * phase - 1)                 // 0..1..0
+      const eased = tri * tri * (3 - 2 * tri)                 // smoothstep
+      obj.scale.setScalar(baseScale * (1 + AMPLITUDE * eased))
+    }
+  })
+
   return <primitive object={scene} {...props} />
 }
 
