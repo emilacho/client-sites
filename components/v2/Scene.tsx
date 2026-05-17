@@ -400,21 +400,21 @@ function IslandModel(props: React.ComponentProps<"group">) {
       name: string
       pos: [number, number, number]
     }> = [
-      // Round 69 · "un poquito" deltas on top of R68:
-      //   center · Y  0.00 → -0.05 (drop  -0.05u)
-      //   left   · Y -0.20 → -0.15 (raise +0.05u)
+      // Round 70 · another "un poquito" on top of R69:
+      //   center · Y -0.05 → -0.10 (drop  -0.05u)
+      //   left   · Y -0.15 → -0.10 (raise +0.05u)
       //   right  · unchanged
       { name: "Coconut_10_43", pos: [ 1.40,  0.08, -0.80] }, // back-right
-      { name: "Coconut_11_44", pos: [ 0.10, -0.05,  0.80] }, // front-center (lowered)
-      { name: "Coconut_12_45", pos: [-1.80, -0.15,  0.30] }, // left (raised)
+      { name: "Coconut_11_44", pos: [ 0.10, -0.10,  0.80] }, // front-center
+      { name: "Coconut_12_45", pos: [-1.80, -0.10,  0.30] }, // left
     ]
     for (const { name, pos } of FALLEN_TARGETS) {
       const c = scene.getObjectByName(name)
-      // Flag bumped r68 → r69 so the new positions apply on
+      // Flag bumped r69 → r70 so the new positions apply on
       // sessions whose scene cache predates this round.
-      if (c && !c.userData.r69Moved) {
+      if (c && !c.userData.r70Moved) {
         c.position.set(pos[0], pos[1], pos[2])
-        c.userData.r69Moved = true
+        c.userData.r70Moved = true
       }
     }
   }, [scene])
