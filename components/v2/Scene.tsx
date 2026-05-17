@@ -497,14 +497,20 @@ function IslandModel(props: React.ComponentProps<"group">) {
     // Round 42 · peak doubled 0.02 → 0.04 so the vibration reads
     // at the default camera distance. Still below the chest's
     // 0.05 uniform amplitude (chest stays the "alpha animal").
-    //   peak amplitude       = 0.04 (80% of chest peak)
+    // Round 49 · peak bumped 0.04 → 0.06 because R45 moved the
+    // default cam to front [0, 4, 9] · the canopy cocos are now
+    // further from the cam than they were from the old side cam,
+    // and 0.04 wasn't reading. 0.06 is at chest peak (0.05) ·
+    // intentional cap on "alpha animal" relaxed slightly so the
+    // taladro is visible at the new distance.
+    //   peak amplitude       = 0.06 (120% of chest peak)
     //   burst duration       = 0.9s (2.25× chest)
     //   amplitude envelope   = peak × (1 − phaseInBurst)²
-    //     phaseInBurst = 0   → amp = 0.04   (peak)
-    //     phaseInBurst = 0.5 → amp = 0.010  (quartered)
+    //     phaseInBurst = 0   → amp = 0.06   (peak)
+    //     phaseInBurst = 0.5 → amp = 0.015  (quartered)
     //     phaseInBurst = 1.0 → amp = 0      (still)
     const COCO_BURST = 0.9
-    const COCO_AMP_MAX = 0.04
+    const COCO_AMP_MAX = 0.06
     for (const c of coconutShakeTargets) {
       const interval = 3 + c.intervalJitter // 2.0–4.0s
       const tAdj = t + c.phaseOffset
