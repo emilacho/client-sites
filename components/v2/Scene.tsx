@@ -543,20 +543,27 @@ function IslandWithCharacter({ qaMode }: { qaMode: boolean }) {
       <IslandModel position={[0, 0, 0]} scale={1} />
       <IdlePulseRings />
       <group
-        /* Round 15 set character outer group Y=0.5 (feet sit on sand
-           above visible surface). Round 25 dropped the whole island
-           by 0.4u so the character needs to drop with it · Y=0.5 →
-           Y=0.1. Same relative offset above the new sand surface. */
-        position={[0, 0.1, 0]}
+        /* Round 32 · character flotante fix · Y 0.1 → -0.075.
+           Round 15/25's compromise Y kept feet between visible
+           sand surface (≈-0.075, chest-base reference) and AABB
+           top (0.26), which read as "flotando". Landing feet at
+           the visible surface (where chest sits) finishes the
+           job · character now stands ON sand alongside the chest. */
+        position={[0, -0.075, 0]}
         onPointerOver={() => setHover(true)}
         onPointerOut={() => setHover(false)}
         onPointerDown={() => setHover(!hovered)} // mobile tap toggle
       >
-        <CharacterModel scale={0.6} position={[-0.1, 0, 0.3]} />
+        {/* Round 32 · pull character into the user-marked zone next
+            to the chest · X 0 → -0.3 (more negative, closer to chest
+            at X=-0.76), Z 0.3 → -0.2 (back from shoreline). */}
+        <CharacterModel scale={0.6} position={[-0.3, 0, -0.2]} />
         {/* Speech bubble anchored above the character head · uses drei
             <Html occlude> so it hides behind the geometry properly. */}
         <Html
-          position={[-0.1, 2.0, 0.3]}
+          /* Round 32 · speech bubble anchor follows the character
+             XZ move · stays 2.0u above the head. */
+          position={[-0.3, 2.0, -0.2]}
           center
           distanceFactor={6}
           occlude
