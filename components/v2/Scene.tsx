@@ -29,6 +29,7 @@ import {
   ContactShadows,
 } from "@react-three/drei"
 import { EffectComposer, Bloom } from "@react-three/postprocessing"
+import { AnimatePresence, motion } from "framer-motion"
 import * as THREE from "three"
 
 import { CameraRig } from "./CameraRig"
@@ -47,7 +48,10 @@ useGLTF.preload(naufragoAssets.character)
 useGLTF.preload(naufragoAssets.sign)
 useGLTF.preload(naufragoAssets.surfboard)
 
-export type AnchorKind = "cofre" | "barco" | "cocos" | "palmeras"
+// Round 40 · "cocos" removed from anchor kinds · coconuts now have
+// per-fruit hover cards (see CoconutHoverCards) instead of opening
+// the shared Reseñas overlay modal on click.
+export type AnchorKind = "cofre" | "barco" | "palmeras"
 
 interface SceneProps {
   onAnchorClick: (anchor: AnchorKind) => void
@@ -61,18 +65,12 @@ interface SceneProps {
  * in design review · acceptable visual placement is the bar.
  */
 const ANCHOR_POSITIONS: Record<AnchorKind, [number, number, number]> = {
-  // Round 37 · re-mapped to the real GLB target positions so the
-  // invisible proxy spheres actually sit ON the asset the user
-  // expects to click. Earlier values were eyeballed against a
-  // pre-Round-25 layout and ended up near the wrong meshes.
-  //   cofre · was [1.4, 0.55, 0.9] (near SignModel)
-  //         → Chest_14 world center post-Round-25
+  // Round 37 · cofre re-mapped to Chest_14 world center post-Round-25
   cofre:    [-0.76, 0.16,  0.18],
-  barco:    [-2.4,  0.30,  1.2 ],  // unchanged in this round
-  //   cocos · was [0.4, 1.40, -1.5] (between palms, on Tree_Trunk_1_2)
-  //         → Coconut_2_5 world position post-Round-25 (central palm fruit)
-  cocos:    [ 0.14, 1.36, -0.49],
-  palmeras: [-1.6,  1.30, -1.8 ],  // unchanged in this round
+  barco:    [-2.4,  0.30,  1.2 ],
+  // Round 40 · cocos anchor removed · per-coconut hover cards in
+  // CoconutHoverCards handle the Reseñas surface now.
+  palmeras: [-1.6,  1.30, -1.8 ],
 }
 
 // ANCHOR_LABELS removed in round-3 single-issue fix · the 4 drei <Html>
@@ -541,6 +539,237 @@ function CharacterModel(props: React.ComponentProps<"group">) {
  */
 
 /**
+ * CoconutHoverCards · Round 40 · per-coconut hover review profile.
+ *
+ *  - 4 cocos · each with an invisible hover-proxy mesh + a drei
+ *    <Html> review card anchored above
+ *  - onPointerEnter shows the card · onPointerLeave hides it
+ *  - mobile tap toggles; auto-dismiss after 3s
+ *  - framer-motion fade · 200ms in / 150ms out
+ *  - card · DiceBear avatar 80px (seeded by name) + name + location
+ *    + italic review quote + ⭐ row
+ */
+interface CocoReview {
+  coconutName: string
+  name: string
+  location: string
+  review: string
+  rating: number
+}
+
+const COCONUT_REVIEWS: CocoReview[] = [
+  {
+    coconutName: "Coconut_1_3",
+    name: "María C.",
+    location: "Olón",
+    review:
+      "Pedí encebollado a las 11am y llegó a las 11:35am tibio · caldo perfecto.",
+    rating: 5,
+  },
+  {
+    coconutName: "Coconut_2_5",
+    name: "Diego R.",
+    location: "Manglaralto",
+    review:
+      "El ceviche tiene sabor de mercado · fresco · ácido justo.",
+    rating: 5,
+  },
+  {
+    coconutName: "Coconut_3_4",
+    name: "Andrea P.",
+    location: "Punta Blanca",
+    review: "Pides por WhatsApp y listo · nada de filas.",
+    rating: 5,
+  },
+  {
+    coconutName: "Coconut_10_43",
+    name: "Carlos M.",
+    location: "Olón",
+    review: "Patacones perfectos · sal prieta auténtica.",
+    rating: 5,
+  },
+]
+
+function ReviewCard({ review }: { review: CocoReview }) {
+  const avatarUrl = `https://api.dicebear.com/7.x/micah/svg?seed=${encodeURIComponent(review.name)}&size=80`
+  return (
+    <div
+      style={{
+        background: "rgba(15, 23, 42, 0.95)",
+        border: "1px solid rgba(124, 58, 237, 0.45)",
+        backdropFilter: "blur(8px)",
+        borderRadius: "10px",
+        padding: "12px",
+        maxWidth: "380px",
+        minWidth: "300px",
+        display: "flex",
+        gap: "12px",
+        alignItems: "flex-start",
+        color: "#f1f5f9",
+        fontFamily: 'var(--font-inter), system-ui, -apple-system, sans-serif',
+        boxShadow: "0 12px 32px rgba(0, 0, 0, 0.45)",
+      }}
+    >
+      <img
+        src={avatarUrl}
+        alt={review.name}
+        width={80}
+        height={80}
+        style={{
+          width: "80px",
+          height: "80px",
+          borderRadius: "8px",
+          flexShrink: 0,
+          background: "rgba(30, 41, 59, 0.8)",
+        }}
+      />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontSize: "14px",
+            fontWeight: 600,
+            color: "#f1f5f9",
+            lineHeight: "1.2",
+          }}
+        >
+          {review.name}
+        </div>
+        <div
+          style={{
+            fontSize: "11px",
+            color: "#94a3b8",
+            marginTop: "1px",
+            marginBottom: "6px",
+            letterSpacing: "0.02em",
+          }}
+        >
+          {review.location}
+        </div>
+        <p
+          style={{
+            fontSize: "12.5px",
+            fontStyle: "italic",
+            lineHeight: "1.45",
+            color: "#cbd5e1",
+            margin: 0,
+            marginBottom: "6px",
+          }}
+        >
+          “{review.review}”
+        </p>
+        <div
+          style={{
+            display: "flex",
+            gap: "1px",
+            color: "#fbbf24",
+            fontSize: "13px",
+            letterSpacing: "0.02em",
+          }}
+        >
+          {"★".repeat(review.rating)}
+          <span style={{ color: "#334155" }}>
+            {"★".repeat(5 - review.rating)}
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CoconutHoverCards() {
+  const { scene } = useGLTF(naufragoAssets.island)
+  const [hovered, setHovered] = useState<string | null>(null)
+  const dismissTimerRef = useRef<number | null>(null)
+
+  // Compute world position of each coconut once after mount · uses
+  // scene.getObjectByName + getWorldPosition so it accounts for all
+  // post-mount transforms (Round 25 island drop, Round 38 scale).
+  const targets = useMemo(() => {
+    return COCONUT_REVIEWS.map((review) => {
+      const obj = scene.getObjectByName(review.coconutName)
+      if (!obj) return null
+      obj.updateWorldMatrix(true, false)
+      const worldPos = new THREE.Vector3()
+      obj.getWorldPosition(worldPos)
+      return { review, pos: [worldPos.x, worldPos.y, worldPos.z] as [number, number, number] }
+    }).filter((t): t is { review: CocoReview; pos: [number, number, number] } => t !== null)
+  }, [scene])
+
+  const setHover = (key: string | null) => {
+    setHovered(key)
+    if (dismissTimerRef.current !== null) {
+      window.clearTimeout(dismissTimerRef.current)
+      dismissTimerRef.current = null
+    }
+    // Mobile auto-dismiss · 3s
+    if (key) {
+      dismissTimerRef.current = window.setTimeout(() => {
+        setHovered(null)
+        dismissTimerRef.current = null
+      }, 3000)
+    }
+  }
+
+  return (
+    <group>
+      {targets.map(({ review, pos }) => (
+        <group key={review.coconutName} position={pos}>
+          {/* Invisible hover-proxy sphere · 0.2u radius covers the
+              scaled coconut comfortably. Pointer events stop here
+              so they don'\''t bubble into the GLB. */}
+          <mesh
+            onPointerEnter={(e) => {
+              e.stopPropagation()
+              document.body.style.cursor = "pointer"
+              setHover(review.coconutName)
+            }}
+            onPointerLeave={(e) => {
+              e.stopPropagation()
+              document.body.style.cursor = "auto"
+              setHover(null)
+            }}
+            onPointerDown={(e) => {
+              // Mobile tap toggle
+              e.stopPropagation()
+              setHover(hovered === review.coconutName ? null : review.coconutName)
+            }}
+          >
+            <sphereGeometry args={[0.2, 12, 12]} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+          </mesh>
+          {/* Floating review card · above the coconut · ignores
+              occlusion so palm leaves can'\''t hide it */}
+          <Html
+            position={[0, 0.35, 0]}
+            center
+            distanceFactor={5}
+            zIndexRange={[120, 0]}
+            style={{ pointerEvents: "none" }}
+          >
+            <AnimatePresence>
+              {hovered === review.coconutName && (
+                <motion.div
+                  key="card"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 4 }}
+                  transition={{
+                    opacity: { duration: 0.2, ease: "easeOut" },
+                    y: { duration: 0.2, ease: "easeOut" },
+                  }}
+                >
+                  <ReviewCard review={review} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Html>
+        </group>
+      ))}
+    </group>
+  )
+}
+
+/**
  * IslandWithCharacter · the island base + the castaway character +
  * the character's speech-bubble HTML anchor.
  *
@@ -557,6 +786,7 @@ function IslandWithCharacter({ qaMode }: { qaMode: boolean }) {
   return (
     <group>
       <IslandModel position={[0, 0, 0]} scale={1} />
+      <CoconutHoverCards />
       <group
         /* Round 32 · character flotante fix · Y 0.1 → -0.075.
            Round 15/25's compromise Y kept feet between visible
