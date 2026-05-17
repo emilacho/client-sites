@@ -59,10 +59,19 @@ export function PromoTicker() {
       >
         <div
           aria-hidden
-          className="naufrago-promo-track flex h-full w-max items-center whitespace-nowrap text-[17px] font-bold uppercase tracking-wide select-none"
+          /* Round 24 · font swap · Permanent Marker (manuscrita
+             casual) → Bebas Neue (news-ticker tall narrow uppercase).
+             Bebas reads bold naturally · `font-bold` is omitted so
+             we don't fake-bold an already-condensed typeface.
+             letter-spacing 0.05em gives the headline its "ALERTA"
+             pace without crowding the marquee. Size bumped to 22px
+             so the new typeface's narrower letterforms still read
+             at the same visual weight as the previous 17px marker. */
+          className="naufrago-promo-track flex h-full w-max items-center whitespace-nowrap text-[22px] uppercase select-none"
           style={{
             color: "#FF3B30",
-            fontFamily: 'var(--font-marker), "Permanent Marker", cursive',
+            fontFamily: 'var(--font-bebas), "Bebas Neue", "Impact", sans-serif',
+            letterSpacing: "0.05em",
             animationPlayState: paused ? "paused" : "running",
             textShadow: "0 1px 0 rgba(0,0,0,0.4)",
           }}
