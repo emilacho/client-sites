@@ -141,19 +141,25 @@ export function Scene({ onAnchorClick }: SceneProps) {
               the +Z front view (2/4 angles confirmed visible · was
               1/4 visible borderline). Rotation unchanged. */}
           <SignModel position={[0.8, 0.5, 0.5]} rotation={[0, -0.5, 0]} />
-          {/* Round 17 single-issue fix · surfboard moved
-              [-1.4, 0.05, 0.6] → [-1.0, 0.2, 0.8]. Same buried
-              disease as sign Round 16 · surfboard GLB pivot at
-              bbox center (Y range [-0.07..+0.07] after scale 0.7),
-              previous Y=0.05 placed surfboard top at Y=0.12 · just
-              at the low end of visible sand surface · effectively
-              submerged. Y=0.2 puts bottom at Y=0.13 (just above
-              sand) so it reads as resting on the beach (kept LOW ·
-              surfboards lie down, unlike sign/character which stand).
-              XZ tweak (X -1.4→-1.0, Z 0.6→0.8) pulls it slightly
-              center + forward to balance the sign on the right
-              and increase visibility from default cam. */}
-          <SurfboardModel position={[-1.0, 0.2, 0.8]} rotation={[0, 0.7, 0.2]} scale={0.7} />
+          {/* Round 26 · surfboard reposition · user-marked screenshot
+              zone (central sand, left of chest, NOT water edge).
+                Round 17 pos [-1.0, 0.2, 0.8]  · partially overlapped
+                                                 chest X-range +
+                                                 sat near shoreline
+                Round 26 pos [-1.9, 0.35, -0.2] · 1.14u left of chest
+                                                 center (chest at
+                                                 X=-0.76), Y bumped to
+                                                 sit cleanly above the
+                                                 chest-base reference
+                                                 Y=0.325, Z pulled back
+                                                 to central-back sand
+                                                 (clear of Rock_7_47
+                                                 at Z=0.45 by 0.07u)
+              Bbox X[-2.53..-1.27] Z[-0.78..0.38] inside sand
+              X[-2.82..2.75] Z[-3.66..1.57]. No collision with chest,
+              character, sign, boat, palms, or remaining rocks.
+              Rotation + scale unchanged from Round 17. */}
+          <SurfboardModel position={[-1.9, 0.35, -0.2]} rotation={[0, 0.7, 0.2]} scale={0.7} />
 
           {(Object.keys(ANCHOR_POSITIONS) as AnchorKind[]).map((kind, idx) => (
             <InteractiveAnchor
