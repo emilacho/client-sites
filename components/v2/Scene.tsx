@@ -209,7 +209,7 @@ export function Scene({ onAnchorClick }: SceneProps) {
               · Y dropped 0.925 → 0.7 so the bottom tip sits at
                 Y=0.035 (sand top is 0.26) · ~0.225u of board buried,
                 as per dispatch "permitir punta enterrada parcial". */}
-          <SurfboardModel position={[-1.57, 0.7, -1.98]} rotation={[0, Math.PI + 0.3, Math.PI / 2]} scale={0.7} />
+          <SurfboardModel position={[-1.57, 0.7, -1.98]} rotation={[0, Math.PI / 2, Math.PI / 2]} scale={0.7} />
 
           {(Object.keys(ANCHOR_POSITIONS) as AnchorKind[]).map((kind, idx) => (
             <InteractiveAnchor
@@ -526,20 +526,6 @@ function SignModel(props: React.ComponentProps<"group">) {
 
 function SurfboardModel(props: React.ComponentProps<"group">) {
   const { scene } = useGLTF(naufragoAssets.surfboard)
-  // Round 46 temp · ?surfRotY=N URL override so 9 rotation candidates
-  // can be captured from one deploy. Removed in the follow-up commit
-  // that hardcodes the chosen rotation.
-  const [overrideRotY, setOverrideRotY] = useState<number | null>(null)
-  useEffect(() => {
-    const p = new URLSearchParams(window.location.search).get("surfRotY")
-    const v = p === null ? NaN : parseFloat(p)
-    if (Number.isFinite(v)) setOverrideRotY(v)
-  }, [])
-  const baseRot = props.rotation as [number, number, number] | undefined
-  if (overrideRotY !== null && baseRot) {
-    const r: [number, number, number] = [baseRot[0], overrideRotY, baseRot[2]]
-    return <primitive object={scene} {...props} rotation={r} />
-  }
   return <primitive object={scene} {...props} />
 }
 
