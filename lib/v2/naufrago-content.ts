@@ -258,7 +258,12 @@ export const MENU_ITEMS: MenuItem[] = [
 
 export const naufragoV2 = {
   hero: {
-    headline: "Del mar a tu puerta, hoy.",
+    /* Round 20 · hero slogan replace. Stored as plain text here so
+       the metadata title (app/page.tsx) gets the new line. The
+       visual h1 in LandingV2.tsx renders NÁUFRAGO inside a span
+       with the brand cyan accent · keeping the headline as a flat
+       string here means downstream consumers stay simple. */
+    headline: "Cuando tengas esa hambre de... NÁUFRAGO te espera!",
     subheadline:
       "Encebollados, ceviches y patacones con producto del día — sin esperar mesa, sin salir de casa.",
     ctaPrimary: "Pedir por WhatsApp",

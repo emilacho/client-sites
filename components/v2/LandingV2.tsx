@@ -94,8 +94,15 @@ function LandingInner() {
             <span className="h-1 w-1 rounded-full bg-cyan-400" />
             Olón · ghost kitchen
           </span>
+          {/* Round 20 · hero slogan · "Cuando tengas esa hambre de...
+              NÁUFRAGO te espera!" · NÁUFRAGO highlighted in brand
+              cyan #4DD4D8 against the white drop-shadow base. Plain
+              string stays in naufragoV2.hero.headline for metadata
+              consumers · this h1 owns the visual presentation. */}
           <h1 className="font-display text-2xl font-semibold leading-tight tracking-tight text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.7)] md:text-3xl lg:text-4xl">
-            {naufragoV2.hero.headline}
+            Cuando tengas esa hambre de...{" "}
+            <span style={{ color: "#4DD4D8" }}>NÁUFRAGO</span>{" "}
+            te espera!
           </h1>
           <p className="mt-3 text-sm text-slate-200 drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] md:text-base">
             {naufragoV2.hero.subheadline}
