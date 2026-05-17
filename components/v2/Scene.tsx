@@ -178,20 +178,24 @@ export function Scene({ onAnchorClick }: SceneProps) {
                 0.665 = 0.925, so keel lands exactly on the sand
                 AABB top. Footprint X[-1.62..-1.38] Z[-0.90..-0.50]
                 clear of chest, palm trunk, sign, character. */}
-          {/* Round 33 · surfboard arrimar al árbol · slide back to
-              CONTACT the left-back palm trunk (Tree_Trunk_2_30).
-                Round 30 pos [-1.5, 0.925, -0.7] left 0.85u gap.
-                Probe (scripts/probe-trunk-contact.mjs) measured
-                trunk world bbox post-Round-25:
-                  center (-1.307, 0.595, -1.976)
-                  X[-1.448..-1.166]  Z[-2.138..-1.814]
-                Target so surfboard X max edge touches trunk X min
-                (-1.448) and Z aligns with trunk Z:
-                  X = -1.448 - SURF_X_HALF (0.120) = -1.568
-                  Z = trunk center Z = -1.976
-                Y unchanged (0.925 · keel on sand top). Rotation +
-                scale unchanged. */}
-          <SurfboardModel position={[-1.57, 0.925, -1.98]} rotation={[0, 0.3, Math.PI / 2]} scale={0.7} />
+          {/* Round 33 REDO · re-aimed contact at the CENTRAL palm
+              (Tree_Trunk_1_2) instead of the back-far Tree_Trunk_2_30
+              used in the first Round 33. Default cam [9, 4, 0] looks
+              at origin and Tree_Trunk_2_30 lives at cam X-dist 10.31u
+              right-back · not visible at a glance. Tree_Trunk_1_2 is
+              at cam X-dist 8.97u left/center · matches the dispatch
+              hint "X > -1.5 · Z near 0".
+              Probe (scripts/probe-trunks-all.mjs · post-Round-25):
+                Tree_Trunk_1_2 center (0.026, 0.661, -0.413)
+                X[-0.122..0.175]  Z[-0.497..-0.330]
+              Target so surfboard Z max touches trunk Z min · palm
+              and surfboard appear side-by-side at the same camera
+              distance, neither occluding the other:
+                X = trunk center X                       =  0.026
+                Z = trunk Z min - SURF_Z_HALF (0.197)    = -0.694
+                Y = unchanged at 0.925 (keel on sand top)
+              Rotation + scale unchanged. */}
+          <SurfboardModel position={[0.026, 0.925, -0.694]} rotation={[0, 0.3, Math.PI / 2]} scale={0.7} />
 
           {(Object.keys(ANCHOR_POSITIONS) as AnchorKind[]).map((kind, idx) => (
             <InteractiveAnchor
