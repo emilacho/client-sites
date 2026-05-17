@@ -679,20 +679,33 @@ function ReviewCard({ review }: { review: CocoReview }) {
 function CoconutHoverCards() {
   const { scene } = useGLTF(naufragoAssets.island)
   const [hovered, setHovered] = useState<string | null>(null)
+  const [targets, setTargets] = useState<
+    Array<{ review: CocoReview; pos: [number, number, number] }>
+  >([])
   const dismissTimerRef = useRef<number | null>(null)
 
-  // Compute world position of each coconut once after mount · uses
-  // scene.getObjectByName + getWorldPosition so it accounts for all
-  // post-mount transforms (Round 25 island drop, Round 38 scale).
-  const targets = useMemo(() => {
-    return COCONUT_REVIEWS.map((review) => {
+  // World positions must be captured AFTER the IslandModel useEffect
+  // has applied R25 island drop (-0.4 Y) and R38 scale (×1.2). Using
+  // useEffect (not useMemo) guarantees we read post-mutation values.
+  // Sibling useEffects run in JSX order; IslandModel is rendered
+  // before CoconutHoverCards inside IslandWithCharacter, so its
+  // effect has already mutated the scene by the time we reach here.
+  useEffect(() => {
+    const computed = COCONUT_REVIEWS.map((review) => {
       const obj = scene.getObjectByName(review.coconutName)
       if (!obj) return null
       obj.updateWorldMatrix(true, false)
       const worldPos = new THREE.Vector3()
       obj.getWorldPosition(worldPos)
-      return { review, pos: [worldPos.x, worldPos.y, worldPos.z] as [number, number, number] }
-    }).filter((t): t is { review: CocoReview; pos: [number, number, number] } => t !== null)
+      return {
+        review,
+        pos: [worldPos.x, worldPos.y, worldPos.z] as [number, number, number],
+      }
+    }).filter(
+      (t): t is { review: CocoReview; pos: [number, number, number] } =>
+        t !== null,
+    )
+    setTargets(computed)
   }, [scene])
 
   const setHover = (key: string | null) => {
