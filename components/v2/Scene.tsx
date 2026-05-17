@@ -684,22 +684,25 @@ function CoconutHoverCards() {
   >([])
   const dismissTimerRef = useRef<number | null>(null)
 
-  // World positions must be captured AFTER the IslandModel useEffect
-  // has applied R25 island drop (-0.4 Y) and R38 scale (×1.2). Using
-  // useEffect (not useMemo) guarantees we read post-mutation values.
-  // Sibling useEffects run in JSX order; IslandModel is rendered
-  // before CoconutHoverCards inside IslandWithCharacter, so its
-  // effect has already mutated the scene by the time we reach here.
+  // Coconut group local positions = world positions in this GLB
+  // (all parents · Sketchfab_Scene → Sketchfab_model → root →
+  // GLTF_SceneRootNode · are at identity translation/rotation/scale,
+  // verified via probe-coconuts.mjs). Reading obj.position.{x,y,z}
+  // directly avoids matrixWorld staleness · the R25 useEffect in
+  // IslandModel mutates obj.position.y but doesn'\''t auto-flush
+  // matrixWorld, so getWorldPosition() can return pre-mutation
+  // values on the same tick. Local read is always current.
   useEffect(() => {
     const computed = COCONUT_REVIEWS.map((review) => {
       const obj = scene.getObjectByName(review.coconutName)
       if (!obj) return null
-      obj.updateWorldMatrix(true, false)
-      const worldPos = new THREE.Vector3()
-      obj.getWorldPosition(worldPos)
       return {
         review,
-        pos: [worldPos.x, worldPos.y, worldPos.z] as [number, number, number],
+        pos: [obj.position.x, obj.position.y, obj.position.z] as [
+          number,
+          number,
+          number,
+        ],
       }
     }).filter(
       (t): t is { review: CocoReview; pos: [number, number, number] } =>
