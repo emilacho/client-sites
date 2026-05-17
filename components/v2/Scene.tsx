@@ -214,6 +214,13 @@ export function Scene({ onAnchorClick }: SceneProps) {
 
 function IslandModel(props: React.ComponentProps<"group">) {
   const { scene } = useGLTF(naufragoAssets.island)
+  // Round 31 · ref holds the post-mutation base transforms for the
+  // boat + 2 oars · populated at the end of the useEffect below so
+  // the wave bobbing in useFrame oscillates around the correct
+  // baseline (post Round 22 drop · post Round 25 exempt).
+  const waveBaseRef = useRef<
+    Array<{ obj: THREE.Object3D; baseY: number; baseRotX: number; baseRotZ: number }>
+  >([])
   // Round 13 · Ocean001_57 drop to Y=-0.4 to break shoreline z-fight
   // Round 21 · hide the 4 "shoreline rocks" baked into the GLB at
   //            Z≈1.4-2.1 with Y near 0. The asset designer placed
@@ -272,6 +279,22 @@ function IslandModel(props: React.ComponentProps<"group">) {
         child.userData.r25Lowered = true
       }
     }
+    // Round 31 · capture base transforms for boat + 2 oars AFTER all
+    // position mutations above (R22 lower, R21 visibility, R25
+    // exempt) so the wave bobbing in useFrame below oscillates around
+    // the correct baseline. Stored in a ref because useMemo would
+    // run before useEffect and miss the post-mutation values.
+    const waveSeed = [
+      scene.getObjectByName("Boat_15"),
+      scene.getObjectByName("Oar_1_16"),
+      scene.getObjectByName("Oar_2_17"),
+    ].filter((o): o is THREE.Object3D => Boolean(o))
+    waveBaseRef.current = waveSeed.map((obj) => ({
+      obj,
+      baseY: obj.position.y,
+      baseRotX: obj.rotation.x,
+      baseRotZ: obj.rotation.z,
+    }))
   }, [scene])
 
   // Round 18 single-issue fix · idle pulse on visible GLB sub-groups
@@ -326,7 +349,8 @@ function IslandModel(props: React.ComponentProps<"group">) {
   useFrame((state) => {
     if (inhibited) {
       // Reset · QA screenshot must stay pixel-comparable, reduced-
-      // motion users get a static scene with no glow leakage.
+      // motion users get a static scene with no glow leakage and no
+      // bobbing motion.
       for (const { obj, baseScale, meshes } of pulseTargets) {
         obj.scale.setScalar(baseScale)
         for (const mesh of meshes) {
@@ -334,15 +358,17 @@ function IslandModel(props: React.ComponentProps<"group">) {
           if (mat && "emissiveIntensity" in mat) mat.emissiveIntensity = 0
         }
       }
+      for (const w of waveBaseRef.current) {
+        w.obj.position.y = w.baseY
+        w.obj.rotation.x = w.baseRotX
+        w.obj.rotation.z = w.baseRotZ
+      }
       return
     }
     const t = state.clock.elapsedTime
+    // ── Round 18/23/28 · idle pulse on the 4 interactive GLB groups
     const DURATION = 3.5
     const STAGGER = 0.8
-    // Round 28 · amplitude bumped from 0.06 (Round 23) to 0.09 ·
-    // emissive cyan glow added (intensity 0 → 0.5 · same smoothstep
-    // curve) · 4 floor rings added in <IdlePulseRings> for the
-    // "click here" signal Emilio asked to be MUY visible.
     const AMPLITUDE = 0.09
     const EMISSIVE_MAX = 0.5
     for (let i = 0; i < pulseTargets.length; i++) {
@@ -356,6 +382,18 @@ function IslandModel(props: React.ComponentProps<"group">) {
         const mat = mesh.material as THREE.MeshStandardMaterial
         if (mat && "emissiveIntensity" in mat) mat.emissiveIntensity = ei
       }
+    }
+    // ── Round 31 · boat wave bobbing · 3 different frequencies so
+    // the loop never reads as repetitive · subtle (max ~6cm bob,
+    // ±1.7° roll, ±1.1° pitch) but enough to break the static feel.
+    // Boat scale is independent (Round 28 pulse) and runs on its own.
+    const waveY = Math.sin(t * 1.2) * 0.06
+    const waveRotZ = Math.sin(t * 0.8) * 0.03
+    const waveRotX = Math.cos(t * 1.0) * 0.02
+    for (const w of waveBaseRef.current) {
+      w.obj.position.y = w.baseY + waveY
+      w.obj.rotation.x = w.baseRotX + waveRotX
+      w.obj.rotation.z = w.baseRotZ + waveRotZ
     }
   })
 
