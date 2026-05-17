@@ -474,8 +474,13 @@ function IslandModel(props: React.ComponentProps<"group">) {
     }
     const t = state.clock.elapsedTime
 
-    // ── Round 31 · boat wave bobbing (unchanged)
-    const waveY = Math.sin(t * 1.2) * 0.06
+    // ── Round 31 · boat wave bobbing
+    //    Round 53 · vertical amplitude dropped 0.06 → 0.025 because
+    //    the R31 value read as "flying over the water" at the new
+    //    R45 front cam. Rotation amplitudes kept · they sell the
+    //    "wave-knocked" rocking without lifting the keel out of
+    //    the water.
+    const waveY = Math.sin(t * 1.2) * 0.025
     const waveRotZ = Math.sin(t * 0.8) * 0.03
     const waveRotX = Math.cos(t * 1.0) * 0.02
     for (const w of waveBaseRef.current) {
