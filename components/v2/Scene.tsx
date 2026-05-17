@@ -709,14 +709,6 @@ function CoconutHoverCards() {
         t !== null,
     )
     setTargets(computed)
-    // Round 40 debug · expose captured positions via document title so
-    // the playwright capture script can read them back. Will be
-    // removed once the hover wiring is verified live.
-    if (typeof document !== "undefined") {
-      document.title = `cocos:${computed.length}|${computed
-        .map((c) => `${c.review.coconutName}=${c.pos.map((n) => n.toFixed(2)).join(",")}`)
-        .join("|")}`
-    }
   }, [scene])
 
   const setHover = (key: string | null) => {
@@ -738,10 +730,13 @@ function CoconutHoverCards() {
     <group>
       {targets.map(({ review, pos }) => (
         <group key={review.coconutName} position={pos}>
-          {/* Invisible hover-proxy sphere · 0.2u radius covers the
-              scaled coconut comfortably. Pointer events stop here
-              so they don'\''t bubble into the GLB. */}
+          {/* Hover-proxy sphere · radius 0.4, offset 0.2u upward.
+              The bump puts the proxy mostly ABOVE the sand cylinder
+              (top Y=0.26) even for the fallen coconut at Y=0.06.
+              Without the offset the sand mesh wins the raycast and
+              swallows pointer events meant for Coconut_10_43. */}
           <mesh
+            position={[0, 0.2, 0]}
             onPointerEnter={(e) => {
               e.stopPropagation()
               document.body.style.cursor = "pointer"
@@ -753,12 +748,11 @@ function CoconutHoverCards() {
               setHover(null)
             }}
             onPointerDown={(e) => {
-              // Mobile tap toggle
               e.stopPropagation()
               setHover(hovered === review.coconutName ? null : review.coconutName)
             }}
           >
-            <sphereGeometry args={[0.2, 12, 12]} />
+            <sphereGeometry args={[0.4, 16, 16]} />
             <meshBasicMaterial transparent opacity={0} depthWrite={false} />
           </mesh>
           {/* Floating review card · above the coconut · ignores
