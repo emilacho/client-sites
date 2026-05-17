@@ -141,7 +141,19 @@ export function Scene({ onAnchorClick }: SceneProps) {
               the +Z front view (2/4 angles confirmed visible · was
               1/4 visible borderline). Rotation unchanged. */}
           <SignModel position={[0.8, 0.5, 0.5]} rotation={[0, -0.5, 0]} />
-          <SurfboardModel position={[-1.4, 0.05, 0.6]} rotation={[0, 0.7, 0.2]} scale={0.7} />
+          {/* Round 17 single-issue fix · surfboard moved
+              [-1.4, 0.05, 0.6] → [-1.0, 0.2, 0.8]. Same buried
+              disease as sign Round 16 · surfboard GLB pivot at
+              bbox center (Y range [-0.07..+0.07] after scale 0.7),
+              previous Y=0.05 placed surfboard top at Y=0.12 · just
+              at the low end of visible sand surface · effectively
+              submerged. Y=0.2 puts bottom at Y=0.13 (just above
+              sand) so it reads as resting on the beach (kept LOW ·
+              surfboards lie down, unlike sign/character which stand).
+              XZ tweak (X -1.4→-1.0, Z 0.6→0.8) pulls it slightly
+              center + forward to balance the sign on the right
+              and increase visibility from default cam. */}
+          <SurfboardModel position={[-1.0, 0.2, 0.8]} rotation={[0, 0.7, 0.2]} scale={0.7} />
 
           {(Object.keys(ANCHOR_POSITIONS) as AnchorKind[]).map((kind, idx) => (
             <InteractiveAnchor
