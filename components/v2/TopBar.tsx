@@ -33,8 +33,13 @@ export function TopBar() {
           className="relative inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-sm text-violet-100 transition-colors hover:bg-violet-500/20"
           aria-label="Abrir carrito"
         >
+          {/* Round 14 single-issue fix · removed
+              `<span className="hidden md:inline">Carrito</span>`
+              The icon + aria-label="Abrir carrito" already carries the
+              affordance · the literal text was redundant once the
+              shopping-cart pictogram is recognized, and pushed the
+              hero CTA cluster wider than necessary on md+. */}
           <ShoppingCart className="h-4 w-4" />
-          <span className="hidden md:inline">Carrito</span>
           {cart.itemCount > 0 ? (
             <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-cyan-500 px-1.5 text-[10.5px] font-bold text-slate-950 tabular-nums shadow-md">
               {cart.itemCount}
