@@ -400,23 +400,23 @@ function IslandModel(props: React.ComponentProps<"group">) {
       name: string
       pos: [number, number, number]
     }> = [
-      // Round 67 · revert center coco Y to the pre-R65 value per
-      // user "regrésalo a donde estaba antes de mi último prompt,
-      // osea un poco más abajo". Left + right preserved from R65.
-      //   center · Y  0.00 → -0.05
+      // Round 68 · restore the exact R65 coco state (pre-R66 lift
+      // of the character) per user "pon los cocos tal como estaban
+      // antes de que te pida que subas el esqueleto".
+      //   center · Y -0.05 →  0.00 (back to R65)
       //   left   · unchanged (-0.20)
       //   right  · unchanged ( 0.08)
       { name: "Coconut_10_43", pos: [ 1.40,  0.08, -0.80] }, // back-right
-      { name: "Coconut_11_44", pos: [ 0.10, -0.05,  0.80] }, // front-center (lowered)
+      { name: "Coconut_11_44", pos: [ 0.10,  0.00,  0.80] }, // front-center
       { name: "Coconut_12_45", pos: [-1.80, -0.20,  0.30] }, // left
     ]
     for (const { name, pos } of FALLEN_TARGETS) {
       const c = scene.getObjectByName(name)
-      // Flag bumped r65 → r67 so the new positions apply on
+      // Flag bumped r67 → r68 so the new positions apply on
       // sessions whose scene cache predates this round.
-      if (c && !c.userData.r67Moved) {
+      if (c && !c.userData.r68Moved) {
         c.position.set(pos[0], pos[1], pos[2])
-        c.userData.r67Moved = true
+        c.userData.r68Moved = true
       }
     }
   }, [scene])
