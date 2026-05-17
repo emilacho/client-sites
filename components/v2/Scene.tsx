@@ -526,6 +526,20 @@ function SignModel(props: React.ComponentProps<"group">) {
 
 function SurfboardModel(props: React.ComponentProps<"group">) {
   const { scene } = useGLTF(naufragoAssets.surfboard)
+  // Round 46 temp · ?surfRotY=N URL override so 9 rotation candidates
+  // can be captured from one deploy. Removed in the follow-up commit
+  // that hardcodes the chosen rotation.
+  const [overrideRotY, setOverrideRotY] = useState<number | null>(null)
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("surfRotY")
+    const v = p === null ? NaN : parseFloat(p)
+    if (Number.isFinite(v)) setOverrideRotY(v)
+  }, [])
+  const baseRot = props.rotation as [number, number, number] | undefined
+  if (overrideRotY !== null && baseRot) {
+    const r: [number, number, number] = [baseRot[0], overrideRotY, baseRot[2]]
+    return <primitive object={scene} {...props} rotation={r} />
+  }
   return <primitive object={scene} {...props} />
 }
 
