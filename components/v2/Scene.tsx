@@ -209,20 +209,19 @@ export function Scene({ onAnchorClick }: SceneProps) {
               · Y dropped 0.925 → 0.7 so the bottom tip sits at
                 Y=0.035 (sand top is 0.26) · ~0.225u of board buried,
                 as per dispatch "permitir punta enterrada parcial". */}
-          {/* Round 46 · rotation Y = π/2 to face the NEW front cam
-              at [0, 4, 9] (per the iteration zoom · atan2 = 81.9°).
-              Round 50 · X -1.57 → -1.307 + Z -1.98 → -1.7 so board
-              reads "in front of" Tree_Trunk_2_30 instead of "next
-              to" it (front cam reads depth better than X offset).
-              Round 51 · Y dropped 0.7 → 0.4 so the keel plants in
-              the sand at the new forward Z=-1.7. The R30 reference
-              of "sand top = 0.26 at the OLD Z=-1.98" no longer
-              applies · the island mesh rises toward the center
-              and the surface at Z=-1.7 sits higher, leaving the
-              R41 Y=0.7 tip (Y=0.035) floating above sand. At Y=0.4
-              the tip lands at Y=-0.265 · safely embedded, per
-              dispatch "puedes meter la punta en la arena". */}
-          <SurfboardModel position={[-1.307, 0.4, -1.7]} rotation={[0, Math.PI / 2, Math.PI / 2]} scale={0.7} />
+          {/* Round 46 · rotation Y = π/2 to face the NEW front cam.
+              Round 50 · X/Z moved to read "in front of" trunk.
+              Round 51 · Y dropped so the keel plants in sand.
+              Round 52 · X rotation 0 → 0.3 (17° tilt) so the
+              tail leans BACK toward Tree_Trunk_2_30 · the
+              "propped against the palm" silhouette R30 originally
+              targeted, ported to the new front-cam orientation.
+              The pivot is the board center · adding the tilt
+              also nudges the tail in -Z by ~0.665 × sin(0.3)
+              ≈ 0.197u · tail Z reaches ~-1.897 which lands at
+              the front face of the trunk (trunk Z range
+              [-2.14..-1.81]). */}
+          <SurfboardModel position={[-1.307, 0.4, -1.7]} rotation={[0.3, Math.PI / 2, Math.PI / 2]} scale={0.7} />
 
           {(Object.keys(ANCHOR_POSITIONS) as AnchorKind[]).map((kind, idx) => (
             <InteractiveAnchor
