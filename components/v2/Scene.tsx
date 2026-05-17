@@ -340,6 +340,22 @@ function IslandModel(props: React.ComponentProps<"group">) {
         baseRotZ: chest.rotation.z,
       }
     }
+    // Round 38 · scale up ALL 12 coconuts by 1.2× so the fruit reads
+    // bigger and becomes a viable hover target (Round 40 will attach
+    // per-coconut review cards). Idempotency via userData.r38Scaled.
+    const COCONUT_NAMES = [
+      "Coconut_1_3", "Coconut_2_5", "Coconut_3_4",       // central palm
+      "Coconut_7_21", "Coconut_8_19", "Coconut_9_20",    // right palm
+      "Coconut_4_33", "Coconut_5_32", "Coconut_6_31",    // back-left palm
+      "Coconut_10_43", "Coconut_11_44", "Coconut_12_45", // fallen on sand
+    ]
+    for (const name of COCONUT_NAMES) {
+      const c = scene.getObjectByName(name)
+      if (c && !c.userData.r38Scaled) {
+        c.scale.multiplyScalar(1.2)
+        c.userData.r38Scaled = true
+      }
+    }
   }, [scene])
 
   // Round 18 single-issue fix · idle pulse on visible GLB sub-groups
@@ -362,16 +378,22 @@ function IslandModel(props: React.ComponentProps<"group">) {
   // Round 28 · capture mesh refs + clone materials per target so we
   // can pulse emissive cyan without leaking onto other meshes that
   // share the same material instance in the GLB.
-  // Round 34 · narrow the pulse to only the coconut and palm trunk ·
-  // chest gets a taladro shake (no pulse) and boat gets nothing
-  // beyond Round 31 wave bobbing. Pre-cloned chest/boat materials
-  // from Round 28 stay in place with emissiveIntensity=0 · no visible
-  // glow since nothing mutates them now.
+  // Round 34 · narrow the pulse to only coconut + palm trunk · chest
+  // gets a taladro shake (no pulse) · boat gets nothing beyond Round
+  // 31 wave bobbing.
+  // Round 38 · remove the palm trunk pulse · the trunk is not a
+  // clickable affordance, the coconuts are. Pulse target set becomes
+  // the central palm coconut CLUSTER (Coconut_1_3, 2_5, 3_4) plus the
+  // fallen-on-sand Coconut_10_43 already in the list. The IdlePulseRings
+  // floor halo at the central palm base (Y=-0.05) stays · it now
+  // reads as the coconut-cluster halo (the canopy hangs above it).
   const pulseTargets = useMemo(() => {
     const get = (name: string) => scene.getObjectByName(name)
     const list = [
+      get("Coconut_1_3"),
+      get("Coconut_2_5"),
+      get("Coconut_3_4"),
       get("Coconut_10_43"),
-      get("Tree_Trunk_1_2"),
     ].filter((o): o is THREE.Object3D => Boolean(o))
     return list.map((obj) => {
       const meshes: THREE.Mesh[] = []
@@ -535,16 +557,17 @@ function IdlePulseRings() {
   const inhibited = reducedMotion || qaMode
   const refs = useRef<(THREE.Mesh | null)[]>([])
 
-  // Round 34 · only coco + palm rings remain. Chest moved to a
-  // taladro-shake signal (no ring) and boat dropped its ring entirely
-  // (wave bobbing is enough animation). Remaining rings shrunk to
-  // half radius and made thinner (inner ratio 0.85 vs old 0.78) per
-  // the "apenas perceptible" spec.
+  // Round 34 · only coco + palm rings remain.
+  // Round 38 · same two ring positions but conceptually both indicate
+  // COCONUT clusters now (the palm-base ring sits directly under the
+  // central canopy where Coconut_1_3/2_5/3_4 hang · the other ring is
+  // under the fallen Coconut_10_43). Palm trunk pulse was removed in
+  // Round 38 but its floor halo stays as the cluster indicator.
   const rings = useMemo(
     () => [
-      // cocos · fallen coconut on sand · radius halved 0.3 → 0.15
+      // fallen coconut on sand · Coconut_10_43
       { pos: [0.24, -0.05, -0.26] as [number, number, number], radius: 0.15 },
-      // palmera central · trunk base · radius halved 0.55 → 0.275
+      // central palm canopy cluster · directly under Coconut_1_3/2_5/3_4
       { pos: [0.07, -0.05, -0.42] as [number, number, number], radius: 0.275 },
     ],
     [],
