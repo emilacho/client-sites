@@ -380,33 +380,37 @@ function IslandModel(props: React.ComponentProps<"group">) {
         c.userData.r38Scaled = true
       }
     }
-    // Round 62 · two fixes on top of R61:
-    //   1. user "el de la derecha · muévelo hacia la parte de atrás
-    //      de la isla" · Coconut_10_43 Z 1.00 → -0.80 (back-right
-    //      shore instead of front-right) · balances the layout
-    //      since the back-left already has the palm/surfboard.
-    //   2. user "los tres fallan al tocar la superficie de la
-    //      arena · están como volando o flotando" · Y dropped
-    //      0.10 → -0.05 across all three. R61's 0.10 reference
-    //      assumed shore sand at Y~0.0 but the actual shore mesh
-    //      sits lower (slopes down to Y=-0.4 water). At Y=-0.05
-    //      the coco bottom (center - 0.12 radius = -0.17) is
-    //      embedded in the lower shore sand, no more floating.
+    // Round 63 · per-coco Y/Z tuning based on R62 visual feedback:
+    //   - right (10_43)  · "quedó 80% hundido"   → Y -0.05 → 0.08
+    //                       Sand at back-right is higher than the
+    //                       front-shore estimate · raise so only
+    //                       ~20% of the coco sits in the sand.
+    //   - center (11_44) · "quedó fuera de la isla y hay que
+    //                       bajarlo un poco más" → Z 1.50 → 0.80
+    //                       (move inland off the water edge) +
+    //                       Y -0.05 → -0.10 (drop further to
+    //                       actually touch the lower shore sand).
+    //   - left (12_45)   · "bien ubicado solo bajo un poco más"
+    //                       (interpreted as left · third "derecha"
+    //                       in user msg appears to be a typo for
+    //                       "izquierda" since the right was
+    //                       already covered with "80% hundido")
+    //                       → Y -0.05 → -0.10.
     const FALLEN_TARGETS: Array<{
       name: string
       pos: [number, number, number]
     }> = [
-      { name: "Coconut_10_43", pos: [ 1.40, -0.05, -0.80] }, // back-right shore
-      { name: "Coconut_11_44", pos: [ 0.10, -0.05,  1.50] }, // front shore
-      { name: "Coconut_12_45", pos: [-1.80, -0.05,  0.50] }, // left shore
+      { name: "Coconut_10_43", pos: [ 1.40,  0.08, -0.80] }, // back-right (raised)
+      { name: "Coconut_11_44", pos: [ 0.10, -0.10,  0.80] }, // front (moved inland + lowered)
+      { name: "Coconut_12_45", pos: [-1.80, -0.10,  0.50] }, // left (lowered a tad)
     ]
     for (const { name, pos } of FALLEN_TARGETS) {
       const c = scene.getObjectByName(name)
-      // Flag bumped r61 → r62 so the new positions apply on
+      // Flag bumped r62 → r63 so the new positions apply on
       // sessions whose scene cache predates this round.
-      if (c && !c.userData.r62Moved) {
+      if (c && !c.userData.r63Moved) {
         c.position.set(pos[0], pos[1], pos[2])
-        c.userData.r62Moved = true
+        c.userData.r63Moved = true
       }
     }
   }, [scene])
