@@ -249,7 +249,15 @@ function IslandWithCharacter({ qaMode }: { qaMode: boolean }) {
     <group>
       <IslandModel position={[0, 0, 0]} scale={1} />
       <group
-        position={[0, 0.05, 0]}
+        /* Round 15 single-issue fix · character outer group Y bumped
+           from 0.05 → 0.5. Forensic (scripts/probe-character.mjs):
+           character GLB local feet sits at Y=0, scaled by 0.6 →
+           world-space feet were landing at Y=0.05 · 0.07–0.27u below
+           the visible sand surface (tree trunks parented at Y≈0.12 ·
+           chest base at Y=0.325) · this read as "hundido hasta las
+           rodillas". Y=0.5 puts feet just above chest-base level and
+           below sand-AABB top (0.66) · character stands on sand. */
+        position={[0, 0.5, 0]}
         onPointerOver={() => setHover(true)}
         onPointerOut={() => setHover(false)}
         onPointerDown={() => setHover(!hovered)} // mobile tap toggle
