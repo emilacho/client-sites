@@ -760,12 +760,7 @@ function CoconutHoverCards() {
             }}
           >
             <sphereGeometry args={[0.4, 16, 16]} />
-            <meshBasicMaterial
-              color={review.coconutName === "Coconut_10_43" ? "#ff00ff" : "#000000"}
-              transparent
-              opacity={review.coconutName === "Coconut_10_43" ? 0.6 : 0}
-              depthWrite={false}
-            />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} />
           </mesh>
           {/* Floating review card · above the coconut · ignores
               occlusion so palm leaves can'\''t hide it */}
