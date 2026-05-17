@@ -626,6 +626,53 @@ function IdlePulseRings() {
 }
 
 /**
+ * TrunkLabels · TEMPORARY (Round 33rrr) overlay that names every
+ * Tree_Trunk_X mesh in world space. Used as evidence frames for
+ * Emilio to identify which palm matches his screenshot marker.
+ * REMOVED in the follow-up commit once the right trunk is picked.
+ */
+function TrunkLabels() {
+  const labels: Array<{ pos: [number, number, number]; name: string }> = [
+    { pos: [0.026, 1.65, -0.413], name: "Tree_Trunk_1_2 · CENTRAL" },
+    { pos: [-1.307, 1.55, -1.976], name: "Tree_Trunk_2_30 · BACK-LEFT" },
+    { pos: [1.347, 1.45, -1.389], name: "Tree_Trunk_3_18 · RIGHT" },
+  ]
+  return (
+    <group>
+      {labels.map((l) => (
+        <Html
+          key={l.name}
+          position={l.pos}
+          center
+          distanceFactor={5}
+          zIndexRange={[100, 0]}
+          style={{ pointerEvents: "none" }}
+        >
+          <div
+            style={{
+              background: "rgba(0,0,0,0.78)",
+              border: "1.5px solid #4DD4D8",
+              color: "#4DD4D8",
+              padding: "5px 12px",
+              fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+              fontSize: "12px",
+              fontWeight: 700,
+              borderRadius: "6px",
+              whiteSpace: "nowrap",
+              letterSpacing: "0.04em",
+              textShadow: "0 1px 2px rgba(0,0,0,0.9)",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
+            }}
+          >
+            {l.name}
+          </div>
+        </Html>
+      ))}
+    </group>
+  )
+}
+
+/**
  * IslandWithCharacter · the island base + the castaway character +
  * the character's speech-bubble HTML anchor.
  *
@@ -643,6 +690,9 @@ function IslandWithCharacter({ qaMode }: { qaMode: boolean }) {
     <group>
       <IslandModel position={[0, 0, 0]} scale={1} />
       <IdlePulseRings />
+      {/* Round 33rrr · TEMPORARY trunk-ID overlay · removed after
+          Emilio picks the right trunk from the screenshots. */}
+      <TrunkLabels />
       <group
         /* Round 32 · character flotante fix · Y 0.1 → -0.075.
            Round 15/25's compromise Y kept feet between visible
