@@ -96,21 +96,41 @@ function LandingInner() {
              so the block never overlaps cofre/character on default. */
           className="pointer-events-auto max-w-md"
         >
-          <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan-200">
-            <span className="h-1 w-1 rounded-full bg-cyan-400" />
+          {/* Round 73 · hero letters retuned to the 2-color palette
+              the user supplied · #3D2466 (deep indigo purple) +
+              #4DD4D8 (celeste). NÁUFRAGO accent kept on the
+              celeste; everything else pulled to the indigo. Pill
+              chip swaps from generic cyan-500 utilities to the
+              celeste-on-celeste-tint scheme to keep the palette
+              strict. Drop-shadow kept (dark halo helps the indigo
+              text read over the bright sand / water in the scene
+              background). */}
+          <span
+            className="mb-3 inline-flex items-center gap-2 rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em]"
+            style={{
+              borderColor: "rgba(77, 212, 216, 0.4)",
+              background: "rgba(77, 212, 216, 0.10)",
+              color: "#4DD4D8",
+            }}
+          >
+            <span
+              className="h-1 w-1 rounded-full"
+              style={{ background: "#4DD4D8" }}
+            />
             Olón · ghost kitchen
           </span>
-          {/* Round 20 · hero slogan · "Cuando tengas esa hambre de...
-              NÁUFRAGO te espera!" · NÁUFRAGO highlighted in brand
-              cyan #4DD4D8 against the white drop-shadow base. Plain
-              string stays in naufragoV2.hero.headline for metadata
-              consumers · this h1 owns the visual presentation. */}
-          <h1 className="font-display text-2xl font-semibold leading-tight tracking-tight text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.7)] md:text-3xl lg:text-4xl">
+          <h1
+            className="font-display text-2xl font-semibold leading-tight tracking-tight drop-shadow-[0_4px_20px_rgba(0,0,0,0.7)] md:text-3xl lg:text-4xl"
+            style={{ color: "#3D2466" }}
+          >
             Cuando tengas esa hambre de...{" "}
             <span style={{ color: "#4DD4D8" }}>NÁUFRAGO</span>{" "}
             te espera!
           </h1>
-          <p className="mt-3 text-sm text-slate-200 drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] md:text-base">
+          <p
+            className="mt-3 text-sm drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] md:text-base"
+            style={{ color: "#3D2466" }}
+          >
             {naufragoV2.hero.subheadline}
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
