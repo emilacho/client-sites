@@ -262,7 +262,11 @@ function IslandModel(props: React.ComponentProps<"group">) {
     const t = state.clock.elapsedTime
     const DURATION = 3.5
     const STAGGER = 0.8
-    const AMPLITUDE = 0.03
+    // Round 23 · amplitude bumped from 0.03 (3%) to 0.06 (6%) so the
+    // idle pulse reads at a glance instead of requiring concentration.
+    // 6% is the sweet spot per Emilio · still smoothstep-eased so it
+    // never feels jarring. 7%+ risks crossing into distracting.
+    const AMPLITUDE = 0.06
     for (let i = 0; i < pulseTargets.length; i++) {
       const { obj, baseScale } = pulseTargets[i]
       const phase = ((t + i * STAGGER) % DURATION) / DURATION // 0..1
