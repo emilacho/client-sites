@@ -1,16 +1,22 @@
 "use client"
 /**
- * CameraRig · cinematic auto-rotate camera + hover-pause + drag-cede.
+ * CameraRig · Round 45 floating-drift camera.
  *
- *  - rotates 6°/s around the scene origin (60s per full revolution)
- *  - pauses when ANY interactive anchor is hovered (controlled by
- *    the parent scene via the `pausedHover` prop)
- *  - drag manual cede control (OrbitControls handles drag events; the
- *    rig listens to `start` / `end` and re-arms a 2000ms idle timer
- *    on `end`)
- *  - honors `prefers-reduced-motion` (no rotation, only static target)
- *  - all clamped to a horizontal orbit · vertical bound to keep the
- *    island and character readable
+ *  - Default position FRONT [0, height, radius] (no more side-view
+ *    default · user "siempre de frente")
+ *  - NO orbital auto-rotate around Y · isla stays in the same
+ *    visual orientation
+ *  - Drift offsets layered on top of a base position:
+ *      x = sin(t · 0.2) · 0.30   period 31.4s
+ *      y = sin(t · 0.4) · 0.25   period 15.7s
+ *      z = cos(t · 0.2) · 0.30   period 31.4s
+ *    coprime-enough frequencies so the loop never aligns; net motion
+ *    reads as a slow elliptical hover.
+ *  - Drag-end captures the user'\''s new base position so the drift
+ *    continues from where they let go (no snap-reset).
+ *  - lookAt ALWAYS (0, 1, 0) · isla center. The drift moves the
+ *    camera but never the focal point.
+ *  - reducedMotion / pausedHover / qaMode → snap to base, no drift.
  */
 import { useEffect, useRef } from "react"
 import { useFrame, useThree } from "@react-three/fiber"
@@ -20,25 +26,29 @@ import type { ComponentRef } from "react"
 
 type OrbitControlsRef = ComponentRef<typeof OrbitControls>
 
-const DEGREES_PER_SECOND = 6 // 60s / full revolution
-const RESUME_DELAY_MS = 2000
+const DRIFT_AMP_X = 0.3
+const DRIFT_AMP_Y = 0.25
+const DRIFT_AMP_Z = 0.3
+const DRIFT_FREQ_X = 0.2
+const DRIFT_FREQ_Y = 0.4
+const DRIFT_FREQ_Z = 0.2
+
+const LOOKAT_TARGET: [number, number, number] = [0, 1, 0]
 
 export interface CameraRigProps {
-  /** When true, auto-rotation halts (typically because an anchor is hovered). */
+  /** True when an anchor proxy is hovered or qaMode is active.
+   *  Drift halts and the camera snaps to its base position. */
   pausedHover: boolean
-  /** When true, all motion is suppressed (used for prefers-reduced-motion). */
+  /** True under prefers-reduced-motion or qaMode. Same effect as
+   *  pausedHover · drift halts. Kept as a separate prop so callers
+   *  can wire either signal independently. */
   reducedMotion: boolean
-  /** Orbit radius from the scene origin. */
+  /** Drift center distance from origin. */
   radius?: number
-  /** Initial Y offset (height of the camera). */
+  /** Drift center height. */
   height?: number
-  /**
-   * Round 8.5 · which side of the island the camera starts from.
-   *  - "side"  → [radius, height, 0]  (east side · default UX · matches v1)
-   *  - "front" → [0, height, radius]  (front view · evidence-friendly for QA)
-   * Both views share the same orbit radius · so auto-rotate continues
-   * naturally from whichever side it started on.
-   */
+  /** Legacy prop · ignored by Round 45. The default position is
+   *  always FRONT [0, height, radius] now. */
   initialView?: "side" | "front"
 }
 
@@ -47,37 +57,33 @@ export function CameraRig({
   reducedMotion,
   radius = 9,
   height = 4,
-  initialView = "side",
 }: CameraRigProps) {
   const { camera } = useThree()
   const controlsRef = useRef<OrbitControlsRef | null>(null)
-  const angleRef = useRef(initialView === "front" ? Math.PI / 2 : 0) // azimuth · seeds auto-rotate continuation
-  const userControlUntilRef = useRef<number>(0) // timestamp · auto-rotate suspended until this ms
+  const basePositionRef = useRef<THREE.Vector3>(
+    new THREE.Vector3(0, height, radius),
+  )
+  const draggingRef = useRef(false)
 
-  // Initialize camera position on mount
+  // Initial mount · always FRONT view [0, height, radius]
   useEffect(() => {
-    if (initialView === "front") {
-      camera.position.set(0, height, radius)
-    } else {
-      camera.position.set(radius, height, 0)
-    }
-    camera.lookAt(0, 1.2, 0)
-  }, [camera, radius, height, initialView])
+    basePositionRef.current.set(0, height, radius)
+    camera.position.copy(basePositionRef.current)
+    camera.lookAt(...LOOKAT_TARGET)
+  }, [camera, radius, height])
 
-  // Listen to OrbitControls drag events · suspend auto-rotate for
-  // RESUME_DELAY_MS after the user releases.
+  // OrbitControls drag handling
+  //   start · suspend drift, let OrbitControls own the camera
+  //   end   · capture the camera position as the new drift base
   useEffect(() => {
     const c = controlsRef.current
     if (!c) return
     const onStart = () => {
-      userControlUntilRef.current = Number.POSITIVE_INFINITY
+      draggingRef.current = true
     }
     const onEnd = () => {
-      userControlUntilRef.current = performance.now() + RESUME_DELAY_MS
-      // Re-sync our internal angle with where the user dragged to.
-      const v = new THREE.Vector3()
-      camera.getWorldPosition(v)
-      angleRef.current = Math.atan2(v.z, v.x)
+      draggingRef.current = false
+      basePositionRef.current.copy(camera.position)
     }
     c.addEventListener("start", onStart)
     c.addEventListener("end", onEnd)
@@ -87,18 +93,29 @@ export function CameraRig({
     }
   }, [camera])
 
-  useFrame((_, delta) => {
-    if (reducedMotion) return
-    if (pausedHover) return
-    if (performance.now() < userControlUntilRef.current) return
-
-    angleRef.current += THREE.MathUtils.degToRad(DEGREES_PER_SECOND) * delta
-    const a = angleRef.current
-    camera.position.x = Math.cos(a) * radius
-    camera.position.z = Math.sin(a) * radius
-    camera.position.y = height
-    camera.lookAt(0, 1.2, 0)
-    controlsRef.current?.update()
+  useFrame((state) => {
+    if (draggingRef.current) {
+      // User is dragging · OrbitControls drives position. Just enforce
+      // the lookAt so the isla stays the visual anchor.
+      camera.lookAt(...LOOKAT_TARGET)
+      return
+    }
+    if (reducedMotion || pausedHover) {
+      // Snap to base · no drift, no animation
+      camera.position.copy(basePositionRef.current)
+      camera.lookAt(...LOOKAT_TARGET)
+      return
+    }
+    const t = state.clock.elapsedTime
+    const dx = Math.sin(t * DRIFT_FREQ_X) * DRIFT_AMP_X
+    const dy = Math.sin(t * DRIFT_FREQ_Y) * DRIFT_AMP_Y
+    const dz = Math.cos(t * DRIFT_FREQ_Z) * DRIFT_AMP_Z
+    camera.position.set(
+      basePositionRef.current.x + dx,
+      basePositionRef.current.y + dy,
+      basePositionRef.current.z + dz,
+    )
+    camera.lookAt(...LOOKAT_TARGET)
   })
 
   return (
