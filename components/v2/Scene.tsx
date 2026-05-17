@@ -61,10 +61,18 @@ interface SceneProps {
  * in design review · acceptable visual placement is the bar.
  */
 const ANCHOR_POSITIONS: Record<AnchorKind, [number, number, number]> = {
-  cofre:    [ 1.4, 0.55, 0.9 ],  // chest sits on the beach front-right
-  barco:    [-2.4, 0.30, 1.2 ],  // surfboard / boat to the left
-  cocos:    [ 0.4, 1.40, -1.5 ], // coconuts hang on the central palm
-  palmeras: [-1.6, 1.30, -1.8 ], // back-left palm cluster
+  // Round 37 · re-mapped to the real GLB target positions so the
+  // invisible proxy spheres actually sit ON the asset the user
+  // expects to click. Earlier values were eyeballed against a
+  // pre-Round-25 layout and ended up near the wrong meshes.
+  //   cofre · was [1.4, 0.55, 0.9] (near SignModel)
+  //         → Chest_14 world center post-Round-25
+  cofre:    [-0.76, 0.16,  0.18],
+  barco:    [-2.4,  0.30,  1.2 ],  // unchanged in this round
+  //   cocos · was [0.4, 1.40, -1.5] (between palms, on Tree_Trunk_1_2)
+  //         → Coconut_2_5 world position post-Round-25 (central palm fruit)
+  cocos:    [ 0.14, 1.36, -0.49],
+  palmeras: [-1.6,  1.30, -1.8 ],  // unchanged in this round
 }
 
 // ANCHOR_LABELS removed in round-3 single-issue fix · the 4 drei <Html>
