@@ -26,7 +26,6 @@ import {
   PerformanceMonitor,
   useAnimations,
   useGLTF,
-  ContactShadows,
 } from "@react-three/drei"
 import { EffectComposer, Bloom } from "@react-three/postprocessing"
 import { AnimatePresence, motion } from "framer-motion"
@@ -237,7 +236,14 @@ export function Scene({ onAnchorClick }: SceneProps) {
           ))}
         </PerformanceMonitor>
 
-        <ContactShadows position={[0, 0, 0]} opacity={0.45} scale={14} blur={2.4} far={3.5} />
+        {/* Round 56 · removed <ContactShadows scale={14}/> · the drei
+            shadow plane rendered as a 14u² darkened square texture
+            on top of the water around the island, reading as a hard
+            edge against the ocean color. The directional light's
+            castShadow + shadow-mapSize on the island sand mesh
+            still provides real ground shadow under the chest/palms;
+            we just lose the soft ambient darkening contact shadow
+            that was responsible for the square. */}
         <Environment preset="sunset" />
       </Suspense>
 
