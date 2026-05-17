@@ -526,8 +526,17 @@ function IslandModel(props: React.ComponentProps<"group">) {
     //     phaseInBurst = 0   → amp = 0.06   (peak)
     //     phaseInBurst = 0.5 → amp = 0.015  (quartered)
     //     phaseInBurst = 1.0 → amp = 0      (still)
+    // Round 54 · within-burst motion changed from random jitter to
+    // smooth wind-sway. The burst window + decay envelope are
+    // unchanged · only the per-frame value generator. Each coco
+    // gets a continuous sin oscillation on Z (lateral sway) +
+    // cos on X (forward-back tilt) at a slightly different
+    // frequency, modulated by the burst decay envelope. Reads as
+    // "a gust catches the coco" instead of the previous
+    // mechanical-shake / taladro feel.
     const COCO_BURST = 0.9
     const COCO_AMP_MAX = 0.06
+    const SWAY_FREQ = 9 // ~1.4 cycles per 0.9s burst
     for (const c of coconutShakeTargets) {
       const interval = 3 + c.intervalJitter // 2.0–4.0s
       const tAdj = t + c.phaseOffset
@@ -535,9 +544,11 @@ function IslandModel(props: React.ComponentProps<"group">) {
       if (cyclePos < COCO_BURST) {
         const phaseInBurst = cyclePos / COCO_BURST
         const amp = COCO_AMP_MAX * Math.pow(1 - phaseInBurst, 2)
-        c.obj.rotation.x = c.baseRotX + (Math.random() - 0.5) * 2 * amp
-        c.obj.rotation.y = c.baseRotY + (Math.random() - 0.5) * 2 * amp
-        c.obj.rotation.z = c.baseRotZ + (Math.random() - 0.5) * 2 * amp
+        const sway = Math.sin(tAdj * SWAY_FREQ) * amp
+        const tilt = Math.cos(tAdj * SWAY_FREQ * 0.85) * amp * 0.6
+        c.obj.rotation.x = c.baseRotX + tilt
+        c.obj.rotation.y = c.baseRotY
+        c.obj.rotation.z = c.baseRotZ + sway
       } else {
         c.obj.rotation.x = c.baseRotX
         c.obj.rotation.y = c.baseRotY
