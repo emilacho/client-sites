@@ -952,7 +952,7 @@ function InteractiveAnchor({
           onClick()
         }}
       >
-        <sphereGeometry args={[0.55, 16, 16]} />
+        <sphereGeometry args={[0.15, 16, 16]} />
         {/* Round 6 single-issue fix · the proxy sphere is now fully
             invisible (meshBasicMaterial · opacity 0 · depthWrite off).
             Raycast still hits the geometry so pointer/click events
