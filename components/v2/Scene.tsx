@@ -140,7 +140,9 @@ export function Scene({ onAnchorClick }: SceneProps) {
               sign reads from the default-cam initial side-view AND
               the +Z front view (2/4 angles confirmed visible · was
               1/4 visible borderline). Rotation unchanged. */}
-          <SignModel position={[0.8, 0.5, 0.5]} rotation={[0, -0.5, 0]} />
+          {/* Round 16 placed sign at Y=0.5 · Round 25 island drop -0.4
+              brings it to Y=0.1 (same relative gap above sand). */}
+          <SignModel position={[0.8, 0.1, 0.5]} rotation={[0, -0.5, 0]} />
           {/* Round 26 · surfboard reposition · user-marked screenshot
               zone (central sand, left of chest, NOT water edge).
                 Round 17 pos [-1.0, 0.2, 0.8]  · partially overlapped
@@ -159,7 +161,9 @@ export function Scene({ onAnchorClick }: SceneProps) {
               X[-2.82..2.75] Z[-3.66..1.57]. No collision with chest,
               character, sign, boat, palms, or remaining rocks.
               Rotation + scale unchanged from Round 17. */}
-          <SurfboardModel position={[-1.9, 0.35, -0.2]} rotation={[0, 0.7, 0.2]} scale={0.7} />
+          {/* Round 26 surfboard pos · Round 25 -0.4 island drop adjusts
+              Y 0.35 → -0.05 so it rests on the new sand surface. */}
+          <SurfboardModel position={[-1.9, -0.05, -0.2]} rotation={[0, 0.7, 0.2]} scale={0.7} />
 
           {(Object.keys(ANCHOR_POSITIONS) as AnchorKind[]).map((kind, idx) => (
             <InteractiveAnchor
@@ -224,6 +228,33 @@ function IslandModel(props: React.ComponentProps<"group">) {
       const obj = scene.getObjectByName(name)
       if (obj && obj.position.y > -0.3) {
         obj.position.y += BOAT_DELTA_Y
+      }
+    }
+    // Round 25 · drop the entire island assembly (sand + palms + chest
+    // + rocks + coconuts + Island537 grass cap) by 0.4u so the sand
+    // bottom dips below the water plane at Y=-0.4. Eliminates the
+    // 0.04u "isla flotante" airgap between sand bottom (Y=-0.36) and
+    // water. After this drop · sand Y[-0.76 .. +0.26], coast reads as
+    // emerging naturally from the water.
+    //   exempt · Ocean001_57 (the water itself · stays at -0.4)
+    //          · Cube_59     (skybox · far above scene, no effect)
+    //          · Boat_15 + Oar_1_16 + Oar_2_17 (sit in water · keel
+    //            already at water level per Round 22)
+    // The external CharacterModel, SignModel, SurfboardModel JSX props
+    // are also lowered by 0.4u (see below) to maintain their relative
+    // height above the new sand surface.
+    const islandRoot = scene.getObjectByName("GLTF_SceneRootNode") ?? scene
+    const ROUND_25_EXEMPT = new Set([
+      "Ocean001_57",
+      "Cube_59",
+      "Boat_15",
+      "Oar_1_16",
+      "Oar_2_17",
+    ])
+    for (const child of islandRoot.children) {
+      if (!ROUND_25_EXEMPT.has(child.name) && !child.userData.r25Lowered) {
+        child.position.y -= 0.4
+        child.userData.r25Lowered = true
       }
     }
   }, [scene])
@@ -349,15 +380,11 @@ function IslandWithCharacter({ qaMode }: { qaMode: boolean }) {
     <group>
       <IslandModel position={[0, 0, 0]} scale={1} />
       <group
-        /* Round 15 single-issue fix · character outer group Y bumped
-           from 0.05 → 0.5. Forensic (scripts/probe-character.mjs):
-           character GLB local feet sits at Y=0, scaled by 0.6 →
-           world-space feet were landing at Y=0.05 · 0.07–0.27u below
-           the visible sand surface (tree trunks parented at Y≈0.12 ·
-           chest base at Y=0.325) · this read as "hundido hasta las
-           rodillas". Y=0.5 puts feet just above chest-base level and
-           below sand-AABB top (0.66) · character stands on sand. */
-        position={[0, 0.5, 0]}
+        /* Round 15 set character outer group Y=0.5 (feet sit on sand
+           above visible surface). Round 25 dropped the whole island
+           by 0.4u so the character needs to drop with it · Y=0.5 →
+           Y=0.1. Same relative offset above the new sand surface. */
+        position={[0, 0.1, 0]}
         onPointerOver={() => setHover(true)}
         onPointerOut={() => setHover(false)}
         onPointerDown={() => setHover(!hovered)} // mobile tap toggle
