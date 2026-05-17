@@ -206,6 +206,20 @@ function IslandModel(props: React.ComponentProps<"group">) {
       const r = scene.getObjectByName(name)
       if (r) r.visible = false
     }
+    // Round 22 · lower boat + its 2 oars by 0.36u so the keel reaches
+    // the new water plane (Y=-0.4). Same disease as the rocks · the
+    // boat was designed for a Y=0 ocean. Oar_1_16 and Oar_2_17 are
+    // GLB scene-tree siblings of Boat_15 (not children) so they need
+    // explicit motion to keep the boat-and-oars assembly coherent.
+    // Guard with `position.y > -0.3` so HMR / strict-mode re-runs
+    // don't double-apply the delta.
+    const BOAT_DELTA_Y = -0.36
+    for (const name of ["Boat_15", "Oar_1_16", "Oar_2_17"]) {
+      const obj = scene.getObjectByName(name)
+      if (obj && obj.position.y > -0.3) {
+        obj.position.y += BOAT_DELTA_Y
+      }
+    }
   }, [scene])
 
   // Round 18 single-issue fix · idle pulse on visible GLB sub-groups
