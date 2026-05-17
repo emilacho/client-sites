@@ -947,13 +947,14 @@ function IslandWithCharacter({ qaMode }: { qaMode: boolean }) {
       <IslandModel position={[0, 0, 0]} scale={1} />
       <CoconutHoverCards />
       <group
-        /* Round 32 · character flotante fix · Y 0.1 → -0.075.
-           Round 15/25's compromise Y kept feet between visible
-           sand surface (≈-0.075, chest-base reference) and AABB
-           top (0.26), which read as "flotando". Landing feet at
-           the visible surface (where chest sits) finishes the
-           job · character now stands ON sand alongside the chest. */
-        position={[0, -0.075, 0]}
+        /* Round 32 · character flotante fix · Y 0.1 → -0.075 ·
+           landed feet at chest-base sand reference.
+           Round 66 · per user "sube un poco el esqueleto no mucho
+           así mismo como los cocos vamos de a poco" · Y -0.075 →
+           -0.025 (+0.05u · same delta size as the coco "un
+           poquito" tuning). Feet now sit slightly above the
+           chest-base sand · subtle lift. */
+        position={[0, -0.025, 0]}
         onPointerOver={() => setHover(true)}
         onPointerOut={() => setHover(false)}
         onPointerDown={() => setHover(!hovered)} // mobile tap toggle
