@@ -131,7 +131,16 @@ export function Scene({ onAnchorClick }: SceneProps) {
                 sign      → X[0.37..2.03] · Z[-1.5..-0.5]
                 surfboard → X[-1.90..-0.90] · Z[0.40..0.80]
               No rotation / scale change · just position. */}
-          <SignModel position={[1.2, 0.0, -1.0]} rotation={[0, -0.5, 0]} />
+          {/* Round 16 single-issue fix · sign moved [1.2, 0, -1.0] →
+              [0.8, 0.5, 0.5]. Y lifted from 0 to 0.5 (matches character
+              lift Round 15) · Y=0 buried the sign in sand (GLB bbox
+              Y[-0.225..+0.225], visible sand surface ~Y=0.12-0.33 ·
+              only the top 22mm was visible). XZ shifted from back-
+              right (Z=-1.0) to front-center (Z=0.5, X=0.8) so the
+              sign reads from the default-cam initial side-view AND
+              the +Z front view (2/4 angles confirmed visible · was
+              1/4 visible borderline). Rotation unchanged. */}
+          <SignModel position={[0.8, 0.5, 0.5]} rotation={[0, -0.5, 0]} />
           <SurfboardModel position={[-1.4, 0.05, 0.6]} rotation={[0, 0.7, 0.2]} scale={0.7} />
 
           {(Object.keys(ANCHOR_POSITIONS) as AnchorKind[]).map((kind, idx) => (
