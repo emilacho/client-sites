@@ -753,7 +753,8 @@ function CoconutHoverCards() {
             }}
           >
             <sphereGeometry args={[0.4, 16, 16]} />
-            <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+            {/* TEMP debug · visible cyan to confirm proxy positions */}
+            <meshBasicMaterial color="#4DD4D8" transparent opacity={0.4} depthWrite={false} />
           </mesh>
           {/* Floating review card · above the coconut · ignores
               occlusion so palm leaves can'\''t hide it */}
