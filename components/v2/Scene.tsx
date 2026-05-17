@@ -720,7 +720,11 @@ function ReviewCard({ review }: { review: CocoReview }) {
   return (
     <div
       style={{
-        background: "rgba(124, 58, 237, 0.96)",
+        // Round 59 · morado bg darkened per user "el morado del
+        // fondo de la reseña es más oscuro" · #7c3aed (violet-600)
+        // → #4c1d95 (violet-900) · matches the deeper purple read
+        // off the actual SignModel plank.
+        background: "rgba(76, 29, 149, 0.96)",
         border: "1px solid rgba(77, 212, 216, 0.7)",
         backdropFilter: "blur(8px)",
         borderRadius: "10px",
@@ -732,7 +736,7 @@ function ReviewCard({ review }: { review: CocoReview }) {
         alignItems: "flex-start",
         color: "#4DD4D8",
         fontFamily: 'var(--font-inter), system-ui, -apple-system, sans-serif',
-        boxShadow: "0 12px 32px rgba(91, 33, 182, 0.55)",
+        boxShadow: "0 12px 32px rgba(46, 16, 101, 0.55)",
       }}
     >
       <img
