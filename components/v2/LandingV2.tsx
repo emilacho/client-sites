@@ -83,19 +83,24 @@ function LandingInner() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4, ease: [0.2, 0.8, 0.2, 1] }}
-          className="pointer-events-auto max-w-2xl rounded-2xl bg-slate-950/50 p-5 backdrop-blur-md md:bg-transparent md:p-0 md:backdrop-blur-0"
+          /* Round 10 · single-issue fix · hero block trimmed so the 3D
+             island stays the visual lead. No more backdrop-blur (mobile
+             container removed too · text rides drop-shadow legibility
+             over the scene) · max-width clamped to 448px (was 672px)
+             so the block never overlaps cofre/character on default. */
+          className="pointer-events-auto max-w-md"
         >
           <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan-200">
             <span className="h-1 w-1 rounded-full bg-cyan-400" />
             Olón · ghost kitchen
           </span>
-          <h1 className="font-display text-[40px] font-semibold leading-[1.02] tracking-tight text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.7)] md:text-[64px]">
+          <h1 className="font-display text-2xl font-semibold leading-tight tracking-tight text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.7)] md:text-3xl lg:text-4xl">
             {naufragoV2.hero.headline}
           </h1>
-          <p className="mt-4 max-w-xl text-base text-slate-200 drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] md:text-lg">
+          <p className="mt-3 text-sm text-slate-200 drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] md:text-base">
             {naufragoV2.hero.subheadline}
           </p>
-          <div className="mt-6 flex flex-wrap items-center gap-3">
+          <div className="mt-5 flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={openMenu}
