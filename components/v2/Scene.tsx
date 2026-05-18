@@ -816,29 +816,36 @@ function createPromoTexture(): THREE.CanvasTexture | null {
   ctx.textAlign = "center"
   ctx.textBaseline = "middle"
 
+  // Round 90 · per-line color · default near-black INK, opt-in
+  // accent colors for emphasized lines (red for the code +
+  // discount headline). Stroke + fill both pick up the color
+  // so the double-pass stays faithful to the silhouette.
   function lineAt(
     text: string,
     x: number,
     y: number,
     font: string,
     rotateRad = 0,
+    color: string = INK,
   ) {
     ctx!.save()
     ctx!.translate(x, y)
     ctx!.rotate(rotateRad)
     ctx!.font = font
-    // Round 88 · "stroked + filled" double-pass · adds a small
-    // stroke around each filled letter so the silhouette has
-    // sharper edges against the parchment texture beneath. Stroke
-    // matches the fill color so the letter looks denser, not
-    // outlined.
     ctx!.lineWidth = 2.2
     ctx!.lineJoin = "round"
-    ctx!.strokeStyle = INK
+    ctx!.strokeStyle = color
+    ctx!.fillStyle = color
     ctx!.strokeText(text, 0, 0)
     ctx!.fillText(text, 0, 0)
     ctx!.restore()
   }
+
+  // Round 90 · red ink for the code and discount headline ·
+  // wine-red close to PromoTicker's #CC0000 but slightly deeper
+  // (#B91C1C · red-700) so it reads like an inked seal stamp
+  // against the kraft parchment.
+  const RED = "#B91C1C"
 
   // Round 89 · true connected-cursive handwritten stack.
   // Homemade Apple is the primary · realistic one-stroke
@@ -861,20 +868,20 @@ function createPromoTexture(): THREE.CanvasTexture | null {
   // gracefully. Slight per-line rotation is what sells the
   // hand-written feel · the font does the rest.
   //
-  // Line 1 · introducing the find
+  // Round 90 · "Has encontrado el Tesoro de Náufrago" -20% size
+  // per user · 64/68 → 51/54px.
   lineAt(
     "¡ Has encontrado",
     512,
     150,
-    `64px ${handwritten}`,
+    `51px ${handwritten}`,
     -0.025,
   )
-  // Line 2 · headline (the treasure)
   lineAt(
     "el Tesoro de Náufrago !",
     512,
-    230,
-    `68px ${handwritten}`,
+    220,
+    `54px ${handwritten}`,
     0.018,
   )
 
@@ -890,9 +897,8 @@ function createPromoTexture(): THREE.CanvasTexture | null {
   }
   ctx.stroke()
 
-  // Line 3 · "Código Promo" label · Caveat (more legible at
-  // small sizes than Homemade Apple's tight cursive)
-  lineAt("Código Promo", 512, 330, `46px ${handwrittenLegible}`, -0.02)
+  // Round 90 · "Código Promo" +30% size per user · 46 → 60px
+  lineAt("Código Promo", 512, 332, `60px ${handwrittenLegible}`, -0.02)
 
   // Hand-drawn box around the code · double-stroke "sketchy"
   // Round 88 · stroke thicker (5 → 7) + faded pass darker
@@ -916,9 +922,8 @@ function createPromoTexture(): THREE.CanvasTexture | null {
   ctx.closePath()
   ctx.stroke()
 
-  // Line 4 · the code · BIG · mixed case preserved.
-  // Caveat at bold weight for the code · Homemade Apple is too
-  // hard to read at this size on a single word with caps.
+  // Round 90 · "SurfBollado" RED per user · Caveat bold for
+  // legibility of mixed-case code on a single word.
   ctx.fillStyle = INK
   lineAt(
     "“SurfBollado”",
@@ -926,12 +931,14 @@ function createPromoTexture(): THREE.CanvasTexture | null {
     432,
     `bold 100px ${handwrittenLegible}`,
     -0.012,
+    RED,
   )
 
-  // Line 5 · the discount headline · BIG · back to Homemade
-  // Apple for the headline · its connected strokes read
-  // dramatic at 132px.
-  lineAt("5% Off", 512, 580, `132px ${handwritten}`, -0.028)
+  // Round 90 · "5% Off" → "5% DSCT" + RED + Caveat bold (the
+  // 5 in Homemade Apple reads as a wild squiggle · the user
+  // explicitly flagged "no se entiende que es un número 5" ·
+  // Caveat's bold weight renders 5 as a clean numeral).
+  lineAt("5% DSCT", 512, 582, `bold 132px ${handwrittenLegible}`, -0.028, RED)
 
   // Signature · Caveat italic so the rúbrica is legible
   lineAt(
