@@ -14,6 +14,7 @@ import { Minus, Plus, ShoppingCart, Trash2, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useCart } from "@/lib/v2/cart-context"
 import { buildWhatsAppLink, naufragoV2 } from "@/lib/v2/naufrago-content"
+import { CourierQuoteFlow } from "./CourierQuoteFlow"
 
 function MenuThumb({ id, emoji }: { id: string; emoji: string }) {
   const item = naufragoV2.menu.find((m) => m.id === id)
@@ -169,6 +170,10 @@ export function CartDrawer() {
                   ${cart.total.toFixed(2)}
                 </span>
               </div>
+              {/* Round 74 · PedidosYa Courier integration · sits
+                  between the total and the WhatsApp CTA. Renders
+                  nothing when the cart is empty. */}
+              <CourierQuoteFlow />
               <a
                 href={buildWhatsAppLink(cart.lines)}
                 target="_blank"
