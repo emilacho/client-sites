@@ -39,6 +39,7 @@ import {
 } from "@/lib/v2/use-interactive-idle-pulse"
 import { useQaMode } from "@/lib/v2/use-qa-mode"
 import { naufragoAssets } from "@/lib/v2/naufrago-content"
+import { useCart } from "@/lib/v2/cart-context"
 
 // Preload the 4 GLBs at module load so the first paint of the canvas
 // doesn't kick off a 4-network-roundtrip waterfall.
@@ -58,6 +59,11 @@ export type AnchorKind = "cofre" | "barco" | "palmeras"
 
 interface SceneProps {
   onAnchorClick: (anchor: AnchorKind) => void
+  /** Round 85 · cofre click toggles this · in-scene 3D pergamino
+   *  animates emerge from cofre when true, retracts when false. */
+  treasureOpen?: boolean
+  onTreasureClose?: () => void
+  onOpenMenu?: () => void
 }
 
 /**
@@ -104,7 +110,23 @@ const ANCHOR_PROXIES: Record<AnchorKind, ProxyGeom> = {
 // "Interactive object idle pulse" · interactivity hint is now only the
 // idle pulse + cyan emissive glow).
 
-export function Scene({ onAnchorClick }: SceneProps) {
+export function Scene({
+  onAnchorClick,
+  treasureOpen = false,
+  onTreasureClose,
+  onOpenMenu,
+}: SceneProps) {
+  // Round 85 · auto-apply discount when the cofre opens · the 3D
+  // pergamino reveal handles the visual, the cart still gets
+  // the NAUFRAGO5 code so the WhatsApp checkout includes it.
+  const cart = useCart()
+  useEffect(() => {
+    if (treasureOpen) cart.applyCode("NAUFRAGO5")
+  }, [treasureOpen, cart])
+  // Suppress unused warnings · these props are wired into the
+  // PergaminoPropModel below.
+  void onTreasureClose
+  void onOpenMenu
   const reducedMotion = usePrefersReducedMotion()
   // QA toggle · when `?qa=1` is set, freeze the camera + suppress idle
   // pulse + suppress the character speech bubble so screenshots are
@@ -248,17 +270,15 @@ export function Scene({ onAnchorClick }: SceneProps) {
               [-2.14..-1.81]). */}
           <SurfboardModel position={[-1.307, 0.4, -1.7]} rotation={[0.3, Math.PI / 2, Math.PI / 2]} scale={0.7} />
 
-          {/* Round 84 · pergamino pirata 3D prop · complements the
-              cofre / castaway narrative. Lies on the sand right in
-              front of the cofre · acts as a visible "breadcrumb"
-              hint that there's a message here before the user
-              clicks. Doesn't trigger anything · the cofre still
-              owns the click and opens the R82 castaway parchment
-              modal. Idle sway via PergaminoPropModel useFrame. */}
+          {/* Round 85 · pergamino emerges FROM the cofre on click.
+              Hidden at rest (scale 0 inside cofre at world Y=0.16)
+              · cofre click flips `open` true · animates upward to
+              [0, 1.4, 0.5] and scales to 0.5. Has the promo text
+              drawn directly on its surface (CanvasTexture child).
+              Cofre click again retracts back into the cofre. */}
           <PergaminoPropModel
-            position={[-0.15, 0.08, 0.65]}
-            rotation={[0, Math.PI / 4, 0]}
-            scale={0.25}
+            open={treasureOpen}
+            onClose={onTreasureClose}
           />
 
           {(Object.keys(ANCHOR_POSITIONS) as AnchorKind[]).map((kind, idx) => (
@@ -630,49 +650,248 @@ function SurfboardModel(props: React.ComponentProps<"group">) {
 }
 
 /**
- * PergaminoPropModel · Round 84.
+ * PergaminoPropModel · Round 85.
  *
- * Loads the Draco-compressed pergamino-pirata GLB and wraps it in
- * a group that applies a slow idle sway · sin(t · 0.4) on rotation
- * Y at ±0.08 rad (~4.6° each side). The sway runs from a base
- * rotation passed via props so the caller can orient the scroll
- * however they want and the wind motion adds on top.
+ * Treasure-reveal · the cofre is clicked, this pergamino emerges
+ * from inside it and rises to a readable position above the
+ * chest. On the way up it scales from 0 to 0.5 with a slight
+ * overshoot. While visible it sways gently. Click anywhere on
+ * the pergamino (or the close button) and it retracts back into
+ * the cofre.
  *
- * The GLB ships a single mesh of 611K triangles · expensive but
- * one-time uploaded geometry · the Draco compression on the
- * accessors keeps the over-the-wire payload at 8.5MB (down from
- * 26.7MB raw). Material is PBR with embedded textures · we let
- * the runtime use whatever the GLB defines (no overrides).
+ * State morphing · `posT` (0..1) animated via useFrame:
+ *   posT=0 · world position [-0.76, 0.16, 0.18] (cofre center) · scale 0
+ *   posT=1 · world position [-0.76, 1.40, 0.50] (above cofre)  · scale 0.5
+ * Spring-like ease via critically-damped lerp on each frame.
  *
- * The second `true` arg to useGLTF tells drei to attach the
- * DRACOLoader pointing at the gstatic CDN decoder · no extra
- * setup needed in the app.
+ * Text overlay · a transparent CanvasTexture is generated at
+ * mount (handwritten Permanent Marker style, dark sepia ink, with
+ * a hand-drawn box around the NAUFRAGO5 code). It's applied to a
+ * thin plane child of the model, positioned just above the
+ * pergamino's broad face on the local +Y axis (the parchment's
+ * surface normal in its native GLB orientation). Because the
+ * plane is a child of the same group, it rotates and animates
+ * with the parchment · the writing reads as if drawn directly on
+ * the paper.
+ *
+ * Cam-facing orientation · the parchment GLB has its broad face
+ * on the local XZ plane (normal +Y). Front cam sits at
+ * [0, 4, 9] looking at [0, 1, 0]. Rotation X = -1.05 rad
+ * (~-60°) tips the parchment so its normal points at the cam
+ * (computed from atan2(cam_y_offset, cam_z_offset) ≈ atan2(3, 9)
+ * + the parchment lift).
  */
-function PergaminoPropModel(props: React.ComponentProps<"group">) {
+function PergaminoPropModel({
+  open,
+  onClose,
+}: {
+  open?: boolean
+  onClose?: () => void
+}) {
   const { scene } = useGLTF(naufragoAssets.pergamino, true)
   const groupRef = useRef<THREE.Group>(null)
-  const baseRotYRef = useRef<number>(0)
   const reducedMotion = usePrefersReducedMotion()
+  const posTRef = useRef(0) // 0 = hidden in cofre, 1 = visible above
 
+  // Generate the handwritten-text canvas texture once on mount.
+  // The texture is reused across re-renders (CanvasTexture is
+  // expensive to create). useMemo keyed on nothing · stable id.
+  const textTexture = useMemo(() => createPromoTexture(), [])
+
+  // Cleanup the canvas texture on unmount to release GPU memory.
   useEffect(() => {
-    // Capture base rotation Y from the JSX prop so the sway
-    // oscillates around it · re-runs only when props.rotation
-    // changes (idempotent across re-renders).
-    const r = props.rotation
-    if (Array.isArray(r)) baseRotYRef.current = r[1] ?? 0
-  }, [props.rotation])
+    return () => {
+      textTexture?.dispose()
+    }
+  }, [textTexture])
 
-  useFrame((state) => {
-    if (reducedMotion || !groupRef.current) return
-    const t = state.clock.elapsedTime
-    groupRef.current.rotation.y = baseRotYRef.current + Math.sin(t * 0.4) * 0.08
+  useFrame((_, delta) => {
+    if (!groupRef.current) return
+    const target = open ? 1 : 0
+    // Critically-damped lerp · approach target at fixed rate
+    //   open speed · 1.6/s (full open ~0.9s)
+    //   close speed · 2.4/s (snap back ~0.5s)
+    const rate = open ? 1.6 : 2.4
+    const diff = target - posTRef.current
+    posTRef.current += Math.sign(diff) * Math.min(Math.abs(diff), rate * delta)
+
+    const t = posTRef.current
+    // Interpolate position · cofre center → above cofre
+    const x = -0.76
+    const y = 0.16 + t * (1.4 - 0.16)
+    const z = 0.18 + t * (0.5 - 0.18)
+    groupRef.current.position.set(x, y, z)
+    // Scale from 0 with subtle overshoot
+    const easedScale = t < 1 ? t * (1.1 - 0.1 * t) : 1
+    groupRef.current.scale.setScalar(easedScale * 0.5)
+    // Rotation · tilt back to face front cam + gentle sway when open
+    const tipX = -1.05
+    const swayY = reducedMotion ? 0 : Math.sin(performance.now() * 0.0004) * 0.06
+    groupRef.current.rotation.set(tipX, swayY, 0)
   })
 
   return (
-    <group ref={groupRef} {...props}>
+    <group
+      ref={groupRef}
+      visible={true}
+      onClick={(e) => {
+        // Click the parchment itself dismisses (same UX as the
+        // R82 modal's click-outside · here you click the prop).
+        if (!open) return
+        e.stopPropagation()
+        onClose?.()
+      }}
+    >
       <primitive object={scene} />
+      {/* Text overlay · plane on the parchment's broad face
+           (local XZ plane · normal +Y) so it reads as if the
+           handwriting is drawn directly on the paper. */}
+      {textTexture && (
+        <mesh position={[0, 0.19, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[1.7, 1.3]} />
+          <meshBasicMaterial
+            map={textTexture}
+            transparent
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+      )}
     </group>
   )
+}
+
+/**
+ * Generate the handwritten promo overlay as a CanvasTexture.
+ * Uses Permanent Marker (loaded as --font-marker) for scrawled
+ * castaway-style handwriting in dark sepia ink. Background is
+ * transparent so the parchment's baked texture shows through.
+ *
+ * Returns null on SSR / when canvas2D unavailable · the caller
+ * guards with `textTexture && <mesh>`.
+ */
+function createPromoTexture(): THREE.CanvasTexture | null {
+  if (typeof document === "undefined") return null
+  const canvas = document.createElement("canvas")
+  canvas.width = 1024
+  canvas.height = 768
+  const ctx = canvas.getContext("2d")
+  if (!ctx) return null
+
+  // Transparent background
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+  const INK = "#3a2818"
+  ctx.fillStyle = INK
+  ctx.textAlign = "center"
+  ctx.textBaseline = "middle"
+
+  // Helper for slight per-line rotation (handwritten feel)
+  function lineAt(
+    text: string,
+    x: number,
+    y: number,
+    font: string,
+    rotateRad = 0,
+  ) {
+    ctx!.save()
+    ctx!.translate(x, y)
+    ctx!.rotate(rotateRad)
+    ctx!.font = font
+    ctx!.fillText(text, 0, 0)
+    ctx!.restore()
+  }
+
+  const handwritten =
+    '"Permanent Marker", "Caveat", "Marker Felt", cursive'
+
+  lineAt("· Mensaje del náufrago ·", 512, 110, `28px ${handwritten}`, -0.018)
+
+  lineAt("Quien lea esta nota,", 130, 200, `38px ${handwritten}`, -0.02)
+  lineAt(
+    "te dejo mi último tesoro",
+    130,
+    256,
+    `38px ${handwritten}`,
+    0.012,
+  )
+
+  lineAt(
+    "5% off",
+    512,
+    380,
+    `bold 130px ${handwritten}`,
+    -0.025,
+  )
+  lineAt(
+    "en tu primer pedido",
+    512,
+    450,
+    `30px ${handwritten}`,
+    -0.01,
+  )
+
+  // Hand-drawn box around the code · double-stroke "sketchy" feel
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 5
+  ctx.beginPath()
+  // First stroke (slightly skewed)
+  ctx.moveTo(260, 530)
+  ctx.lineTo(774, 524)
+  ctx.lineTo(778, 610)
+  ctx.lineTo(258, 614)
+  ctx.closePath()
+  ctx.stroke()
+  // Second pass (faded · scribbled twice)
+  ctx.strokeStyle = "rgba(58,40,24,0.4)"
+  ctx.lineWidth = 2.5
+  ctx.beginPath()
+  ctx.moveTo(264, 534)
+  ctx.lineTo(770, 528)
+  ctx.lineTo(774, 606)
+  ctx.lineTo(262, 610)
+  ctx.closePath()
+  ctx.stroke()
+
+  ctx.fillStyle = INK
+  lineAt("NAUFRAGO5", 518, 572, `bold 78px ${handwritten}`, -0.012)
+
+  lineAt(
+    "— El Náufrago",
+    760,
+    690,
+    `italic 32px ${handwritten}`,
+    -0.05,
+  )
+
+  // Squiggly underline under the signature (sea-wave feel)
+  ctx.strokeStyle = "rgba(58,40,24,0.65)"
+  ctx.lineWidth = 2.5
+  ctx.beginPath()
+  ctx.moveTo(640, 720)
+  for (let i = 0; i <= 6; i++) {
+    const x = 640 + i * 25
+    const y = 720 + ((i % 2 === 0 ? -1 : 1) * 4)
+    ctx.lineTo(x, y)
+  }
+  ctx.stroke()
+
+  // Add a few small ink-blot stains for authenticity
+  ctx.fillStyle = "rgba(58,40,24,0.18)"
+  ctx.beginPath()
+  ctx.arc(180, 480, 9, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.beginPath()
+  ctx.arc(860, 240, 7, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.beginPath()
+  ctx.arc(880, 690, 11, 0, Math.PI * 2)
+  ctx.fill()
+
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.needsUpdate = true
+  return texture
 }
 
 function CharacterModel(props: React.ComponentProps<"group">) {

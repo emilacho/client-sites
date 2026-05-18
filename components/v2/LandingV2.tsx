@@ -21,7 +21,9 @@ import { CartDrawer } from "./CartDrawer"
 import { OverlayPanels, type OverlayKind } from "./OverlayPanels"
 import { PromoTicker } from "./PromoTicker"
 import { MenuModal } from "./MenuModal"
-import { TreasureRewardModal } from "./TreasureRewardModal"
+// Round 85 · TreasureRewardModal (R82 castaway SVG modal) retired ·
+// the 3D pergamino in-scene that emerges from the cofre on click
+// replaces it · same discount flow, more immersive reveal.
 import { SceneErrorBoundary } from "./SceneErrorBoundary"
 import type { AnchorKind } from "./Scene"
 
@@ -77,7 +79,12 @@ function LandingInner() {
           the boundary and keep working when the scene fails. */}
       <div className="absolute inset-0 z-0">
         <SceneErrorBoundary>
-          <Scene onAnchorClick={handleAnchor} />
+          <Scene
+            onAnchorClick={handleAnchor}
+            treasureOpen={treasureOpen}
+            onTreasureClose={() => setTreasureOpen(false)}
+            onOpenMenu={openMenu}
+          />
         </SceneErrorBoundary>
       </div>
 
@@ -168,14 +175,11 @@ function LandingInner() {
       {/* Round 19 · bottom sticky promo strip (was MenuQuickAdd) */}
       <PromoTicker />
 
-      {/* Drawers + modals · z-40+ to sit above the 3D layer */}
+      {/* Drawers + modals · z-40+ to sit above the 3D layer.
+          Round 85 · TreasureRewardModal unmounted · cofre click
+          drives the in-scene 3D pergamino emerge (Scene.tsx). */}
       <CartDrawer />
       <MenuModal open={menuOpen} onClose={() => setMenuOpen(false)} />
-      <TreasureRewardModal
-        open={treasureOpen}
-        onClose={() => setTreasureOpen(false)}
-        onOpenMenu={openMenu}
-      />
       <OverlayPanels active={overlay} onClose={() => setOverlay(null)} />
     </main>
   )
