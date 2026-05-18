@@ -46,6 +46,10 @@ useGLTF.preload(naufragoAssets.island)
 useGLTF.preload(naufragoAssets.character)
 useGLTF.preload(naufragoAssets.sign)
 useGLTF.preload(naufragoAssets.surfboard)
+// Round 84 · pergamino Draco-compressed · second arg `true` tells
+// useGLTF to bundle the DRACOLoader with the gstatic decoder path.
+// Same call signature in useGLTF and useGLTF.preload.
+useGLTF.preload(naufragoAssets.pergamino, true)
 
 // Round 40 · "cocos" removed from anchor kinds · coconuts now have
 // per-fruit hover cards (see CoconutHoverCards) instead of opening
@@ -243,6 +247,19 @@ export function Scene({ onAnchorClick }: SceneProps) {
               the front face of the trunk (trunk Z range
               [-2.14..-1.81]). */}
           <SurfboardModel position={[-1.307, 0.4, -1.7]} rotation={[0.3, Math.PI / 2, Math.PI / 2]} scale={0.7} />
+
+          {/* Round 84 · pergamino pirata 3D prop · complements the
+              cofre / castaway narrative. Lies on the sand right in
+              front of the cofre · acts as a visible "breadcrumb"
+              hint that there's a message here before the user
+              clicks. Doesn't trigger anything · the cofre still
+              owns the click and opens the R82 castaway parchment
+              modal. Idle sway via PergaminoPropModel useFrame. */}
+          <PergaminoPropModel
+            position={[-0.15, 0.08, 0.65]}
+            rotation={[0, Math.PI / 4, 0]}
+            scale={0.25}
+          />
 
           {(Object.keys(ANCHOR_POSITIONS) as AnchorKind[]).map((kind, idx) => (
             <InteractiveAnchor
@@ -610,6 +627,52 @@ function SignModel(props: React.ComponentProps<"group">) {
 function SurfboardModel(props: React.ComponentProps<"group">) {
   const { scene } = useGLTF(naufragoAssets.surfboard)
   return <primitive object={scene} {...props} />
+}
+
+/**
+ * PergaminoPropModel · Round 84.
+ *
+ * Loads the Draco-compressed pergamino-pirata GLB and wraps it in
+ * a group that applies a slow idle sway · sin(t · 0.4) on rotation
+ * Y at ±0.08 rad (~4.6° each side). The sway runs from a base
+ * rotation passed via props so the caller can orient the scroll
+ * however they want and the wind motion adds on top.
+ *
+ * The GLB ships a single mesh of 611K triangles · expensive but
+ * one-time uploaded geometry · the Draco compression on the
+ * accessors keeps the over-the-wire payload at 8.5MB (down from
+ * 26.7MB raw). Material is PBR with embedded textures · we let
+ * the runtime use whatever the GLB defines (no overrides).
+ *
+ * The second `true` arg to useGLTF tells drei to attach the
+ * DRACOLoader pointing at the gstatic CDN decoder · no extra
+ * setup needed in the app.
+ */
+function PergaminoPropModel(props: React.ComponentProps<"group">) {
+  const { scene } = useGLTF(naufragoAssets.pergamino, true)
+  const groupRef = useRef<THREE.Group>(null)
+  const baseRotYRef = useRef<number>(0)
+  const reducedMotion = usePrefersReducedMotion()
+
+  useEffect(() => {
+    // Capture base rotation Y from the JSX prop so the sway
+    // oscillates around it · re-runs only when props.rotation
+    // changes (idempotent across re-renders).
+    const r = props.rotation
+    if (Array.isArray(r)) baseRotYRef.current = r[1] ?? 0
+  }, [props.rotation])
+
+  useFrame((state) => {
+    if (reducedMotion || !groupRef.current) return
+    const t = state.clock.elapsedTime
+    groupRef.current.rotation.y = baseRotYRef.current + Math.sin(t * 0.4) * 0.08
+  })
+
+  return (
+    <group ref={groupRef} {...props}>
+      <primitive object={scene} />
+    </group>
+  )
 }
 
 function CharacterModel(props: React.ComponentProps<"group">) {

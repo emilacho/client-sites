@@ -335,6 +335,12 @@ export const naufragoAssets = {
   character: `${ASSET_BASE}/3d-models/character-castaway-confused-scratch.glb`,
   sign:      `${ASSET_BASE}/3d-models/sign-naufrago.glb`,
   surfboard: `${ASSET_BASE}/3d-models/surfboard-old.glb`,
+  // Round 84 · pergamino pirata 3D asset (Meshy AI · Draco-compressed).
+  // Served locally from /public/models because the Supabase 3D-models
+  // bucket holds the original 4 island/character/sign/surfboard GLBs ·
+  // for new client assets we use /public/models/ for path simplicity.
+  // Original 26.7MB · post-Draco 8.5MB (-68%).
+  pergamino: "/models/pergamino-pirata.glb",
   heroImage: `${ASSET_BASE}/v2/hero.png`,
 } as const
 
