@@ -708,14 +708,18 @@ function PergaminoPropModel({
   useFrame((_, delta) => {
     if (!groupRef.current) return
     const target = open ? 1 : 0
-    // Critically-damped lerp · approach target at fixed rate
-    //   open speed · 1.6/s (full open ~0.9s)
-    //   close speed · 2.4/s (snap back ~0.5s)
     const rate = open ? 1.6 : 2.4
     const diff = target - posTRef.current
     posTRef.current += Math.sign(diff) * Math.min(Math.abs(diff), rate * delta)
-
     const t = posTRef.current
+
+    // Round 86 · visibility gate · when fully hidden (t≈0), set
+    // group.visible=false so the GLB mesh is excluded from the
+    // raycaster · otherwise the parchment intercepts cofre clicks
+    // (both occupy world position [-0.76, 0.16, 0.18] when closed)
+    // and the InteractiveAnchor cofre.onClick never fires.
+    groupRef.current.visible = t > 0.005
+
     // Interpolate position · cofre center → above cofre
     const x = -0.76
     const y = 0.16 + t * (1.4 - 0.16)
@@ -724,8 +728,12 @@ function PergaminoPropModel({
     // Scale from 0 with subtle overshoot
     const easedScale = t < 1 ? t * (1.1 - 0.1 * t) : 1
     groupRef.current.scale.setScalar(easedScale * 0.5)
-    // Rotation · tilt back to face front cam + gentle sway when open
-    const tipX = -1.05
+    // Round 86 · rotation X SIGN flipped · was -1.05 (showing the
+    // back face to cam · user said "le está dando la espalda") ·
+    // now +1.27 so the GLB's native +Y normal points toward the
+    // front cam at [0, 4, 9]. atan2(0.956, 0.293) ≈ 1.27 rad
+    // (~72.7°) computed from the cam-to-parchment vector in YZ.
+    const tipX = 1.27
     const swayY = reducedMotion ? 0 : Math.sin(performance.now() * 0.0004) * 0.06
     groupRef.current.rotation.set(tipX, swayY, 0)
   })
@@ -733,19 +741,14 @@ function PergaminoPropModel({
   return (
     <group
       ref={groupRef}
-      visible={true}
+      visible={false}
       onClick={(e) => {
-        // Click the parchment itself dismisses (same UX as the
-        // R82 modal's click-outside · here you click the prop).
         if (!open) return
         e.stopPropagation()
         onClose?.()
       }}
     >
       <primitive object={scene} />
-      {/* Text overlay · plane on the parchment's broad face
-           (local XZ plane · normal +Y) so it reads as if the
-           handwriting is drawn directly on the paper. */}
       {textTexture && (
         <mesh position={[0, 0.19, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[1.7, 1.3]} />
