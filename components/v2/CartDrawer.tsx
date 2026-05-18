@@ -11,6 +11,7 @@
  */
 import { useEffect, useState } from "react"
 import { Minus, Plus, ShoppingCart, Trash2, X } from "lucide-react"
+// useState imported above is reused by the DiscountCodeRow helper.
 import { motion, AnimatePresence } from "framer-motion"
 import { useCart } from "@/lib/v2/cart-context"
 import { buildWhatsAppLink, naufragoV2 } from "@/lib/v2/naufrago-content"
@@ -162,20 +163,48 @@ export function CartDrawer() {
               )}
             </div>
 
-            {/* Footer · total + checkout */}
+            {/* Footer · totals + discount + checkout */}
             <footer className="border-t border-slate-800 bg-slate-950/80 px-5 py-4">
-              <div className="mb-3 flex items-baseline justify-between">
-                <span className="text-sm text-slate-400">Total</span>
-                <span className="font-display text-xl font-semibold tabular-nums text-cyan-200">
-                  ${cart.total.toFixed(2)}
-                </span>
-              </div>
+              {/* Round 77 · discount surface · code input visible
+                  when no code is active · applied chip + remove
+                  when one is. */}
+              <DiscountCodeRow />
+
+              {/* Subtotal + discount line + total breakdown.
+                  When no discount is active, subtotal === total and
+                  the discount line is hidden · the row count
+                  collapses to a single line like before. */}
+              {cart.discountUsd > 0 ? (
+                <div className="mb-3 space-y-1">
+                  <div className="flex items-baseline justify-between text-xs text-slate-400">
+                    <span>Subtotal</span>
+                    <span className="tabular-nums">${cart.subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-baseline justify-between text-xs" style={{ color: "#4DD4D8" }}>
+                    <span>Descuento · {cart.discount?.code}</span>
+                    <span className="tabular-nums">−${cart.discountUsd.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-baseline justify-between pt-1">
+                    <span className="text-sm text-slate-300">Total</span>
+                    <span className="font-display text-xl font-semibold tabular-nums text-cyan-200">
+                      ${cart.total.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-3 flex items-baseline justify-between">
+                  <span className="text-sm text-slate-400">Total</span>
+                  <span className="font-display text-xl font-semibold tabular-nums text-cyan-200">
+                    ${cart.total.toFixed(2)}
+                  </span>
+                </div>
+              )}
               {/* Round 74 · PedidosYa Courier integration · sits
                   between the total and the WhatsApp CTA. Renders
                   nothing when the cart is empty. */}
               <CourierQuoteFlow />
               <a
-                href={buildWhatsAppLink(cart.lines)}
+                href={buildWhatsAppLink(cart.lines, cart.discount)}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-disabled={cart.lines.length === 0}
@@ -207,9 +236,92 @@ function EmptyState() {
       </div>
       <p className="text-sm text-slate-300">Tu carrito está vacío.</p>
       <p className="text-[12px] text-slate-500">
-        Toca el <strong className="text-cyan-300">cofre</strong> en la isla para
-        empezar a pedir.
+        Toca el <strong className="text-cyan-300">cofre</strong> en la isla
+        para reclamar tu descuento, luego explorá el menú.
       </p>
     </div>
+  )
+}
+
+/* Round 77 · standalone discount row above the totals · two states:
+ *   - no discount · text input + "Aplicar" button · invalid input
+ *     shakes and shows a brief "código inválido" hint
+ *   - active discount · chip with the code + label + remove button
+ */
+function DiscountCodeRow() {
+  const cart = useCart()
+  const [code, setCode] = useState("")
+  const [error, setError] = useState(false)
+
+  if (cart.discount) {
+    return (
+      <div
+        className="mb-3 flex items-center justify-between rounded-xl border px-3 py-2"
+        style={{
+          borderColor: "rgba(77,212,216,0.5)",
+          background: "rgba(76,29,149,0.18)",
+        }}
+      >
+        <div>
+          <div
+            className="font-mono text-[10px] uppercase tracking-[0.22em]"
+            style={{ color: "#4DD4D8" }}
+          >
+            Código aplicado
+          </div>
+          <div className="text-sm font-semibold text-slate-100">
+            {cart.discount.code}{" "}
+            <span className="font-normal text-slate-400">
+              · {cart.discount.label}
+            </span>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => cart.removeDiscount()}
+          aria-label="Quitar código"
+          className="rounded-full p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-slate-200"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        const ok = cart.applyCode(code)
+        if (!ok) {
+          setError(true)
+          setTimeout(() => setError(false), 1400)
+        } else {
+          setCode("")
+        }
+      }}
+      className="mb-3 flex gap-2"
+    >
+      <input
+        type="text"
+        value={code}
+        onChange={(e) => setCode(e.target.value.toUpperCase())}
+        placeholder="¿Tenés un código?"
+        className={[
+          "flex-1 rounded-md border bg-slate-950 px-3 py-2 text-sm uppercase tracking-[0.1em] text-slate-100 placeholder:text-slate-500 transition-all",
+          error
+            ? "border-rose-500 ring-1 ring-rose-500/40"
+            : "border-slate-700 focus:border-cyan-500",
+        ].join(" ")}
+        maxLength={20}
+      />
+      <button
+        type="submit"
+        disabled={!code.trim()}
+        className="rounded-md bg-gradient-to-r from-violet-500 to-cyan-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-40"
+      >
+        Aplicar
+      </button>
+    </form>
   )
 }

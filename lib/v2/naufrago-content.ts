@@ -348,26 +348,51 @@ export interface CartLine {
   qty: number
 }
 
-export function buildWhatsAppMessage(lines: CartLine[]): string {
+export interface AppliedDiscountSummary {
+  code: string
+  percent: number
+}
+
+export function buildWhatsAppMessage(
+  lines: CartLine[],
+  discount?: AppliedDiscountSummary | null,
+): string {
   if (lines.length === 0) {
     return "Hola, quiero pedir."
   }
   const items = lines
     .map((l) => `• ${l.qty}× ${l.name} — $${(l.priceUsd * l.qty).toFixed(2)}`)
     .join("\n")
-  const total = lines.reduce((s, l) => s + l.priceUsd * l.qty, 0).toFixed(2)
-  return [
+  const subtotal = lines.reduce((s, l) => s + l.priceUsd * l.qty, 0)
+  // Round 77 · include the discount line + adjusted total when a
+  // code is active. WhatsApp message stays the source of truth for
+  // the kitchen · no separate checkout API.
+  const lines_msg = [
     "¡Hola Náufrago! Quiero pedir lo siguiente:",
     "",
     items,
     "",
-    `Total: $${total}`,
-    "",
-    "¿Me confirmas tiempo de entrega? Gracias.",
-  ].join("\n")
+  ]
+  if (discount && discount.percent > 0) {
+    const discountUsd =
+      Math.round(subtotal * (discount.percent / 100) * 100) / 100
+    const total = Math.max(0, subtotal - discountUsd).toFixed(2)
+    lines_msg.push(
+      `Subtotal: $${subtotal.toFixed(2)}`,
+      `Descuento (${discount.code} · ${discount.percent}%): −$${discountUsd.toFixed(2)}`,
+      `Total: $${total}`,
+    )
+  } else {
+    lines_msg.push(`Total: $${subtotal.toFixed(2)}`)
+  }
+  lines_msg.push("", "¿Me confirmas tiempo de entrega? Gracias.")
+  return lines_msg.join("\n")
 }
 
-export function buildWhatsAppLink(lines: CartLine[]): string {
-  const msg = buildWhatsAppMessage(lines)
+export function buildWhatsAppLink(
+  lines: CartLine[],
+  discount?: AppliedDiscountSummary | null,
+): string {
+  const msg = buildWhatsAppMessage(lines, discount)
   return `https://wa.me/${WHATSAPP_E164}?text=${encodeURIComponent(msg)}`
 }

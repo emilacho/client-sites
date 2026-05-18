@@ -21,6 +21,7 @@ import { CartDrawer } from "./CartDrawer"
 import { OverlayPanels, type OverlayKind } from "./OverlayPanels"
 import { PromoTicker } from "./PromoTicker"
 import { MenuModal } from "./MenuModal"
+import { TreasureRewardModal } from "./TreasureRewardModal"
 import { SceneErrorBoundary } from "./SceneErrorBoundary"
 import type { AnchorKind } from "./Scene"
 
@@ -51,12 +52,16 @@ function LandingInner() {
   useCart()
   const [overlay, setOverlay] = useState<OverlayKind>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  // Round 77 · cofre click now opens the treasure reward modal
+  // (discount reveal) instead of the menu modal. Menu modal stays
+  // available · the treasure modal CTAs route into it.
+  const [treasureOpen, setTreasureOpen] = useState(false)
 
   const openMenu = () => setMenuOpen(true)
 
   const handleAnchor = (kind: AnchorKind) => {
     if (kind === "cofre") {
-      openMenu()
+      setTreasureOpen(true)
       return
     }
     setOverlay(kind)
@@ -166,6 +171,11 @@ function LandingInner() {
       {/* Drawers + modals · z-40+ to sit above the 3D layer */}
       <CartDrawer />
       <MenuModal open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <TreasureRewardModal
+        open={treasureOpen}
+        onClose={() => setTreasureOpen(false)}
+        onOpenMenu={openMenu}
+      />
       <OverlayPanels active={overlay} onClose={() => setOverlay(null)} />
     </main>
   )
