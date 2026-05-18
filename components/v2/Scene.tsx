@@ -64,12 +64,15 @@ interface SceneProps {
  * in design review · acceptable visual placement is the bar.
  */
 const ANCHOR_POSITIONS: Record<AnchorKind, [number, number, number]> = {
-  // Round 75 · cofre re-aligned to the ACTUAL Chest_14 AABB center
-  // (probe-bbox.mjs · center=[-0.76, 0.56, 0.18] · size=[0.75,
-  // 0.47, 0.67]). Y bumped 0.16 → 0.56 · the old anchor sat 40cm
-  // BELOW the chest center which is why the clickable felt tiny
-  // and offset.
-  cofre:    [-0.76, 0.56,  0.18],
+  // Round 76 · cofre anchor Y reverted to 0.16 · I missed that R25
+  // drops the whole island assembly by 0.4u AFTER the GLB loads.
+  // probe-bbox.mjs reads the RAW GLB (Chest_14 center Y=0.56), but
+  // in the live scene the chest sits at world Y=0.16 (0.56 − 0.4).
+  // R75's bump to Y=0.56 put the box 40cm ABOVE the visible chest.
+  // X and Z don't need the correction (R25 only translates Y).
+  // The box geom in ANCHOR_PROXIES still matches the chest size
+  // 0.75 × 0.47 × 0.67 · only the Y origin was wrong.
+  cofre:    [-0.76, 0.16,  0.18],
   barco:    [-2.4,  0.30,  1.2 ],
   // Round 40 · cocos anchor removed · per-coconut hover cards in
   // CoconutHoverCards handle the Reseñas surface now.
