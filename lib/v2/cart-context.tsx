@@ -20,10 +20,11 @@ const STORAGE_KEY = "naufrago_cart_v1"
 const DISCOUNT_KEY = "naufrago_discount_v1"
 
 /* Round 77 · discount codes from the treasure-chest reveal.
- * Currently a single hard-coded code worth 5% off the cart subtotal.
- * Easy to expand into a server-validated table later. */
+ * Round 87 · code rebrand · NAUFRAGO5 retired in favor of
+ * SurfBollado (mixed-case display, uppercase lookup key).
+ * Single hard-coded code worth 5% off the cart subtotal. */
 const DISCOUNT_CODES: Record<string, { percent: number; label: string }> = {
-  NAUFRAGO5: { percent: 5, label: "Tesoro · 5% OFF" },
+  SURFBOLLADO: { percent: 5, label: "Tesoro de Náufrago · 5% OFF" },
 }
 
 export interface CartLine {
@@ -161,10 +162,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clear = useCallback(() => setLines([]), [])
 
   const applyCode = useCallback((code: string) => {
-    const key = code.trim().toUpperCase()
+    // Round 87 · preserve the user-typed casing for display
+    // (e.g. "SurfBollado" stays mixed-case in the chip) while
+    // looking up the dictionary entry case-insensitively.
+    const trimmed = code.trim()
+    const key = trimmed.toUpperCase()
     const entry = DISCOUNT_CODES[key]
     if (!entry) return false
-    setDiscount({ code: key, percent: entry.percent, label: entry.label })
+    setDiscount({ code: trimmed, percent: entry.percent, label: entry.label })
     return true
   }, [])
 

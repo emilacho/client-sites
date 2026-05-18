@@ -121,7 +121,8 @@ export function Scene({
   // the NAUFRAGO5 code so the WhatsApp checkout includes it.
   const cart = useCart()
   useEffect(() => {
-    if (treasureOpen) cart.applyCode("NAUFRAGO5")
+    // Round 87 · code rebrand · NAUFRAGO5 → SurfBollado
+    if (treasureOpen) cart.applyCode("SurfBollado")
   }, [treasureOpen, cart])
   // Suppress unused warnings · these props are wired into the
   // PergaminoPropModel below.
@@ -693,31 +694,51 @@ function PergaminoPropModel({
   const reducedMotion = usePrefersReducedMotion()
   const posTRef = useRef(0) // 0 = hidden in cofre, 1 = visible above
 
-  // Generate the handwritten-text canvas texture once on mount.
-  // The texture is reused across re-renders (CanvasTexture is
-  // expensive to create). useMemo keyed on nothing · stable id.
-  const textTexture = useMemo(() => createPromoTexture(), [])
-
-  // Cleanup the canvas texture on unmount to release GPU memory.
+  // Round 87 · canvas texture creation needs to wait for the
+  // Permanent Marker font to actually load (next/font is async
+  // on first paint) · otherwise the canvas API renders the
+  // system cursive fallback and the message reads typographic,
+  // not "letra manuscrita" as the user requested. Switch from
+  // useMemo to async useEffect gated on document.fonts.ready.
+  const [textTexture, setTextTexture] = useState<THREE.CanvasTexture | null>(
+    null,
+  )
   useEffect(() => {
-    return () => {
-      textTexture?.dispose()
+    let cancelled = false
+    let createdTex: THREE.CanvasTexture | null = null
+    const setup = async () => {
+      try {
+        if (typeof document !== "undefined" && document.fonts) {
+          // Force-load the exact font face we'll use in the canvas
+          await document.fonts.load('bold 60px "Permanent Marker"')
+          await document.fonts.ready
+        }
+      } catch {
+        /* font API unsupported · proceed with fallback */
+      }
+      if (cancelled) return
+      const tex = createPromoTexture()
+      createdTex = tex
+      setTextTexture(tex)
     }
-  }, [textTexture])
+    setup()
+    return () => {
+      cancelled = true
+      createdTex?.dispose()
+    }
+  }, [])
 
   useFrame((_, delta) => {
     if (!groupRef.current) return
     const target = open ? 1 : 0
-    const rate = open ? 1.6 : 2.4
+    // Round 87 · MORE VIOLENT emerge · open rate 1.6 → 3.5/s
+    // (full open ~0.4s · was ~0.9s). Close rate also bumped
+    // for symmetric snap.
+    const rate = open ? 3.5 : 3.0
     const diff = target - posTRef.current
     posTRef.current += Math.sign(diff) * Math.min(Math.abs(diff), rate * delta)
     const t = posTRef.current
 
-    // Round 86 · visibility gate · when fully hidden (t≈0), set
-    // group.visible=false so the GLB mesh is excluded from the
-    // raycaster · otherwise the parchment intercepts cofre clicks
-    // (both occupy world position [-0.76, 0.16, 0.18] when closed)
-    // and the InteractiveAnchor cofre.onClick never fires.
     groupRef.current.visible = t > 0.005
 
     // Interpolate position · cofre center → above cofre
@@ -725,14 +746,13 @@ function PergaminoPropModel({
     const y = 0.16 + t * (1.4 - 0.16)
     const z = 0.18 + t * (0.5 - 0.18)
     groupRef.current.position.set(x, y, z)
-    // Scale from 0 with subtle overshoot
-    const easedScale = t < 1 ? t * (1.1 - 0.1 * t) : 1
-    groupRef.current.scale.setScalar(easedScale * 0.5)
-    // Round 86 · rotation X SIGN flipped · was -1.05 (showing the
-    // back face to cam · user said "le está dando la espalda") ·
-    // now +1.27 so the GLB's native +Y normal points toward the
-    // front cam at [0, 4, 9]. atan2(0.956, 0.293) ≈ 1.27 rad
-    // (~72.7°) computed from the cam-to-parchment vector in YZ.
+    // Round 87 · stronger overshoot bounce · peak 1.30 (was 1.10)
+    // followed by settle to 1.0. Plus final scale × 0.8 (60%
+    // larger than R85's 0.5 per user "aumenta el tamaño en un
+    // 60 porciento").
+    const easedScale = t < 1 ? t * (1.3 - 0.3 * t) : 1
+    groupRef.current.scale.setScalar(easedScale * 0.8)
+    // Rotation X = 1.27 (R86 · faces front cam). Sway gentle.
     const tipX = 1.27
     const swayY = reducedMotion ? 0 : Math.sin(performance.now() * 0.0004) * 0.06
     groupRef.current.rotation.set(tipX, swayY, 0)
@@ -781,7 +801,6 @@ function createPromoTexture(): THREE.CanvasTexture | null {
   const ctx = canvas.getContext("2d")
   if (!ctx) return null
 
-  // Transparent background
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
   const INK = "#3a2818"
@@ -789,7 +808,6 @@ function createPromoTexture(): THREE.CanvasTexture | null {
   ctx.textAlign = "center"
   ctx.textBaseline = "middle"
 
-  // Helper for slight per-line rotation (handwritten feel)
   function lineAt(
     text: string,
     x: number,
@@ -805,90 +823,109 @@ function createPromoTexture(): THREE.CanvasTexture | null {
     ctx!.restore()
   }
 
+  // Round 87 · message rebrand · "Has encontrado el Tesoro de
+  // Náufrago · Código Promo SurfBollado · 5% Off". Permanent
+  // Marker stays as the handwritten face · Caveat fallback for
+  // platforms that don't ship it.
   const handwritten =
     '"Permanent Marker", "Caveat", "Marker Felt", cursive'
 
-  lineAt("· Mensaje del náufrago ·", 512, 110, `28px ${handwritten}`, -0.018)
-
-  lineAt("Quien lea esta nota,", 130, 200, `38px ${handwritten}`, -0.02)
+  // Line 1 · introducing the find
   lineAt(
-    "te dejo mi último tesoro",
-    130,
-    256,
-    `38px ${handwritten}`,
-    0.012,
-  )
-
-  lineAt(
-    "5% off",
+    "¡ Has encontrado",
     512,
-    380,
-    `bold 130px ${handwritten}`,
+    140,
+    `bold 56px ${handwritten}`,
     -0.025,
   )
+  // Line 2 · headline (the treasure)
   lineAt(
-    "en tu primer pedido",
+    "el Tesoro de Náufrago !",
     512,
-    450,
-    `30px ${handwritten}`,
-    -0.01,
+    216,
+    `bold 60px ${handwritten}`,
+    0.015,
   )
 
-  // Hand-drawn box around the code · double-stroke "sketchy" feel
-  ctx.strokeStyle = INK
-  ctx.lineWidth = 5
+  // Spacer · ink swash divider
+  ctx.strokeStyle = "rgba(58,40,24,0.45)"
+  ctx.lineWidth = 3
   ctx.beginPath()
-  // First stroke (slightly skewed)
-  ctx.moveTo(260, 530)
-  ctx.lineTo(774, 524)
-  ctx.lineTo(778, 610)
-  ctx.lineTo(258, 614)
-  ctx.closePath()
-  ctx.stroke()
-  // Second pass (faded · scribbled twice)
-  ctx.strokeStyle = "rgba(58,40,24,0.4)"
-  ctx.lineWidth = 2.5
-  ctx.beginPath()
-  ctx.moveTo(264, 534)
-  ctx.lineTo(770, 528)
-  ctx.lineTo(774, 606)
-  ctx.lineTo(262, 610)
-  ctx.closePath()
-  ctx.stroke()
-
-  ctx.fillStyle = INK
-  lineAt("NAUFRAGO5", 518, 572, `bold 78px ${handwritten}`, -0.012)
-
-  lineAt(
-    "— El Náufrago",
-    760,
-    690,
-    `italic 32px ${handwritten}`,
-    -0.05,
-  )
-
-  // Squiggly underline under the signature (sea-wave feel)
-  ctx.strokeStyle = "rgba(58,40,24,0.65)"
-  ctx.lineWidth = 2.5
-  ctx.beginPath()
-  ctx.moveTo(640, 720)
-  for (let i = 0; i <= 6; i++) {
-    const x = 640 + i * 25
-    const y = 720 + ((i % 2 === 0 ? -1 : 1) * 4)
+  ctx.moveTo(260, 270)
+  for (let i = 0; i <= 10; i++) {
+    const x = 260 + i * 50
+    const y = 270 + (i % 2 === 0 ? -3 : 3)
     ctx.lineTo(x, y)
   }
   ctx.stroke()
 
-  // Add a few small ink-blot stains for authenticity
+  // Line 3 · "Código Promo" label
+  lineAt("Código Promo", 512, 330, `italic 38px ${handwritten}`, -0.02)
+
+  // Hand-drawn box around the code · double-stroke "sketchy"
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 5
+  ctx.beginPath()
+  ctx.moveTo(192, 380)
+  ctx.lineTo(836, 374)
+  ctx.lineTo(840, 480)
+  ctx.lineTo(190, 484)
+  ctx.closePath()
+  ctx.stroke()
+  ctx.strokeStyle = "rgba(58,40,24,0.4)"
+  ctx.lineWidth = 2.5
+  ctx.beginPath()
+  ctx.moveTo(196, 384)
+  ctx.lineTo(832, 378)
+  ctx.lineTo(836, 476)
+  ctx.lineTo(194, 480)
+  ctx.closePath()
+  ctx.stroke()
+
+  // Line 4 · the code · BIG · mixed case preserved
+  ctx.fillStyle = INK
+  lineAt(
+    "“SurfBollado”",
+    518,
+    432,
+    `bold 96px ${handwritten}`,
+    -0.012,
+  )
+
+  // Line 5 · the discount headline · BIG
+  lineAt("5% Off", 512, 580, `bold 132px ${handwritten}`, -0.028)
+
+  // Signature
+  lineAt(
+    "— El Náufrago",
+    760,
+    700,
+    `italic 36px ${handwritten}`,
+    -0.05,
+  )
+
+  // Sea-wave squiggle under the signature
+  ctx.strokeStyle = "rgba(58,40,24,0.65)"
+  ctx.lineWidth = 2.5
+  ctx.beginPath()
+  ctx.moveTo(630, 730)
+  for (let i = 0; i <= 6; i++) {
+    const x = 630 + i * 25
+    const y = 730 + ((i % 2 === 0 ? -1 : 1) * 4)
+    ctx.lineTo(x, y)
+  }
+  ctx.stroke()
+
+  // Small ink-blot stains for authenticity
   ctx.fillStyle = "rgba(58,40,24,0.18)"
   ctx.beginPath()
-  ctx.arc(180, 480, 9, 0, Math.PI * 2)
+  ctx.arc(180, 530, 9, 0, Math.PI * 2)
   ctx.fill()
   ctx.beginPath()
-  ctx.arc(860, 240, 7, 0, Math.PI * 2)
+  ctx.arc(860, 290, 7, 0, Math.PI * 2)
   ctx.fill()
   ctx.beginPath()
-  ctx.arc(880, 690, 11, 0, Math.PI * 2)
+  ctx.arc(880, 695, 11, 0, Math.PI * 2)
   ctx.fill()
 
   const texture = new THREE.CanvasTexture(canvas)
