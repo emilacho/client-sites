@@ -1,25 +1,26 @@
 "use client"
 /**
- * TreasureRewardModal · Round 77 · refactored R79.
+ * TreasureRewardModal · Round 82 · castaway parchment.
  *
- * Sequenced treasure reveal · the chest opens FIRST, then an
- * explosion burst (confetti + rays + flash) erupts, then a
- * pirate-scroll pergamino rises out of the chest carrying the
- * NAUFRAGO5 5% off message.
+ * Opens on cofre click WITHOUT animating the chest itself. A
+ * hyperrealistic aged-paper pergamino unfolds on screen · the
+ * kind a castaway scribbled in pencil and rolled into a bottle.
  *
- * Sequence (cumulative ms after open):
- *   0    backdrop fades in (transparent post-R78 · isla visible)
- *   150  ChestSVG bounces in
- *   750  Lid swings open · the chest is now "ready"
- *   1150 EXPLOSION · flash + 16 rays + 12 sparkles + 14 confetti
- *        bits burst outward
- *   1550 Pergamino scroll rises from inside the chest, unrolls
- *        upward, headline + code visible
- *   2200 CTAs fade in below the scroll
+ * Visual goals (per user dispatch):
+ *  - papel viejo arrugado color café · aged kraft paper, sepia
+ *    edges, wrinkle folds, coffee stains, torn irregular outline
+ *  - letra manuscrita "como lo haría un náufrago con su puño y
+ *    letra" · uses Permanent Marker (already loaded as
+ *    --font-marker via app/layout.tsx · powers the character
+ *    speech bubble too · same scrawled handwriting personality)
+ *  - dark sepia ink, slight rotations, hand-drawn code box
  *
- * Náufrago palette · panel violet #3D2466 / celeste #4DD4D8 ·
- * gold #FACC15 on the burst + chest details · pergamino cream
- * #F5E6CB with wine-red #7F1D1D pirate type.
+ * Sequence (≈800ms): fade + scale in + small wobble. No chest
+ * animation, no explosion, no royal-purple card. The paper IS
+ * the visual.
+ *
+ * Discount auto-applies (NAUFRAGO5 · 5%) the moment the modal
+ * opens.
  */
 import { useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
@@ -28,15 +29,6 @@ import { useCart } from "@/lib/v2/cart-context"
 
 const DISCOUNT_CODE = "NAUFRAGO5"
 const DISCOUNT_PERCENT = 5
-
-// Cumulative timeline offsets (seconds) · used by both the CSS
-// keyframe delays and the framer transition.delay values so the
-// two animation systems stay in lockstep.
-const T_CHEST = 0.15
-const T_LID = 0.75
-const T_EXPLOSION = 1.15
-const T_SCROLL = 1.55
-const T_CTAS = 2.2
 
 export interface TreasureRewardModalProps {
   open: boolean
@@ -53,7 +45,6 @@ export function TreasureRewardModal({
   const [copied, setCopied] = useState(false)
   const copyTimerRef = useRef<number | null>(null)
 
-  // ESC dismiss · only while open
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
@@ -67,8 +58,6 @@ export function TreasureRewardModal({
     if (!open) setCopied(false)
   }, [open])
 
-  // Auto-apply the discount when the modal opens · the customer
-  // gets the treasure even if they never copy / never read.
   useEffect(() => {
     if (open) cart.applyCode(DISCOUNT_CODE)
   }, [open, cart])
@@ -78,16 +67,9 @@ export function TreasureRewardModal({
       await navigator.clipboard.writeText(DISCOUNT_CODE)
       setCopied(true)
       if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current)
-      copyTimerRef.current = window.setTimeout(() => setCopied(false), 2000)
+      copyTimerRef.current = window.setTimeout(() => setCopied(false), 2200)
     } catch {
-      const el = document.getElementById("treasure-code-text")
-      if (el) {
-        const range = document.createRange()
-        range.selectNodeContents(el)
-        const sel = window.getSelection()
-        sel?.removeAllRanges()
-        sel?.addRange(range)
-      }
+      /* clipboard API failed · ignore, the visible code still reads */
     }
   }
 
@@ -95,87 +77,9 @@ export function TreasureRewardModal({
     <AnimatePresence>
       {open ? (
         <>
-          <style>{`
-            /* ─── Chest entrance + lid ───────────────────────── */
-            @keyframes nrmChestBounce {
-              0%   { transform: scale(0.3) translateY(40px); opacity: 0; }
-              60%  { transform: scale(1.08) translateY(-6px); opacity: 1; }
-              80%  { transform: scale(0.96) translateY(2px); }
-              100% { transform: scale(1.00) translateY(0); }
-            }
-            @keyframes nrmLidOpen {
-              0%   { transform: rotate(0deg); }
-              100% { transform: rotate(-95deg); }
-            }
-            .nrm-chest {
-              animation: nrmChestBounce 700ms cubic-bezier(.34,1.56,.64,1) ${T_CHEST}s 1 both;
-            }
-            .nrm-lid {
-              animation: nrmLidOpen 480ms cubic-bezier(.34,1.56,.64,1) ${T_LID}s 1 both;
-              transform-origin: 16% 100%;
-              transform-box: fill-box;
-            }
-
-            /* ─── EXPLOSION at T_EXPLOSION ───────────────────── */
-            @keyframes nrmFlash {
-              0%   { opacity: 0;   transform: scale(0.2); }
-              40%  { opacity: 0.9; transform: scale(1.0); }
-              100% { opacity: 0;   transform: scale(1.6); }
-            }
-            @keyframes nrmRayBurst {
-              0%   { transform: rotate(var(--ray-angle)) scaleY(0); opacity: 0; }
-              25%  { opacity: 1; }
-              100% { transform: rotate(var(--ray-angle)) scaleY(1); opacity: 0; }
-            }
-            @keyframes nrmConfetti {
-              0%   { transform: translate(0, 0) rotate(0deg);                        opacity: 0; }
-              20%  { opacity: 1; }
-              100% { transform: translate(var(--cx), var(--cy)) rotate(var(--cr)); opacity: 0; }
-            }
-            @keyframes nrmSparkleBurst {
-              0%   { transform: translate(0, 0) scale(0);   opacity: 0; }
-              30%  { transform: translate(var(--sx), var(--sy)) scale(1.1); opacity: 1; }
-              100% { transform: translate(var(--sx), var(--sy)) scale(0.2); opacity: 0; }
-            }
-            .nrm-flash    { animation: nrmFlash 700ms ease-out ${T_EXPLOSION}s 1 forwards; }
-            .nrm-ray      { animation: nrmRayBurst 1100ms ease-out ${T_EXPLOSION}s 1 forwards; }
-            .nrm-confetti { animation: nrmConfetti 1400ms cubic-bezier(.22,.61,.36,1) ${T_EXPLOSION}s 1 forwards; }
-            .nrm-sparkle  { animation: nrmSparkleBurst 1500ms ease-out var(--delay, ${T_EXPLOSION}s) 1 forwards; }
-
-            /* ─── Pergamino rises + unrolls ──────────────────── */
-            @keyframes nrmScrollRise {
-              0%   { transform: translateY(60px) scaleY(0.05); opacity: 0; }
-              20%  { opacity: 1; }
-              55%  { transform: translateY(-40px) scaleY(1.06); }
-              80%  { transform: translateY(-58px) scaleY(0.98); }
-              100% { transform: translateY(-62px) scaleY(1.00); opacity: 1; }
-            }
-            .nrm-scroll {
-              animation: nrmScrollRise 750ms cubic-bezier(.34,1.4,.64,1) ${T_SCROLL}s 1 both;
-              transform-origin: 50% 100%;
-            }
-
-            /* ─── Pergamino glow pulse (post-rise) ───────────── */
-            @keyframes nrmScrollGlow {
-              0%, 100% { filter: drop-shadow(0 6px 14px rgba(127,29,29,0.35)); }
-              50%      { filter: drop-shadow(0 6px 18px rgba(77,212,216,0.55)); }
-            }
-            .nrm-scroll-glow {
-              animation: nrmScrollGlow 2800ms ease-in-out ${T_SCROLL + 0.8}s infinite;
-            }
-
-            @media (prefers-reduced-motion: reduce) {
-              .nrm-chest, .nrm-lid,
-              .nrm-flash, .nrm-ray, .nrm-confetti, .nrm-sparkle,
-              .nrm-scroll, .nrm-scroll-glow {
-                animation: none !important;
-              }
-            }
-          `}</style>
-
-          {/* BACKDROP · invisible · click-to-close · isla visible (R78) */}
+          {/* Transparent backdrop · isla visible (R78 spec) */}
           <motion.div
-            key="treasure-backdrop"
+            key="parchment-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -186,183 +90,62 @@ export function TreasureRewardModal({
             aria-hidden
           />
 
-          {/* PANEL · centered card · the only opaque surface */}
+          {/* Parchment + CTAs · no surrounding card */}
           <motion.div
-            key="treasure-panel"
+            key="parchment-panel"
             role="dialog"
             aria-modal="true"
-            aria-label="¡Encontraste un tesoro!"
-            initial={{ opacity: 0, scale: 0.9, y: 18 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.92, y: 10 }}
-            transition={{ duration: 0.32, ease: [0.2, 0.8, 0.2, 1] }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-5"
+            aria-label="Mensaje del náufrago"
+            initial={{ opacity: 0, scale: 0.5, rotate: -4, y: 30 }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              rotate: -1.5,
+              y: 0,
+            }}
+            exit={{ opacity: 0, scale: 0.7, rotate: -3, y: 20 }}
+            transition={{
+              duration: 0.7,
+              ease: [0.34, 1.4, 0.64, 1],
+            }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div
-              className="relative w-full max-w-md overflow-hidden rounded-2xl border"
-              style={{
-                background:
-                  "linear-gradient(180deg, #3D2466 0%, #1a0a3a 100%)",
-                borderColor: "rgba(77,212,216,0.5)",
-                boxShadow:
-                  "0 28px 80px -16px rgba(76,29,149,0.65), 0 12px 32px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08)",
-              }}
-            >
+            <div className="relative">
+              {/* Close (top-right, on top of paper) */}
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="Cerrar"
-                className="absolute right-3 top-3 z-30 flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white/10"
-                style={{ color: "#4DD4D8" }}
+                className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-[#3a2818]/85 text-[#e8d2a8] shadow-lg transition-colors hover:bg-[#3a2818]"
               >
                 <X className="h-5 w-5" />
               </button>
 
-              {/* ARENA · chest + explosion + scroll all share this
-                  space so the scroll visually rises FROM the chest
-                  opening. Height tall enough for the unrolled
-                  pergamino plus the chest below it. */}
-              <div className="relative h-[360px] overflow-hidden">
-                {/* CHEST · sits anchored bottom-center */}
-                <div className="absolute inset-x-0 bottom-3 flex items-end justify-center">
-                  <ChestSVG />
-                </div>
+              <button
+                type="button"
+                onClick={handleCopy}
+                aria-label={`Copiar código ${DISCOUNT_CODE}`}
+                className="block active:translate-y-[1px]"
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                }}
+              >
+                <CastawayParchment
+                  code={DISCOUNT_CODE}
+                  percent={DISCOUNT_PERCENT}
+                  copied={copied}
+                />
+              </button>
 
-                {/* FLASH · burst of white at T_EXPLOSION · sits in
-                    front of the chest, behind the scroll */}
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                  <div
-                    className="nrm-flash absolute"
-                    style={{
-                      width: "300px",
-                      height: "300px",
-                      bottom: "60px",
-                      borderRadius: "9999px",
-                      background:
-                        "radial-gradient(circle, rgba(255,255,255,0.85) 0%, rgba(252,211,77,0.6) 35%, rgba(77,212,216,0.0) 70%)",
-                      mixBlendMode: "screen",
-                    }}
-                    aria-hidden
-                  />
-                </div>
-
-                {/* RAYS · 16 spokes from the chest opening */}
-                <div className="pointer-events-none absolute inset-0">
-                  <div className="absolute left-1/2 bottom-[110px] h-1 w-1">
-                    {Array.from({ length: 16 }).map((_, i) => {
-                      const angle = (360 / 16) * i
-                      return (
-                        <span
-                          key={i}
-                          className="nrm-ray absolute left-1/2 top-1/2"
-                          style={
-                            {
-                              "--ray-angle": `${angle}deg`,
-                              width: "5px",
-                              height: "180px",
-                              marginLeft: "-2.5px",
-                              marginTop: "-90px",
-                              transformOrigin: "50% 100%",
-                              background:
-                                "linear-gradient(180deg, rgba(77,212,216,0) 0%, rgba(77,212,216,0.95) 50%, rgba(252,211,77,0.95) 100%)",
-                              borderRadius: "3px",
-                            } as React.CSSProperties
-                          }
-                          aria-hidden
-                        />
-                      )
-                    })}
-                  </div>
-                </div>
-
-                {/* CONFETTI · 14 rotating chips in brand + treasure */}
-                <div className="pointer-events-none absolute inset-0">
-                  {Array.from({ length: 14 }).map((_, i) => {
-                    const angle = (i / 14) * Math.PI * 2
-                    const dist = 90 + (i % 3) * 25
-                    const cx = Math.cos(angle) * dist
-                    const cy = -(20 + Math.sin(angle) * 60)
-                    const cr = (i % 2 ? 1 : -1) * (180 + (i % 3) * 90)
-                    const palette = ["#4DD4D8", "#FACC15", "#F5E6CB", "#7c3aed"]
-                    const color = palette[i % palette.length]
-                    return (
-                      <span
-                        key={i}
-                        className="nrm-confetti absolute left-1/2"
-                        style={
-                          {
-                            "--cx": `${cx}px`,
-                            "--cy": `${cy}px`,
-                            "--cr": `${cr}deg`,
-                            bottom: "110px",
-                            width: i % 2 ? "7px" : "9px",
-                            height: i % 2 ? "11px" : "5px",
-                            marginLeft: i % 2 ? "-3.5px" : "-4.5px",
-                            background: color,
-                            borderRadius: "1.5px",
-                            boxShadow: `0 0 6px ${color}80`,
-                          } as React.CSSProperties
-                        }
-                        aria-hidden
-                      />
-                    )
-                  })}
-                </div>
-
-                {/* SPARKLES · 12 small floating dots, staggered */}
-                <div className="pointer-events-none absolute inset-0">
-                  {Array.from({ length: 12 }).map((_, i) => {
-                    const sx = Math.cos((i / 12) * Math.PI * 2) * 110
-                    const sy = -(60 + Math.sin((i / 12) * Math.PI * 2) * 50)
-                    const delay = `${T_EXPLOSION + (i % 5) * 0.07}s`
-                    const isGold = i % 3 === 0
-                    return (
-                      <span
-                        key={i}
-                        className="nrm-sparkle absolute left-1/2"
-                        style={
-                          {
-                            "--sx": `${sx}px`,
-                            "--sy": `${sy}px`,
-                            "--delay": delay,
-                            bottom: "120px",
-                            width: isGold ? "6px" : "4px",
-                            height: isGold ? "6px" : "4px",
-                            marginLeft: isGold ? "-3px" : "-2px",
-                            background: isGold ? "#FACC15" : "#4DD4D8",
-                            borderRadius: "9999px",
-                            boxShadow: isGold
-                              ? "0 0 10px rgba(250,204,21,0.9)"
-                              : "0 0 10px rgba(77,212,216,0.9)",
-                          } as React.CSSProperties
-                        }
-                        aria-hidden
-                      />
-                    )
-                  })}
-                </div>
-
-                {/* PERGAMINO · rises from inside the chest opening.
-                    Anchored at chest hinge Y (bottom of arena) and
-                    animated translateY upward + scaleY 0 → 1. */}
-                <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center">
-                  <div className="nrm-scroll nrm-scroll-glow mt-3">
-                    <PergaminoScroll
-                      code={DISCOUNT_CODE}
-                      percent={DISCOUNT_PERCENT}
-                      copied={copied}
-                      onCopy={handleCopy}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* CTAs · below the arena */}
+              {/* CTAs · sit just below the paper, no purple panel */}
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: T_CTAS }}
-                className="flex flex-col gap-2 px-6 pb-6 pt-2 sm:flex-row sm:gap-3"
+                transition={{ duration: 0.35, delay: 0.5 }}
+                className="mt-5 flex justify-center gap-3"
               >
                 <button
                   type="button"
@@ -370,34 +153,18 @@ export function TreasureRewardModal({
                     onClose()
                     onOpenMenu()
                   }}
-                  className="flex-1 rounded-full bg-gradient-to-r from-[#4DD4D8] to-[#7c3aed] px-5 py-3 font-semibold text-white shadow-lg shadow-violet-500/40 transition-transform hover:translate-y-[-1px]"
+                  className="rounded-full bg-gradient-to-r from-[#4DD4D8] to-[#7c3aed] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-900/40"
                 >
                   Ver el menú
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 rounded-full border px-5 py-3 font-medium transition-colors"
-                  style={{
-                    borderColor: "rgba(77,212,216,0.5)",
-                    color: "#4DD4D8",
-                    background: "rgba(77,212,216,0.06)",
-                  }}
+                  className="rounded-full border border-[#3a2818]/40 bg-[#f5e6cb]/80 px-5 py-2.5 text-sm font-medium text-[#3a2818] backdrop-blur-sm"
                 >
-                  Seguir explorando
+                  Cerrar
                 </button>
               </motion.div>
-
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.4, delay: T_CTAS + 0.1 }}
-                className="px-6 pb-5 text-center text-[10px]"
-                style={{ color: "rgba(255,255,255,0.45)" }}
-              >
-                Descuento aplicado automáticamente · válido sobre el
-                subtotal de tu pedido por WhatsApp.
-              </motion.p>
             </div>
           </motion.div>
         </>
@@ -406,233 +173,346 @@ export function TreasureRewardModal({
   )
 }
 
-/* ─── ChestSVG ────────────────────────────────────────────────── */
-function ChestSVG() {
-  return (
-    <svg
-      width="180"
-      height="160"
-      viewBox="0 0 180 160"
-      className="nrm-chest relative z-10 drop-shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
-      aria-hidden
-    >
-      <defs>
-        <linearGradient id="chest-wood-r79" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#5B3A24" />
-          <stop offset="100%" stopColor="#2D1810" />
-        </linearGradient>
-        <linearGradient id="chest-lid-r79" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#6B452C" />
-          <stop offset="100%" stopColor="#3A2818" />
-        </linearGradient>
-        <radialGradient id="chest-glow-r79" cx="0.5" cy="0.5" r="0.5">
-          <stop offset="0%" stopColor="#FACC15" stopOpacity="1" />
-          <stop offset="60%" stopColor="#4DD4D8" stopOpacity="0.7" />
-          <stop offset="100%" stopColor="#4DD4D8" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-
-      <ellipse cx="90" cy="92" rx="60" ry="22" fill="url(#chest-glow-r79)" />
-
-      {/* BASE */}
-      <g>
-        <rect
-          x="20" y="78" width="140" height="62" rx="6"
-          fill="url(#chest-wood-r79)"
-          stroke="#1a0a05" strokeWidth="2"
-        />
-        <rect x="20" y="106" width="140" height="6" fill="#4DD4D8" opacity="0.9" />
-        <rect x="42" y="78"  width="6"   height="62" fill="#4DD4D8" opacity="0.9" />
-        <rect x="132" y="78" width="6"   height="62" fill="#4DD4D8" opacity="0.9" />
-        <rect x="80" y="100" width="20"  height="22" rx="2"
-              fill="#FACC15" stroke="#7F1D1D" strokeWidth="1.5" />
-        <circle cx="90" cy="113" r="2.5" fill="#7F1D1D" />
-      </g>
-
-      {/* LID · pivots on the back-left hinge */}
-      <g className="nrm-lid">
-        <path
-          d="M 20 78 L 20 50 Q 90 22 160 50 L 160 78 Z"
-          fill="url(#chest-lid-r79)"
-          stroke="#1a0a05" strokeWidth="2"
-        />
-        <path
-          d="M 22 50 Q 90 24 158 50"
-          stroke="#4DD4D8" strokeWidth="3"
-          fill="none" opacity="0.85"
-        />
-      </g>
-    </svg>
-  )
-}
-
-/* ─── PergaminoScroll · pirate parchment with the code ──────────
+/**
+ * CastawayParchment · the hand-drawn aged-paper SVG.
  *
- * A vertical parchment with rolled top + bottom edges, aged cream
- * tone, wine-red border line, and the discount headline + code.
- * Whole component clickable to trigger the copy handler.
+ * Layering (back to front):
+ *   1. Outer torn shadow (darker offset path)
+ *   2. Burnt-edge gradient overlay
+ *   3. Paper body · slightly irregular path with kraft-tan fill
+ *   4. Wrinkle lines (subtle dark curves)
+ *   5. Coffee stains (radial brown blobs)
+ *   6. Handwritten text (Permanent Marker) in dark sepia ink
+ *   7. Hand-drawn code box + emphasized code
+ *   8. Castaway signature bottom-right with slight tilt
+ *
+ * Path coordinates are hand-tuned to feel irregular without
+ * looking glitchy · viewBox 0 0 440 540 keeps the modal close
+ * to letter-paper proportions at a moderate size.
  */
-function PergaminoScroll({
+function CastawayParchment({
   code,
   percent,
   copied,
-  onCopy,
 }: {
   code: string
   percent: number
   copied: boolean
-  onCopy: () => void
 }) {
   return (
-    <button
-      type="button"
-      onClick={onCopy}
-      className="pointer-events-auto relative block w-[300px] active:translate-y-[1px]"
-      style={{ background: "transparent", border: "none", padding: 0 }}
-      aria-label={`Copiar código ${code}`}
+    <svg
+      width="440"
+      height="540"
+      viewBox="0 0 440 540"
+      className="block drop-shadow-[0_24px_50px_rgba(0,0,0,0.55)]"
+      aria-hidden
     >
-      <svg
-        width="300"
-        height="220"
-        viewBox="0 0 300 220"
-        className="block"
-        aria-hidden
+      <defs>
+        {/* Paper base · kraft tan, lighter center darker edges */}
+        <radialGradient id="parchment-body" cx="0.5" cy="0.5" r="0.7">
+          <stop offset="0%" stopColor="#EAD4A6" />
+          <stop offset="55%" stopColor="#D7B583" />
+          <stop offset="100%" stopColor="#8B6A3F" />
+        </radialGradient>
+        {/* Burnt overlay · multiplies darker brown at the very edge */}
+        <radialGradient id="parchment-burn" cx="0.5" cy="0.5" r="0.7">
+          <stop offset="0%" stopColor="rgba(0,0,0,0)" />
+          <stop offset="78%" stopColor="rgba(58,40,24,0.0)" />
+          <stop offset="100%" stopColor="rgba(58,40,24,0.55)" />
+        </radialGradient>
+        {/* Subtle paper grain · semi-transparent noise via SVG turbulence */}
+        <filter id="parchment-grain">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.85"
+            numOctaves="2"
+            seed="7"
+          />
+          <feColorMatrix
+            values="0 0 0 0 0.22
+                    0 0 0 0 0.14
+                    0 0 0 0 0.08
+                    0 0 0 0.10 0"
+          />
+          <feComposite in2="SourceGraphic" operator="in" />
+        </filter>
+        {/* Coffee stain gradient · circular sepia smear */}
+        <radialGradient id="coffee-stain" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0%" stopColor="rgba(74,42,26,0.0)" />
+          <stop offset="60%" stopColor="rgba(74,42,26,0.28)" />
+          <stop offset="85%" stopColor="rgba(74,42,26,0.45)" />
+          <stop offset="100%" stopColor="rgba(74,42,26,0.0)" />
+        </radialGradient>
+      </defs>
+
+      {/* DROP-SHADOW PAPER · slightly offset darker shape behind */}
+      <path
+        d="M 32 56
+           Q 50 50 90 48
+           L 220 42
+           Q 280 40 340 50
+           Q 390 60 408 80
+           L 412 200
+           Q 416 320 408 440
+           Q 400 480 360 492
+           L 220 502
+           Q 110 506 60 496
+           Q 30 488 24 460
+           L 22 320
+           Q 20 200 26 110
+           Q 28 75 32 56 Z"
+        fill="#3a2818"
+        opacity="0.25"
+        transform="translate(4, 8)"
+      />
+
+      {/* MAIN PAPER · irregular torn outline */}
+      <path
+        d="M 32 56
+           Q 50 50 90 48
+           L 220 42
+           Q 280 40 340 50
+           Q 390 60 408 80
+           L 412 200
+           Q 416 320 408 440
+           Q 400 480 360 492
+           L 220 502
+           Q 110 506 60 496
+           Q 30 488 24 460
+           L 22 320
+           Q 20 200 26 110
+           Q 28 75 32 56 Z"
+        fill="url(#parchment-body)"
+        stroke="#6b4824"
+        strokeWidth="1"
+        strokeOpacity="0.4"
+      />
+
+      {/* BURN OVERLAY · darkens edges */}
+      <path
+        d="M 32 56
+           Q 50 50 90 48
+           L 220 42
+           Q 280 40 340 50
+           Q 390 60 408 80
+           L 412 200
+           Q 416 320 408 440
+           Q 400 480 360 492
+           L 220 502
+           Q 110 506 60 496
+           Q 30 488 24 460
+           L 22 320
+           Q 20 200 26 110
+           Q 28 75 32 56 Z"
+        fill="url(#parchment-burn)"
+      />
+
+      {/* Tiny torn nicks along the edges · little V cuts */}
+      <g fill="#3a2818" opacity="0.25">
+        <path d="M 150 42 l 6 -6 l 4 6 z" />
+        <path d="M 280 44 l 5 -5 l 4 6 z" />
+        <path d="M 412 220 l 6 -3 l -2 7 z" />
+        <path d="M 415 380 l 6 -4 l -1 8 z" />
+        <path d="M 320 501 l 4 7 l 5 -6 z" />
+        <path d="M 120 502 l 4 7 l 5 -6 z" />
+        <path d="M 22 360 l -7 -3 l 2 8 z" />
+        <path d="M 22 180 l -7 -3 l 2 8 z" />
+      </g>
+
+      {/* WRINKLE LINES · subtle paper folds */}
+      <g
+        stroke="#5b3a24"
+        strokeOpacity="0.18"
+        strokeWidth="1.2"
+        fill="none"
       >
-        <defs>
-          <linearGradient id="pergamino-body" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"  stopColor="#F5E6CB" />
-            <stop offset="50%" stopColor="#EFD9B0" />
-            <stop offset="100%" stopColor="#E2C290" />
-          </linearGradient>
-          <linearGradient id="pergamino-roll" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor="#8B6034" />
-            <stop offset="50%"  stopColor="#5B3A24" />
-            <stop offset="100%" stopColor="#3D2410" />
-          </linearGradient>
-          <radialGradient id="pergamino-vignette" cx="0.5" cy="0.5" r="0.7">
-            <stop offset="0%"   stopColor="rgba(0,0,0,0)" />
-            <stop offset="70%"  stopColor="rgba(74,42,26,0.05)" />
-            <stop offset="100%" stopColor="rgba(74,42,26,0.30)" />
-          </radialGradient>
-        </defs>
+        {/* horizontal-ish folds */}
+        <path d="M 30 140 Q 220 134 410 150" />
+        <path d="M 28 280 Q 220 274 410 290" />
+        <path d="M 30 420 Q 220 415 408 430" />
+        {/* diagonal crease */}
+        <path d="M 60 60 Q 200 180 390 380" />
+        {/* small left-side wrinkle */}
+        <path d="M 30 200 Q 90 220 30 260" />
+      </g>
 
-        {/* PARCHMENT BODY · rectangle with subtle aged edges */}
-        <rect
-          x="22" y="34"
-          width="256" height="152"
-          rx="4"
-          fill="url(#pergamino-body)"
-          stroke="#7F1D1D"
-          strokeOpacity="0.35"
-          strokeWidth="1.2"
-        />
-        {/* Vignette overlay so edges read aged */}
-        <rect
-          x="22" y="34"
-          width="256" height="152"
-          rx="4"
-          fill="url(#pergamino-vignette)"
-        />
-        {/* Top inner border line */}
-        <line x1="40" y1="58"  x2="260" y2="58"
-              stroke="#7F1D1D" strokeOpacity="0.4" strokeWidth="1" />
-        {/* Bottom inner border line */}
-        <line x1="40" y1="162" x2="260" y2="162"
-              stroke="#7F1D1D" strokeOpacity="0.4" strokeWidth="1" />
+      {/* COFFEE STAINS */}
+      <ellipse cx="350" cy="120" rx="34" ry="22" fill="url(#coffee-stain)" />
+      <ellipse cx="80" cy="360" rx="46" ry="30" fill="url(#coffee-stain)" />
+      <ellipse cx="380" cy="440" rx="28" ry="18" fill="url(#coffee-stain)" />
+      <circle cx="370" cy="138" r="3" fill="#3a2818" opacity="0.35" />
+      <circle cx="76" cy="380" r="2.5" fill="#3a2818" opacity="0.35" />
 
-        {/* TOP ROLL · cylinder */}
-        <rect
-          x="10" y="20"
-          width="280" height="22"
-          rx="11"
-          fill="url(#pergamino-roll)"
-          stroke="#2D1810"
-          strokeWidth="1.5"
-        />
-        {/* tiny end-caps highlight */}
-        <ellipse cx="22"  cy="31" rx="6" ry="9" fill="#3A2310" />
-        <ellipse cx="278" cy="31" rx="6" ry="9" fill="#3A2310" />
+      {/* GRAIN TEXTURE · masked to the paper outline */}
+      <g filter="url(#parchment-grain)" opacity="0.5">
+        <rect x="0" y="0" width="440" height="540" />
+      </g>
 
-        {/* BOTTOM ROLL */}
-        <rect
-          x="10" y="178"
-          width="280" height="22"
-          rx="11"
-          fill="url(#pergamino-roll)"
-          stroke="#2D1810"
-          strokeWidth="1.5"
-        />
-        <ellipse cx="22"  cy="189" rx="6" ry="9" fill="#3A2310" />
-        <ellipse cx="278" cy="189" rx="6" ry="9" fill="#3A2310" />
-
-        {/* TEXT · pirate flavor */}
+      {/* ── HANDWRITTEN MESSAGE ────────────────────────────────
+       *
+       * Permanent Marker · scrawled castaway voice. Lines are
+       * tilted ±1-2° individually so each line reads as a separate
+       * stroke of the pen, not aligned typesetting. Ink color
+       * #3a2818 (dark sepia).
+       */}
+      <g
+        fill="#3a2818"
+        style={{
+          fontFamily:
+            'var(--font-marker), "Permanent Marker", "Caveat", cursive',
+        }}
+      >
         <text
-          x="150" y="76"
-          textAnchor="middle"
-          fontSize="9.5"
-          letterSpacing="3"
-          fontFamily="ui-monospace, Menlo, monospace"
-          fill="#5B3A24"
-        >
-          · TESORO HALLADO ·
-        </text>
-
-        <text
-          x="150" y="105"
-          textAnchor="middle"
+          x="60"
+          y="100"
           fontSize="22"
-          fontWeight="700"
-          fontFamily="var(--font-display), Georgia, serif"
-          fill="#7F1D1D"
+          transform="rotate(-1.5 60 100)"
         >
-          {percent}% de descuento
+          Quien lea esta nota,
+        </text>
+        <text
+          x="60"
+          y="138"
+          fontSize="18"
+          transform="rotate(-0.8 60 138)"
+        >
+          si llegaste hasta acá fue
+        </text>
+        <text
+          x="60"
+          y="162"
+          fontSize="18"
+          transform="rotate(-1.1 60 162)"
+        >
+          por curioso. Eso es bueno.
         </text>
 
         <text
-          x="150" y="124"
-          textAnchor="middle"
-          fontSize="10"
-          fontFamily="ui-monospace, Menlo, monospace"
-          fill="#5B3A24"
+          x="60"
+          y="208"
+          fontSize="18"
+          transform="rotate(0.6 60 208)"
         >
-          usá el código al cerrar tu pedido
+          Te dejo mi último tesoro
+        </text>
+        <text
+          x="60"
+          y="232"
+          fontSize="18"
+          transform="rotate(-0.5 60 232)"
+        >
+          antes que se lo lleve el mar:
         </text>
 
-        {/* Code chip · cream inside parchment */}
-        <rect
-          x="60" y="134"
-          width="180" height="32"
-          rx="4"
-          fill="#FFFFFF"
-          fillOpacity="0.55"
-          stroke="#7F1D1D"
-          strokeWidth="1.2"
+        {/* The percentage · big, emphasized */}
+        <text
+          x="220"
+          y="290"
+          textAnchor="middle"
+          fontSize="56"
+          fontWeight="bold"
+          transform="rotate(-2 220 290)"
+        >
+          {percent}% off
+        </text>
+        <text
+          x="220"
+          y="318"
+          textAnchor="middle"
+          fontSize="14"
+          transform="rotate(-1 220 318)"
+        >
+          en tu primer pedido
+        </text>
+      </g>
+
+      {/* HAND-DRAWN CODE BOX · uneven rectangle around the code */}
+      <g>
+        <path
+          d="M 92 360
+             L 348 354
+             L 352 412
+             L 88 416
+             Z"
+          fill="rgba(255,255,255,0.35)"
+          stroke="#3a2818"
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+          strokeOpacity="0.7"
+        />
+        {/* second pass · "scribbled twice" feel */}
+        <path
+          d="M 90 362
+             L 346 356
+             L 350 410
+             L 90 414"
+          fill="none"
+          stroke="#3a2818"
+          strokeWidth="1.4"
+          strokeOpacity="0.45"
+          strokeLinejoin="round"
         />
         <text
           id="treasure-code-text"
-          x="150" y="156"
+          x="220"
+          y="396"
           textAnchor="middle"
-          fontSize="20"
-          fontWeight="800"
-          letterSpacing="3.5"
-          fontFamily="var(--font-display), Georgia, serif"
-          fill="#4c1d95"
+          fontSize="38"
+          fontWeight="bold"
+          letterSpacing="3"
+          fill="#2a1810"
+          style={{
+            fontFamily:
+              'var(--font-marker), "Permanent Marker", "Caveat", cursive',
+          }}
+          transform="rotate(-1 220 396)"
         >
           {code}
         </text>
+      </g>
 
-        {/* tap-hint or copied feedback */}
+      {/* Tap-hint or copied feedback */}
+      <text
+        x="220"
+        y="440"
+        textAnchor="middle"
+        fontSize="12"
+        fill={copied ? "#14532d" : "#5b3a24"}
+        style={{
+          fontFamily:
+            'var(--font-marker), "Permanent Marker", "Caveat", cursive',
+        }}
+      >
+        {copied ? "¡copiado!" : "tócalo para guardarlo"}
+      </text>
+
+      {/* CASTAWAY SIGNATURE bottom-right · rotated more */}
+      <g
+        fill="#2a1810"
+        style={{
+          fontFamily:
+            'var(--font-marker), "Permanent Marker", "Caveat", cursive',
+        }}
+      >
         <text
-          x="150" y="178"
-          textAnchor="middle"
-          fontSize="8"
-          letterSpacing="1.5"
-          fontFamily="ui-monospace, Menlo, monospace"
-          fill={copied ? "#14532d" : "#5B3A24"}
+          x="350"
+          y="478"
+          textAnchor="end"
+          fontSize="20"
+          transform="rotate(-4 350 478)"
         >
-          {copied ? "¡COPIADO!" : "TOCA EL PERGAMINO PARA COPIAR"}
+          — El Náufrago
         </text>
-      </svg>
-    </button>
+        {/* tiny scribbled sea-line under the signature */}
+        <path
+          d="M 280 488 Q 310 484 340 488 T 370 484"
+          stroke="#2a1810"
+          strokeWidth="1.5"
+          fill="none"
+          opacity="0.55"
+          transform="rotate(-4 320 486)"
+        />
+      </g>
+    </svg>
   )
 }
