@@ -36,3 +36,5 @@ coverage/
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+scripts/qa/
+scripts/round2-evidence/
