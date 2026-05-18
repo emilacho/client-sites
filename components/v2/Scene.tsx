@@ -746,12 +746,11 @@ function PergaminoPropModel({
     const y = 0.16 + t * (1.4 - 0.16)
     const z = 0.18 + t * (0.5 - 0.18)
     groupRef.current.position.set(x, y, z)
-    // Round 87 · stronger overshoot bounce · peak 1.30 (was 1.10)
-    // followed by settle to 1.0. Plus final scale × 0.8 (60%
-    // larger than R85's 0.5 per user "aumenta el tamaño en un
-    // 60 porciento").
+    // Round 87 · stronger overshoot · peak 1.30 (settle to 1.0).
+    // Round 88 · second +60% bump per user "haslo 60 porciento
+    // más grande" · final scale 0.8 → 1.28 (0.8 × 1.6).
     const easedScale = t < 1 ? t * (1.3 - 0.3 * t) : 1
-    groupRef.current.scale.setScalar(easedScale * 0.8)
+    groupRef.current.scale.setScalar(easedScale * 1.28)
     // Rotation X = 1.27 (R86 · faces front cam). Sway gentle.
     const tipX = 1.27
     const swayY = reducedMotion ? 0 : Math.sin(performance.now() * 0.0004) * 0.06
@@ -803,7 +802,12 @@ function createPromoTexture(): THREE.CanvasTexture | null {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-  const INK = "#3a2818"
+  // Round 88 · contrast bump · ink darkened #3a2818 → #0d0a06
+  // (near-black warm). Combined with the kraft-tan parchment
+  // beneath, the lift in luminance contrast is ~3× · letters
+  // read cleanly even on the darker stained zones of the
+  // baked baseColor texture.
+  const INK = "#0d0a06"
   ctx.fillStyle = INK
   ctx.textAlign = "center"
   ctx.textBaseline = "middle"
@@ -819,6 +823,15 @@ function createPromoTexture(): THREE.CanvasTexture | null {
     ctx!.translate(x, y)
     ctx!.rotate(rotateRad)
     ctx!.font = font
+    // Round 88 · "stroked + filled" double-pass · adds a small
+    // stroke around each filled letter so the silhouette has
+    // sharper edges against the parchment texture beneath. Stroke
+    // matches the fill color so the letter looks denser, not
+    // outlined.
+    ctx!.lineWidth = 2.2
+    ctx!.lineJoin = "round"
+    ctx!.strokeStyle = INK
+    ctx!.strokeText(text, 0, 0)
     ctx!.fillText(text, 0, 0)
     ctx!.restore()
   }
@@ -847,9 +860,9 @@ function createPromoTexture(): THREE.CanvasTexture | null {
     0.015,
   )
 
-  // Spacer · ink swash divider
-  ctx.strokeStyle = "rgba(58,40,24,0.45)"
-  ctx.lineWidth = 3
+  // Spacer · ink swash divider · Round 88 · stronger ink
+  ctx.strokeStyle = "rgba(13,10,6,0.75)"
+  ctx.lineWidth = 4
   ctx.beginPath()
   ctx.moveTo(260, 270)
   for (let i = 0; i <= 10; i++) {
@@ -863,8 +876,10 @@ function createPromoTexture(): THREE.CanvasTexture | null {
   lineAt("Código Promo", 512, 330, `italic 38px ${handwritten}`, -0.02)
 
   // Hand-drawn box around the code · double-stroke "sketchy"
+  // Round 88 · stroke thicker (5 → 7) + faded pass darker
+  // (rgba 0.4 → 0.65) for stronger contrast against parchment.
   ctx.strokeStyle = INK
-  ctx.lineWidth = 5
+  ctx.lineWidth = 7
   ctx.beginPath()
   ctx.moveTo(192, 380)
   ctx.lineTo(836, 374)
@@ -872,8 +887,8 @@ function createPromoTexture(): THREE.CanvasTexture | null {
   ctx.lineTo(190, 484)
   ctx.closePath()
   ctx.stroke()
-  ctx.strokeStyle = "rgba(58,40,24,0.4)"
-  ctx.lineWidth = 2.5
+  ctx.strokeStyle = "rgba(13,10,6,0.65)"
+  ctx.lineWidth = 3
   ctx.beginPath()
   ctx.moveTo(196, 384)
   ctx.lineTo(832, 378)
@@ -904,9 +919,9 @@ function createPromoTexture(): THREE.CanvasTexture | null {
     -0.05,
   )
 
-  // Sea-wave squiggle under the signature
-  ctx.strokeStyle = "rgba(58,40,24,0.65)"
-  ctx.lineWidth = 2.5
+  // Sea-wave squiggle under the signature · Round 88 darker ink
+  ctx.strokeStyle = "rgba(13,10,6,0.85)"
+  ctx.lineWidth = 3
   ctx.beginPath()
   ctx.moveTo(630, 730)
   for (let i = 0; i <= 6; i++) {
@@ -917,7 +932,7 @@ function createPromoTexture(): THREE.CanvasTexture | null {
   ctx.stroke()
 
   // Small ink-blot stains for authenticity
-  ctx.fillStyle = "rgba(58,40,24,0.18)"
+  ctx.fillStyle = "rgba(13,10,6,0.22)"
   ctx.beginPath()
   ctx.arc(180, 530, 9, 0, Math.PI * 2)
   ctx.fill()
