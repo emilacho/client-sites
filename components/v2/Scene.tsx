@@ -676,6 +676,12 @@ interface CocoReview {
    *  the sand cylinder · its proxy needs a bigger lift to clear the
    *  sand mesh raycast. */
   proxyYOffset: number
+  /** Round 83 · optional real customer photo. When undefined, the
+   *  ReviewCard falls back to a DiceBear cartoon avatar seeded by
+   *  the name. Path is relative to `/public` (e.g.
+   *  "/reviews/01-hombre-drone.jpg") OR a full https URL when the
+   *  photo is hosted off-domain. */
+  photoUrl?: string
 }
 
 const COCONUT_REVIEWS: CocoReview[] = [
@@ -746,7 +752,11 @@ function ReviewCard({ review }: { review: CocoReview }) {
   // SpeechBubble) and celeste (light cyan letters · #4DD4D8, the
   // same cyan as the hero NÁUFRAGO highlight). Card recolored
   // strictly to those two.
-  const avatarUrl = `https://api.dicebear.com/7.x/micah/svg?seed=${encodeURIComponent(review.name)}&size=80`
+  // Round 83 · real customer photo when present, DiceBear cartoon
+  // fallback when not. Falls back automatically on broken image
+  // (404, network error) via onError handler below.
+  const fallbackAvatarUrl = `https://api.dicebear.com/7.x/micah/svg?seed=${encodeURIComponent(review.name)}&size=80`
+  const avatarUrl = review.photoUrl ?? fallbackAvatarUrl
   return (
     <div
       style={{
@@ -774,12 +784,20 @@ function ReviewCard({ review }: { review: CocoReview }) {
         alt={review.name}
         width={80}
         height={80}
+        onError={(e) => {
+          // Round 83 · real photo failed (broken path, network error)
+          // · swap to DiceBear cartoon so the card never shows a
+          // broken-image icon.
+          const img = e.currentTarget
+          if (img.src !== fallbackAvatarUrl) img.src = fallbackAvatarUrl
+        }}
         style={{
           width: "80px",
           height: "80px",
           borderRadius: "8px",
           flexShrink: 0,
           background: "rgba(77, 212, 216, 0.15)",
+          objectFit: "cover",
         }}
       />
       <div style={{ flex: 1, minWidth: 0 }}>
