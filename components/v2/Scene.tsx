@@ -691,6 +691,14 @@ const COCONUT_REVIEWS: CocoReview[] = [
   // (sphere center matches coco center). Fallen cocos: offset = 0.1
   // (small lift to clear the sand mesh raycast · sphere bottom
   // tangent at sand level Y=0.06 + 0 = -0.09, well clear).
+  // Round 83 · photoUrl wired for 4 of 6 reviewers per CC4 dispatch.
+  // Mapping decided here (Emilio delegated):
+  //   foto-1 drone-antártida  → Diego R.  (Manglaralto · outdoor adventure)
+  //   foto-2 outdoor-lentes   → Pablo G.  (Olón · relaxed portrait fits family-man)
+  //   foto-3 joven-perro      → Andrea P. (Punta Blanca · home-ordering convenience)
+  //   foto-4 cumpleaños #6    → María C.  (Olón · on-time delivery for a celebration)
+  // Carlos M. + Lucía F. keep the DiceBear fallback (gender-mixed
+  // unphotographed pair · 2M + 2F balance preserved overall).
   {
     coconutName: "Coconut_1_3",
     name: "María C.",
@@ -699,6 +707,7 @@ const COCONUT_REVIEWS: CocoReview[] = [
       "Pedí encebollado a las 11am y llegó a las 11:35am tibio · caldo perfecto.",
     rating: 5,
     proxyYOffset: 0,
+    photoUrl: "/reviews/reviewer-4-maria.jpg",
   },
   {
     coconutName: "Coconut_2_5",
@@ -708,6 +717,7 @@ const COCONUT_REVIEWS: CocoReview[] = [
       "El ceviche tiene sabor de mercado · fresco · ácido justo.",
     rating: 5,
     proxyYOffset: 0,
+    photoUrl: "/reviews/reviewer-1-diego.jpg",
   },
   {
     coconutName: "Coconut_3_4",
@@ -716,6 +726,7 @@ const COCONUT_REVIEWS: CocoReview[] = [
     review: "Pides por WhatsApp y listo · nada de filas.",
     rating: 5,
     proxyYOffset: 0,
+    photoUrl: "/reviews/reviewer-3-andrea.jpg",
   },
   {
     coconutName: "Coconut_10_43",
@@ -724,6 +735,7 @@ const COCONUT_REVIEWS: CocoReview[] = [
     review: "Patacones perfectos · sal prieta auténtica.",
     rating: 5,
     proxyYOffset: 0.1,
+    // No photo · DiceBear fallback
   },
   {
     coconutName: "Coconut_11_44",
@@ -733,6 +745,7 @@ const COCONUT_REVIEWS: CocoReview[] = [
       "Hicieron mi pedido completo en 25 minutos · calidad como en mesa.",
     rating: 5,
     proxyYOffset: 0.1,
+    // No photo · DiceBear fallback
   },
   {
     coconutName: "Coconut_12_45",
@@ -741,6 +754,7 @@ const COCONUT_REVIEWS: CocoReview[] = [
     review: "Lo pedí para reunión familiar · llegó a tiempo · todos contentos.",
     rating: 5,
     proxyYOffset: 0.1,
+    photoUrl: "/reviews/reviewer-2-pablo.jpg",
   },
 ]
 
