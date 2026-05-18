@@ -694,12 +694,13 @@ function PergaminoPropModel({
   const reducedMotion = usePrefersReducedMotion()
   const posTRef = useRef(0) // 0 = hidden in cofre, 1 = visible above
 
-  // Round 87 · canvas texture creation needs to wait for the
-  // Permanent Marker font to actually load (next/font is async
-  // on first paint) · otherwise the canvas API renders the
-  // system cursive fallback and the message reads typographic,
-  // not "letra manuscrita" as the user requested. Switch from
-  // useMemo to async useEffect gated on document.fonts.ready.
+  // Round 89 · switch from Permanent Marker (print-style marker)
+  // to Homemade Apple (true connected-cursive handwriting) per
+  // user "letras concatenadas, como un humano sin alzar la mano".
+  // Wait for BOTH Homemade Apple and Caveat (fallback for the
+  // small label lines that need legibility) to fully load before
+  // creating the canvas · otherwise system cursive fallback
+  // paints first and looks like keyboard calligraphy.
   const [textTexture, setTextTexture] = useState<THREE.CanvasTexture | null>(
     null,
   )
@@ -709,8 +710,11 @@ function PergaminoPropModel({
     const setup = async () => {
       try {
         if (typeof document !== "undefined" && document.fonts) {
-          // Force-load the exact font face we'll use in the canvas
-          await document.fonts.load('bold 60px "Permanent Marker"')
+          await Promise.all([
+            document.fonts.load('60px "Homemade Apple"'),
+            document.fonts.load('bold 60px "Caveat"'),
+            document.fonts.load('italic 36px "Caveat"'),
+          ])
           await document.fonts.ready
         }
       } catch {
@@ -836,28 +840,42 @@ function createPromoTexture(): THREE.CanvasTexture | null {
     ctx!.restore()
   }
 
-  // Round 87 · message rebrand · "Has encontrado el Tesoro de
-  // Náufrago · Código Promo SurfBollado · 5% Off". Permanent
-  // Marker stays as the handwritten face · Caveat fallback for
-  // platforms that don't ship it.
+  // Round 89 · true connected-cursive handwritten stack.
+  // Homemade Apple is the primary · realistic one-stroke
+  // handwriting where letters flow continuously (the look of
+  // a castaway scribbling with a quill). Caveat is the
+  // fallback · a slightly cleaner but still informal cursive
+  // for platforms that haven't loaded Homemade Apple yet.
   const handwritten =
-    '"Permanent Marker", "Caveat", "Marker Felt", cursive'
+    '"Homemade Apple", "Caveat", "Snell Roundhand", cursive'
+  // Caveat is used directly for the smaller labels (Código
+  // Promo · — El Náufrago) where Homemade Apple becomes
+  // hard to read · script font swap for legibility.
+  const handwrittenLegible =
+    '"Caveat", "Homemade Apple", "Brush Script MT", cursive'
 
+  // Round 89 · Homemade Apple ships a single regular weight ·
+  // "bold" requests are silently no-ops (the font face simply
+  // has no bold variant) · we keep the keyword for the canvas
+  // API engine which will pick the closest match (regular)
+  // gracefully. Slight per-line rotation is what sells the
+  // hand-written feel · the font does the rest.
+  //
   // Line 1 · introducing the find
   lineAt(
     "¡ Has encontrado",
     512,
-    140,
-    `bold 56px ${handwritten}`,
+    150,
+    `64px ${handwritten}`,
     -0.025,
   )
   // Line 2 · headline (the treasure)
   lineAt(
     "el Tesoro de Náufrago !",
     512,
-    216,
-    `bold 60px ${handwritten}`,
-    0.015,
+    230,
+    `68px ${handwritten}`,
+    0.018,
   )
 
   // Spacer · ink swash divider · Round 88 · stronger ink
@@ -872,8 +890,9 @@ function createPromoTexture(): THREE.CanvasTexture | null {
   }
   ctx.stroke()
 
-  // Line 3 · "Código Promo" label
-  lineAt("Código Promo", 512, 330, `italic 38px ${handwritten}`, -0.02)
+  // Line 3 · "Código Promo" label · Caveat (more legible at
+  // small sizes than Homemade Apple's tight cursive)
+  lineAt("Código Promo", 512, 330, `46px ${handwrittenLegible}`, -0.02)
 
   // Hand-drawn box around the code · double-stroke "sketchy"
   // Round 88 · stroke thicker (5 → 7) + faded pass darker
@@ -897,25 +916,29 @@ function createPromoTexture(): THREE.CanvasTexture | null {
   ctx.closePath()
   ctx.stroke()
 
-  // Line 4 · the code · BIG · mixed case preserved
+  // Line 4 · the code · BIG · mixed case preserved.
+  // Caveat at bold weight for the code · Homemade Apple is too
+  // hard to read at this size on a single word with caps.
   ctx.fillStyle = INK
   lineAt(
     "“SurfBollado”",
     518,
     432,
-    `bold 96px ${handwritten}`,
+    `bold 100px ${handwrittenLegible}`,
     -0.012,
   )
 
-  // Line 5 · the discount headline · BIG
-  lineAt("5% Off", 512, 580, `bold 132px ${handwritten}`, -0.028)
+  // Line 5 · the discount headline · BIG · back to Homemade
+  // Apple for the headline · its connected strokes read
+  // dramatic at 132px.
+  lineAt("5% Off", 512, 580, `132px ${handwritten}`, -0.028)
 
-  // Signature
+  // Signature · Caveat italic so the rúbrica is legible
   lineAt(
     "— El Náufrago",
     760,
     700,
-    `italic 36px ${handwritten}`,
+    `42px ${handwrittenLegible}`,
     -0.05,
   )
 

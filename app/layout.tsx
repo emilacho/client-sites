@@ -4,6 +4,8 @@ import {
   DM_Serif_Display,
   Permanent_Marker,
   Bebas_Neue,
+  Homemade_Apple,
+  Caveat,
 } from "next/font/google"
 import { cliente } from "@/cliente.config"
 import "./globals.css"
@@ -32,6 +34,25 @@ const bebas = Bebas_Neue({
   variable: "--font-bebas",
   display: "swap",
 })
+// Round 89 · Homemade Apple + Caveat · true connected-cursive
+// handwritten fonts for the pergamino canvas text. User wanted
+// "letras concatenadas · como un humano sin alzar la mano".
+// Permanent Marker is print-style marker · these two are real
+// cursive script. Homemade Apple is single-stroke realistic
+// handwriting (primary), Caveat is informal cursive with
+// slightly cleaner letterforms (fallback at small sizes).
+const handwritten = Homemade_Apple({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-handwritten",
+  display: "swap",
+})
+const caveat = Caveat({
+  weight: ["400", "700"],
+  subsets: ["latin"],
+  variable: "--font-caveat",
+  display: "swap",
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL(cliente.domain),
@@ -56,7 +77,7 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${displaySerif.variable} ${marker.variable} ${bebas.variable} font-sans antialiased`}
+        className={`${inter.variable} ${displaySerif.variable} ${marker.variable} ${bebas.variable} ${handwritten.variable} ${caveat.variable} font-sans antialiased`}
       >
         {children}
       </body>
