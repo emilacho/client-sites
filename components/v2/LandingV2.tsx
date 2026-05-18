@@ -21,7 +21,10 @@ import { CartDrawer } from "./CartDrawer"
 import { OverlayPanels, type OverlayKind } from "./OverlayPanels"
 import { PromoTicker } from "./PromoTicker"
 import { MenuModal } from "./MenuModal"
-import { TreasureRewardModal } from "./TreasureRewardModal"
+// Round 80 · TreasureRewardModal full-screen modal retired ·
+// pergamino now emerges in-scene from the real Chest_14 (handled
+// inside Scene.tsx → TreasurePergamino). Keeping the file in the
+// tree as a reference but no longer imported.
 import { SceneErrorBoundary } from "./SceneErrorBoundary"
 import type { AnchorKind } from "./Scene"
 
@@ -77,7 +80,12 @@ function LandingInner() {
           the boundary and keep working when the scene fails. */}
       <div className="absolute inset-0 z-0">
         <SceneErrorBoundary>
-          <Scene onAnchorClick={handleAnchor} />
+          <Scene
+            onAnchorClick={handleAnchor}
+            treasureOpen={treasureOpen}
+            onTreasureClose={() => setTreasureOpen(false)}
+            onOpenMenu={openMenu}
+          />
         </SceneErrorBoundary>
       </div>
 
@@ -171,11 +179,6 @@ function LandingInner() {
       {/* Drawers + modals · z-40+ to sit above the 3D layer */}
       <CartDrawer />
       <MenuModal open={menuOpen} onClose={() => setMenuOpen(false)} />
-      <TreasureRewardModal
-        open={treasureOpen}
-        onClose={() => setTreasureOpen(false)}
-        onOpenMenu={openMenu}
-      />
       <OverlayPanels active={overlay} onClose={() => setOverlay(null)} />
     </main>
   )

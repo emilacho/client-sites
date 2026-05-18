@@ -39,6 +39,7 @@ import {
 } from "@/lib/v2/use-interactive-idle-pulse"
 import { useQaMode } from "@/lib/v2/use-qa-mode"
 import { naufragoAssets } from "@/lib/v2/naufrago-content"
+import { useCart } from "@/lib/v2/cart-context"
 
 // Preload the 4 GLBs at module load so the first paint of the canvas
 // doesn't kick off a 4-network-roundtrip waterfall.
@@ -54,6 +55,14 @@ export type AnchorKind = "cofre" | "barco" | "palmeras"
 
 interface SceneProps {
   onAnchorClick: (anchor: AnchorKind) => void
+  /** Round 80 · in-scene treasure pergamino state. When `treasureOpen`
+   *  is true, the chest "opens" (tilts back) and a pirate parchment
+   *  emerges from its world position via drei <Html>. The parent
+   *  (LandingV2) owns the boolean so it can also handle dismissal +
+   *  the discount cart side-effect. */
+  treasureOpen?: boolean
+  onTreasureClose?: () => void
+  onOpenMenu?: () => void
 }
 
 /**
@@ -100,7 +109,12 @@ const ANCHOR_PROXIES: Record<AnchorKind, ProxyGeom> = {
 // "Interactive object idle pulse" · interactivity hint is now only the
 // idle pulse + cyan emissive glow).
 
-export function Scene({ onAnchorClick }: SceneProps) {
+export function Scene({
+  onAnchorClick,
+  treasureOpen = false,
+  onTreasureClose,
+  onOpenMenu,
+}: SceneProps) {
   const reducedMotion = usePrefersReducedMotion()
   // QA toggle · when `?qa=1` is set, freeze the camera + suppress idle
   // pulse + suppress the character speech bubble so screenshots are
@@ -147,7 +161,12 @@ export function Scene({ onAnchorClick }: SceneProps) {
 
       <Suspense fallback={null}>
         <PerformanceMonitor onDecline={() => { /* fallback handled via dpr already */ }}>
-          <IslandWithCharacter qaMode={qaMode} />
+          <IslandWithCharacter
+            qaMode={qaMode}
+            treasureOpen={treasureOpen}
+            onTreasureClose={onTreasureClose}
+            onOpenMenu={onOpenMenu}
+          />
           {/* Sign + surfboard placed near the beach front · purely visual */}
           {/* Round 7 single-issue fix · sign + surfboard moved onto
               Island_0 sand (world bbox X[-2.82..2.75], Z[-3.66..1.57]).
@@ -952,6 +971,395 @@ function CoconutHoverCards() {
 }
 
 /**
+ * TreasurePergamino · Round 80.
+ *
+ * In-scene treasure reveal · when `open` flips true, the real
+ * Chest_14 mesh in the island GLB tilts back (simulating the lid
+ * opening · the GLB doesn't ship a separable lid mesh, so we tilt
+ * the whole chest as the closest visual stand-in) and a drei
+ * <Html> pergamino emerges from inside the chest at its world
+ * position. The pergamino HTML is rendered in screen space but
+ * anchored to the chest's 3D location so it visually rides above
+ * the cofre as the camera drifts.
+ *
+ * Discount auto-apply is wired here via useCart() · the moment
+ * `open` flips true, NAUFRAGO5 lands on the cart.
+ */
+function TreasurePergamino({
+  open,
+  onClose,
+  onOpenMenu,
+}: {
+  open?: boolean
+  onClose?: () => void
+  onOpenMenu?: () => void
+}) {
+  const { scene } = useGLTF(naufragoAssets.island)
+  const cart = useCart()
+  const chestRef = useRef<THREE.Object3D | null>(null)
+  const tiltAngleRef = useRef(0)
+  const baseRotXRef = useRef(0)
+
+  useEffect(() => {
+    const c = scene.getObjectByName("Chest_14")
+    if (c) {
+      chestRef.current = c
+      baseRotXRef.current = c.rotation.x
+    }
+  }, [scene])
+
+  // Auto-apply the discount the moment the chest opens.
+  useEffect(() => {
+    if (open) cart.applyCode(DISCOUNT_CODE)
+  }, [open, cart])
+
+  // Tilt-back animation · rotate the chest around X toward -0.55
+  // rad (about 31°) when open, ease back to base when closed.
+  // Spring-style approach with constant velocity for predictable
+  // timing · ~600ms full open, ~400ms close.
+  useFrame((_, delta) => {
+    if (!chestRef.current) return
+    const target = open ? -0.55 : 0
+    const speed = open ? 1.6 : 2.4 // rad/s
+    const diff = target - tiltAngleRef.current
+    const step = Math.sign(diff) * Math.min(Math.abs(diff), speed * delta)
+    tiltAngleRef.current += step
+    chestRef.current.rotation.x = baseRotXRef.current + tiltAngleRef.current
+  })
+
+  return (
+    <Html
+      // World position: cofre center [-0.76, 0.16, 0.18] post-R25
+      // + 1.2u upward float so the pergamino sits above the open
+      // chest mouth, clear of the lid arc.
+      position={[-0.76, 1.4, 0.18]}
+      center
+      distanceFactor={2.5}
+      zIndexRange={[200, 0]}
+      style={{ pointerEvents: open ? "auto" : "none" }}
+    >
+      <AnimatePresence>
+        {open ? (
+          <PergaminoOverlay
+            onClose={() => onClose?.()}
+            onOpenMenu={() => {
+              onClose?.()
+              onOpenMenu?.()
+            }}
+          />
+        ) : null}
+      </AnimatePresence>
+    </Html>
+  )
+}
+
+const DISCOUNT_CODE = "NAUFRAGO5"
+const DISCOUNT_PERCENT = 5
+
+/**
+ * PergaminoOverlay · the realistic pirate parchment shown in
+ * screen space via drei <Html>. Two SVG groups for the top + bottom
+ * roll cylinders + a parchment body in between · cream aged tone,
+ * wine-red borders, deep-purple code, tap-to-copy.
+ */
+function PergaminoOverlay({
+  onClose,
+  onOpenMenu,
+}: {
+  onClose: () => void
+  onOpenMenu: () => void
+}) {
+  const [copied, setCopied] = useState(false)
+  const copyTimerRef = useRef<number | null>(null)
+  // ESC to close
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose()
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [onClose])
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(DISCOUNT_CODE)
+      setCopied(true)
+      if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current)
+      copyTimerRef.current = window.setTimeout(() => setCopied(false), 2000)
+    } catch {
+      /* clipboard API failed · fall back to text select */
+    }
+  }
+
+  return (
+    <motion.div
+      key="pergamino"
+      initial={{ opacity: 0, y: 40, scaleY: 0.05 }}
+      animate={{ opacity: 1, y: 0, scaleY: 1 }}
+      exit={{ opacity: 0, y: 24, scaleY: 0.1 }}
+      transition={{
+        opacity: { duration: 0.35, ease: "easeOut" },
+        y: { duration: 0.55, ease: [0.34, 1.4, 0.64, 1] },
+        scaleY: { duration: 0.55, ease: [0.34, 1.4, 0.64, 1] },
+      }}
+      style={{ transformOrigin: "50% 100%", pointerEvents: "auto" }}
+      className="relative"
+    >
+      {/* Sparkle burst overlay · pure CSS, lives at the bottom of
+          the scroll (which visually sits over the chest mouth) so
+          it reads as the burst the chest emitted. */}
+      <style>{`
+        @keyframes nrmPergSparkle {
+          0%   { transform: translate(0, 0) scale(0); opacity: 0; }
+          30%  { transform: translate(var(--sx), var(--sy)) scale(1); opacity: 1; }
+          100% { transform: translate(var(--sx), var(--sy)) scale(0.4); opacity: 0; }
+        }
+        .pergamino-sparkle {
+          animation: nrmPergSparkle 1500ms ease-out var(--delay, 0s) 1 forwards;
+        }
+        @keyframes nrmPergGlow {
+          0%, 100% { filter: drop-shadow(0 6px 14px rgba(127,29,29,0.45)); }
+          50%      { filter: drop-shadow(0 6px 18px rgba(77,212,216,0.55)); }
+        }
+        .pergamino-glow {
+          animation: nrmPergGlow 2800ms ease-in-out 0.6s infinite;
+        }
+      `}</style>
+
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center">
+        {Array.from({ length: 14 }).map((_, i) => {
+          const angle = (i / 14) * Math.PI * 2
+          const sx = Math.cos(angle) * (60 + (i % 3) * 18)
+          const sy = -(Math.sin(angle) * (60 + (i % 3) * 18)) - 20
+          const delay = `${(i % 5) * 0.04}s`
+          const isGold = i % 3 === 0
+          return (
+            <span
+              key={i}
+              className="pergamino-sparkle absolute bottom-2 block rounded-full"
+              style={
+                {
+                  "--sx": `${sx}px`,
+                  "--sy": `${sy}px`,
+                  "--delay": delay,
+                  width: isGold ? "7px" : "4px",
+                  height: isGold ? "7px" : "4px",
+                  background: isGold ? "#FACC15" : "#4DD4D8",
+                  boxShadow: isGold
+                    ? "0 0 10px rgba(250,204,21,0.9)"
+                    : "0 0 10px rgba(77,212,216,0.9)",
+                } as React.CSSProperties
+              }
+              aria-hidden
+            />
+          )
+        })}
+      </div>
+
+      <div className="pergamino-glow relative">
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="block active:translate-y-[1px]"
+          style={{
+            background: "transparent",
+            border: "none",
+            padding: 0,
+            cursor: "pointer",
+          }}
+          aria-label={`Copiar código ${DISCOUNT_CODE}`}
+        >
+          <svg
+            width="320"
+            height="230"
+            viewBox="0 0 320 230"
+            className="block"
+            aria-hidden
+          >
+            <defs>
+              <linearGradient id="perg-body-r80" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#F5E6CB" />
+                <stop offset="50%" stopColor="#EFD9B0" />
+                <stop offset="100%" stopColor="#E2C290" />
+              </linearGradient>
+              <linearGradient id="perg-roll-r80" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#8B6034" />
+                <stop offset="50%" stopColor="#5B3A24" />
+                <stop offset="100%" stopColor="#3D2410" />
+              </linearGradient>
+              <radialGradient id="perg-vig-r80" cx="0.5" cy="0.5" r="0.7">
+                <stop offset="0%" stopColor="rgba(0,0,0,0)" />
+                <stop offset="70%" stopColor="rgba(74,42,26,0.06)" />
+                <stop offset="100%" stopColor="rgba(74,42,26,0.32)" />
+              </radialGradient>
+            </defs>
+
+            <rect
+              x="22"
+              y="40"
+              width="276"
+              height="150"
+              rx="4"
+              fill="url(#perg-body-r80)"
+              stroke="#7F1D1D"
+              strokeOpacity="0.35"
+              strokeWidth="1.2"
+            />
+            <rect
+              x="22"
+              y="40"
+              width="276"
+              height="150"
+              rx="4"
+              fill="url(#perg-vig-r80)"
+            />
+            <line
+              x1="40"
+              y1="62"
+              x2="280"
+              y2="62"
+              stroke="#7F1D1D"
+              strokeOpacity="0.4"
+              strokeWidth="1"
+            />
+            <line
+              x1="40"
+              y1="168"
+              x2="280"
+              y2="168"
+              stroke="#7F1D1D"
+              strokeOpacity="0.4"
+              strokeWidth="1"
+            />
+
+            {/* Top roll */}
+            <rect
+              x="10"
+              y="26"
+              width="300"
+              height="24"
+              rx="12"
+              fill="url(#perg-roll-r80)"
+              stroke="#2D1810"
+              strokeWidth="1.5"
+            />
+            <ellipse cx="22" cy="38" rx="7" ry="10" fill="#3A2310" />
+            <ellipse cx="298" cy="38" rx="7" ry="10" fill="#3A2310" />
+
+            {/* Bottom roll */}
+            <rect
+              x="10"
+              y="182"
+              width="300"
+              height="24"
+              rx="12"
+              fill="url(#perg-roll-r80)"
+              stroke="#2D1810"
+              strokeWidth="1.5"
+            />
+            <ellipse cx="22" cy="194" rx="7" ry="10" fill="#3A2310" />
+            <ellipse cx="298" cy="194" rx="7" ry="10" fill="#3A2310" />
+
+            <text
+              x="160"
+              y="80"
+              textAnchor="middle"
+              fontSize="10"
+              letterSpacing="3"
+              fontFamily="ui-monospace, Menlo, monospace"
+              fill="#5B3A24"
+            >
+              · TESORO HALLADO ·
+            </text>
+            <text
+              x="160"
+              y="110"
+              textAnchor="middle"
+              fontSize="22"
+              fontWeight="700"
+              fontFamily="var(--font-display), Georgia, serif"
+              fill="#7F1D1D"
+            >
+              {DISCOUNT_PERCENT}% de descuento
+            </text>
+            <text
+              x="160"
+              y="128"
+              textAnchor="middle"
+              fontSize="10"
+              fontFamily="ui-monospace, Menlo, monospace"
+              fill="#5B3A24"
+            >
+              usá el código al cerrar tu pedido
+            </text>
+
+            {/* Code chip */}
+            <rect
+              x="70"
+              y="138"
+              width="180"
+              height="32"
+              rx="4"
+              fill="#FFFFFF"
+              fillOpacity="0.55"
+              stroke="#7F1D1D"
+              strokeWidth="1.2"
+            />
+            <text
+              x="160"
+              y="160"
+              textAnchor="middle"
+              fontSize="20"
+              fontWeight="800"
+              letterSpacing="3.5"
+              fontFamily="var(--font-display), Georgia, serif"
+              fill="#4c1d95"
+            >
+              {DISCOUNT_CODE}
+            </text>
+
+            <text
+              x="160"
+              y="182"
+              textAnchor="middle"
+              fontSize="8"
+              letterSpacing="1.5"
+              fontFamily="ui-monospace, Menlo, monospace"
+              fill={copied ? "#14532d" : "#5B3A24"}
+            >
+              {copied ? "¡COPIADO!" : "TOCA EL PERGAMINO PARA COPIAR"}
+            </text>
+          </svg>
+        </button>
+
+        {/* CTAs · float just below the scroll */}
+        <div className="mt-2 flex justify-center gap-2">
+          <button
+            type="button"
+            onClick={onOpenMenu}
+            className="rounded-full bg-gradient-to-r from-[#4DD4D8] to-[#7c3aed] px-4 py-2 text-sm font-semibold text-white shadow-md shadow-violet-900/40"
+          >
+            Ver el menú
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border px-4 py-2 text-sm font-medium"
+            style={{
+              borderColor: "rgba(77,212,216,0.6)",
+              background: "rgba(76,29,149,0.6)",
+              color: "#4DD4D8",
+            }}
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+/**
  * IslandWithCharacter · the island base + the castaway character +
  * the character's speech-bubble HTML anchor.
  *
@@ -959,7 +1367,17 @@ function CoconutHoverCards() {
  * of pointer state so QA screenshot captures don't show a bubble that
  * may have fired from a stray pointer event.
  */
-function IslandWithCharacter({ qaMode }: { qaMode: boolean }) {
+function IslandWithCharacter({
+  qaMode,
+  treasureOpen = false,
+  onTreasureClose,
+  onOpenMenu,
+}: {
+  qaMode: boolean
+  treasureOpen?: boolean
+  onTreasureClose?: () => void
+  onOpenMenu?: () => void
+}) {
   const [hovered, setHovered] = useState(false)
   const setHover = (v: boolean) => {
     if (qaMode) return
@@ -969,6 +1387,14 @@ function IslandWithCharacter({ qaMode }: { qaMode: boolean }) {
     <group>
       <IslandModel position={[0, 0, 0]} scale={1} />
       <CoconutHoverCards />
+      {/* Round 80 · in-scene treasure pergamino · drei <Html> anchored
+          above the real Chest_14 world position (post-R25 island drop
+          · cofre center at world Y=0.16, +1.2u of float = 1.36). */}
+      <TreasurePergamino
+        open={treasureOpen}
+        onClose={onTreasureClose}
+        onOpenMenu={onOpenMenu}
+      />
       <group
         /* Round 32 · character flotante fix · Y 0.1 → -0.075 ·
            landed feet at chest-base sand reference.
