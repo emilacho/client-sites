@@ -146,7 +146,13 @@ export function TreasureRewardModal({
             }
           `}</style>
 
-          {/* BACKDROP · deep-purple radial vignette */}
+          {/* BACKDROP · Round 78 · transparent click-catcher only.
+              Per user "quita el fondo de pantalla, deja solo el
+              cuadro con la promoción · así se ve de fondo la isla".
+              The R77 deep-violet vignette covered the 3D scene ·
+              now the island stays fully visible · clicking outside
+              the panel still dismisses (the layer is invisible
+              but receives pointer events). */}
           <motion.div
             key="treasure-backdrop"
             initial={{ opacity: 0 }}
@@ -155,10 +161,7 @@ export function TreasureRewardModal({
             transition={{ duration: 0.2 }}
             onClick={onClose}
             className="fixed inset-0 z-50"
-            style={{
-              background:
-                "radial-gradient(ellipse at 50% 45%, rgba(76,29,149,0.92) 0%, rgba(26,10,58,0.98) 70%)",
-            }}
+            style={{ background: "transparent" }}
             aria-hidden
           />
 
