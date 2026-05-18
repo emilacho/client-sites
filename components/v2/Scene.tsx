@@ -64,12 +64,31 @@ interface SceneProps {
  * in design review · acceptable visual placement is the bar.
  */
 const ANCHOR_POSITIONS: Record<AnchorKind, [number, number, number]> = {
-  // Round 37 · cofre re-mapped to Chest_14 world center post-Round-25
-  cofre:    [-0.76, 0.16,  0.18],
+  // Round 75 · cofre re-aligned to the ACTUAL Chest_14 AABB center
+  // (probe-bbox.mjs · center=[-0.76, 0.56, 0.18] · size=[0.75,
+  // 0.47, 0.67]). Y bumped 0.16 → 0.56 · the old anchor sat 40cm
+  // BELOW the chest center which is why the clickable felt tiny
+  // and offset.
+  cofre:    [-0.76, 0.56,  0.18],
   barco:    [-2.4,  0.30,  1.2 ],
   // Round 40 · cocos anchor removed · per-coconut hover cards in
   // CoconutHoverCards handle the Reseñas surface now.
   palmeras: [-1.6,  1.30, -1.8 ],
+}
+
+// Round 75 · per-anchor click-proxy geometry. Default is the
+// invisible sphere 0.15 (R47 value) · cofre overrides with the
+// exact Chest_14 AABB so the click zone matches the visible
+// chest 1:1.
+type ProxyGeom =
+  | { shape: "sphere"; radius: number }
+  | { shape: "box"; size: [number, number, number] }
+
+const ANCHOR_PROXIES: Record<AnchorKind, ProxyGeom> = {
+  // Box geom args [width, height, depth] · matches Chest_14 size.
+  cofre:    { shape: "box",    size: [0.75, 0.47, 0.67] },
+  barco:    { shape: "sphere", radius: 0.15 },
+  palmeras: { shape: "sphere", radius: 0.15 },
 }
 
 // ANCHOR_LABELS removed in round-3 single-issue fix · the 4 drei <Html>
@@ -228,6 +247,7 @@ export function Scene({ onAnchorClick }: SceneProps) {
               kind={kind}
               index={idx}
               position={ANCHOR_POSITIONS[kind]}
+              proxy={ANCHOR_PROXIES[kind]}
               hovered={hoveredAnchor === kind}
               reducedMotion={motionInhibited}
               onHover={(h) => setHoveredAnchor(h ? kind : (prev) => (prev === kind ? null : prev as AnchorKind))}
@@ -987,6 +1007,12 @@ interface InteractiveAnchorProps {
   kind: AnchorKind
   index: number
   position: [number, number, number]
+  // Round 75 · per-anchor click-proxy geometry. Defaults to the
+  // R47 sphere(0.15) if omitted. Cofre overrides to a box matching
+  // the actual Chest_14 AABB so the click zone covers the whole
+  // visible chest (75×47×67cm) instead of a 30cm sphere offset
+  // below it.
+  proxy?: ProxyGeom
   // `label` prop was removed in round-3 single-issue fix (no longer
   // any consumer · the drei <Html> floating pill is gone).
   hovered: boolean
@@ -998,6 +1024,7 @@ interface InteractiveAnchorProps {
 function InteractiveAnchor({
   index,
   position,
+  proxy,
   hovered,
   reducedMotion,
   onHover,
@@ -1034,15 +1061,17 @@ function InteractiveAnchor({
           onClick()
         }}
       >
-        <sphereGeometry args={[0.15, 16, 16]} />
-        {/* Round 6 single-issue fix · the proxy sphere is now fully
-            invisible (meshBasicMaterial · opacity 0 · depthWrite off).
-            Raycast still hits the geometry so pointer/click events
-            continue to fire · only the visual chrome is gone. The
-            idle-pulse hook upstream still runs (it mutates
-            emissiveIntensity which MeshBasicMaterial silently ignores
-            · cost is one extra property write per frame · cheaper than
-            restructuring the hook). */}
+        {/* Round 75 · proxy geometry varies per anchor. Defaults to
+            sphere(0.15) (R47) for barco + palmeras · cofre passes a
+            box matching Chest_14 AABB so the entire chest is
+            clickable. Mesh is invisible (R6 · meshBasicMaterial
+            opacity 0 + depthWrite off) but raycast hits regardless
+            of shape. */}
+        {proxy?.shape === "box" ? (
+          <boxGeometry args={proxy.size} />
+        ) : (
+          <sphereGeometry args={[proxy?.radius ?? 0.15, 16, 16]} />
+        )}
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
       {/* Floating drei <Html> label was removed in round-3 single-issue
