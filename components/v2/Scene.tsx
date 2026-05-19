@@ -59,11 +59,15 @@ export type AnchorKind = "cofre" | "barco" | "palmeras"
 
 interface SceneProps {
   onAnchorClick: (anchor: AnchorKind) => void
-  /** Round 85 · cofre click toggles this · in-scene 3D pergamino
-   *  animates emerge from cofre when true, retracts when false. */
   treasureOpen?: boolean
   onTreasureClose?: () => void
   onOpenMenu?: () => void
+  /** Round 92 · in-scene order journey · null when no tracker is
+   *  active; a 0..1 progress value when a tracker session is on.
+   *  Drives a cloned Boat_15 from the island shore toward a house
+   *  primitive set off-shore. Status text shows separately as a
+   *  background-less overlay in LandingV2. */
+  trackerProgress?: number | null
 }
 
 /**
@@ -115,6 +119,7 @@ export function Scene({
   treasureOpen = false,
   onTreasureClose,
   onOpenMenu,
+  trackerProgress = null,
 }: SceneProps) {
   // Round 85 · auto-apply discount when the cofre opens · the 3D
   // pergamino reveal handles the visual, the cart still gets
@@ -271,16 +276,17 @@ export function Scene({
               [-2.14..-1.81]). */}
           <SurfboardModel position={[-1.307, 0.4, -1.7]} rotation={[0.3, Math.PI / 2, Math.PI / 2]} scale={0.7} />
 
-          {/* Round 85 · pergamino emerges FROM the cofre on click.
-              Hidden at rest (scale 0 inside cofre at world Y=0.16)
-              · cofre click flips `open` true · animates upward to
-              [0, 1.4, 0.5] and scales to 0.5. Has the promo text
-              drawn directly on its surface (CanvasTexture child).
-              Cofre click again retracts back into the cofre. */}
+          {/* Round 85 · pergamino emerges FROM the cofre on click. */}
           <PergaminoPropModel
             open={treasureOpen}
             onClose={onTreasureClose}
           />
+
+          {/* Round 92 · in-scene order journey · cloned Boat_15 +
+              house primitive · canoe sails from the island shore
+              toward the house off-shore. Visible only when the
+              tracker is active (trackerProgress != null). */}
+          <OrderJourneyTracker progress={trackerProgress} />
 
           {(Object.keys(ANCHOR_POSITIONS) as AnchorKind[]).map((kind, idx) => (
             <InteractiveAnchor
@@ -648,6 +654,143 @@ function SignModel(props: React.ComponentProps<"group">) {
 function SurfboardModel(props: React.ComponentProps<"group">) {
   const { scene } = useGLTF(naufragoAssets.surfboard)
   return <primitive object={scene} {...props} />
+}
+
+/**
+ * OrderJourneyTracker · Round 92.
+ *
+ * In-scene visual of an order in flight · a clone of Boat_15 from
+ * the island GLB sails from the island shore toward a small house
+ * primitive set off-shore. The user requested this to replace the
+ * R91 bottom-sheet panel · "duplicado de la canoa que ya existe
+ * saliendo de la isla y el punto de llegada es una casa · el
+ * cuadro de información debe ser sin fondo".
+ *
+ * Progress · 0..1
+ *   0   · canoe parked at the island boat dock (same XYZ as Boat_15)
+ *   1   · canoe arrived at the house
+ * The status text (RECIBIDO / ACEPTADO / ...) maps to a 0..1
+ * fraction and the canoe lerps. Status TEXT itself is rendered as
+ * a background-less overlay in LandingV2 · this component is
+ * pure 3D scene chrome.
+ *
+ * House · 4 boxes + a cone roof + a small smoke-puff sphere.
+ * Low-poly so the visual stays cohesive with the island GLB.
+ */
+function OrderJourneyTracker({ progress }: { progress: number | null }) {
+  const { scene } = useGLTF(naufragoAssets.island)
+  const cloneRef = useRef<THREE.Object3D | null>(null)
+  const containerRef = useRef<THREE.Group>(null)
+  const reducedMotion = usePrefersReducedMotion()
+
+  // Boat dock origin (same world position as Boat_15 post-R22 +
+  // R25 lowering). Boat sits at ~[1.15, -0.31, 1.77] in the live
+  // scene · use as journey start.
+  const START: [number, number, number] = [1.15, -0.31, 1.77]
+  // House dock · off-shore right of the island. Y=-0.36 so the
+  // base sits at water surface (ocean Y=-0.4). Z=4.5 keeps it
+  // in cam frustum (cam at Z=9 looking at origin).
+  const END: [number, number, number] = [3.6, -0.36, 4.5]
+
+  // Clone Boat_15 once on mount · stored on a ref, never replaced.
+  useEffect(() => {
+    if (cloneRef.current) return
+    const boat = scene.getObjectByName("Boat_15")
+    if (!boat) return
+    const clone = boat.clone(true)
+    clone.position.set(...START)
+    cloneRef.current = clone
+  }, [scene])
+
+  useFrame((state) => {
+    const c = cloneRef.current
+    if (!c) return
+    const active = progress !== null
+    // Hide the whole tracker (boat + house) when inactive · keeps
+    // the scene clean and the raycaster free.
+    if (containerRef.current) containerRef.current.visible = active
+    if (!active) return
+    const t = Math.min(Math.max(progress ?? 0, 0), 1)
+    // Linear lerp along the journey path · simple, readable.
+    const x = START[0] + (END[0] - START[0]) * t
+    const z = START[2] + (END[2] - START[2]) * t
+    // Subtle Y bob while in flight (mid-journey only · idle at
+    // both ends · the R31 wave bob already runs on the original
+    // Boat_15 · we add a softer one here so the clone reads alive).
+    const inFlight = t > 0.15 && t < 0.95
+    const bob =
+      reducedMotion || !inFlight
+        ? 0
+        : Math.sin(state.clock.elapsedTime * 1.2) * 0.018
+    c.position.set(x, START[1] + bob, z)
+    // Yaw the boat to face the heading (towards house · the path
+    // is mostly +Z + slight +X · simple atan2).
+    const dx = END[0] - START[0]
+    const dz = END[2] - START[2]
+    c.rotation.y = Math.atan2(dx, dz)
+  })
+
+  return (
+    <group ref={containerRef} visible={progress !== null}>
+      {cloneRef.current ? (
+        <primitive object={cloneRef.current} />
+      ) : null}
+      <HousePrim position={END} />
+    </group>
+  )
+}
+
+/**
+ * Minimal beach-shack house · stacked primitives, palette
+ * sympathetic to the island. Body wood, roof clay-red, door dark
+ * wood, smoke puff white. No textures · keeps it light.
+ */
+function HousePrim({
+  position,
+}: {
+  position: [number, number, number]
+}) {
+  return (
+    <group position={position}>
+      {/* Body */}
+      <mesh position={[0, 0.3, 0]} castShadow>
+        <boxGeometry args={[0.7, 0.55, 0.55]} />
+        <meshStandardMaterial color="#C8956D" roughness={0.9} />
+      </mesh>
+      {/* Roof · cone with 4 sides reads as a hip roof */}
+      <mesh position={[0, 0.72, 0]} rotation={[0, Math.PI / 4, 0]}>
+        <coneGeometry args={[0.55, 0.32, 4]} />
+        <meshStandardMaterial color="#7F1D1D" roughness={0.85} />
+      </mesh>
+      {/* Door */}
+      <mesh position={[0, 0.18, 0.28]}>
+        <boxGeometry args={[0.18, 0.30, 0.02]} />
+        <meshStandardMaterial color="#3A2818" roughness={1.0} />
+      </mesh>
+      {/* Window L + R */}
+      <mesh position={[-0.18, 0.36, 0.28]}>
+        <boxGeometry args={[0.12, 0.12, 0.015]} />
+        <meshStandardMaterial color="#4DD4D8" emissive="#4DD4D8" emissiveIntensity={0.3} roughness={0.5} />
+      </mesh>
+      <mesh position={[0.18, 0.36, 0.28]}>
+        <boxGeometry args={[0.12, 0.12, 0.015]} />
+        <meshStandardMaterial color="#4DD4D8" emissive="#4DD4D8" emissiveIntensity={0.3} roughness={0.5} />
+      </mesh>
+      {/* Chimney + smoke puffs */}
+      <mesh position={[0.18, 0.78, -0.12]}>
+        <boxGeometry args={[0.08, 0.18, 0.08]} />
+        <meshStandardMaterial color="#5B3A24" roughness={0.95} />
+      </mesh>
+      <mesh position={[0.22, 1.0, -0.12]}>
+        <sphereGeometry args={[0.05, 8, 8]} />
+        <meshBasicMaterial color="#F5E6CB" transparent opacity={0.7} />
+      </mesh>
+      <mesh position={[0.28, 1.13, -0.10]}>
+        <sphereGeometry args={[0.04, 8, 8]} />
+        <meshBasicMaterial color="#F5E6CB" transparent opacity={0.55} />
+      </mesh>
+    </group>
+  )
 }
 
 /**

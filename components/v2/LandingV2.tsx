@@ -24,7 +24,11 @@ import { MenuModal } from "./MenuModal"
 // Round 85 · TreasureRewardModal (R82 castaway SVG modal) retired ·
 // the 3D pergamino in-scene that emerges from the cofre on click
 // replaces it · same discount flow, more immersive reveal.
-import { OrderTracker, useDemoOrderState } from "./OrderTracker"
+import {
+  OrderStatusOverlay,
+  statusToProgress,
+  useDemoOrderState,
+} from "./OrderTracker"
 import { SceneErrorBoundary } from "./SceneErrorBoundary"
 import type { AnchorKind } from "./Scene"
 
@@ -87,6 +91,7 @@ function LandingInner() {
             treasureOpen={treasureOpen}
             onTreasureClose={() => setTreasureOpen(false)}
             onOpenMenu={openMenu}
+            trackerProgress={trackerOpen ? statusToProgress(demoStatus) : null}
           />
         </SceneErrorBoundary>
       </div>
@@ -185,35 +190,37 @@ function LandingInner() {
       <MenuModal open={menuOpen} onClose={() => setMenuOpen(false)} />
       <OverlayPanels active={overlay} onClose={() => setOverlay(null)} />
 
-      {/* Round 91 · Order tracker (Domino's-style) · demo mode.
-          Floating CTA bottom-right above the PromoTicker. Click
-          opens the tracker with a scripted state machine that
-          auto-advances through the 6 stages over ~22s so the
-          experience is visible without a real order. Replaced
-          by real Supabase wiring in R92+. */}
-      <button
-        type="button"
-        onClick={() => setTrackerOpen(true)}
-        aria-label="Ver mi pedido"
-        className="fixed bottom-[96px] right-4 z-40 flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-semibold shadow-lg transition-transform hover:translate-y-[-1px]"
-        style={{
-          background:
-            "linear-gradient(120deg, rgba(76,29,149,0.96) 0%, rgba(15,23,42,0.97) 100%)",
-          borderColor: "rgba(77,212,216,0.55)",
-          color: "#4DD4D8",
-          boxShadow: "0 12px 28px rgba(76,29,149,0.45)",
-        }}
-      >
-        <span
-          className="inline-block h-2 w-2 rounded-full"
+      {/* Round 92 · Order tracker · canoe sails from island to
+          house in the 3D scene (Scene.tsx · OrderJourneyTracker).
+          Status text rides over the scene as a background-less
+          overlay so the ocean reads through. Trigger button below
+          is subtler than R91 · text-only with celeste underline +
+          tiny gold dot when active. */}
+      {!trackerOpen ? (
+        <button
+          type="button"
+          onClick={() => setTrackerOpen(true)}
+          aria-label="Ver mi pedido"
+          className="fixed bottom-[96px] right-4 z-40 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-colors hover:bg-white/10"
           style={{
-            background: "#FACC15",
-            boxShadow: "0 0 8px rgba(252,211,77,0.8)",
+            color: "#4DD4D8",
+            background: "rgba(15,23,42,0.45)",
+            backdropFilter: "blur(6px)",
+            border: "1px solid rgba(77,212,216,0.35)",
+            textShadow: "0 1px 4px rgba(0,0,0,0.9)",
           }}
-        />
-        Ver mi pedido
-      </button>
-      <OrderTracker
+        >
+          <span
+            className="inline-block h-1.5 w-1.5 rounded-full"
+            style={{
+              background: "#FACC15",
+              boxShadow: "0 0 6px rgba(252,211,77,0.85)",
+            }}
+          />
+          Ver mi pedido
+        </button>
+      ) : null}
+      <OrderStatusOverlay
         open={trackerOpen}
         onClose={() => setTrackerOpen(false)}
         currentStatus={demoStatus}
@@ -229,7 +236,6 @@ function LandingInner() {
                   ? 18
                   : 25
         }
-        riderNote="Vengo en moto azul · suena la bocina"
       />
     </main>
   )
