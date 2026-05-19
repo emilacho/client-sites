@@ -1,23 +1,31 @@
 "use client"
 /**
- * OrderTracker · Round 92.
+ * OrderTracker · Round 93 (cuerda + countdown + confettis).
  *
- * R91 shipped a Domino's-style bottom-sheet panel · user feedback
- * was that the panel didn't fit the landing's visual language and
- * asked for a duplicated canoe sailing across the ocean to a
- * house, with the status overlay rendered WITHOUT a background so
- * the ocean reads through.
+ * Domino's-tracker DNA · grafico persistente del recorrido.
+ *  - Canoa (existing R92 OrderJourneyTracker in Scene.tsx) ·
+ *    sails island → house · stays as the spatial story.
+ *  - Cuerda náutica (R93) · 6 knots horizontal SVG above the
+ *    3D scene · always visible while a tracker is open · the
+ *    Domino's "5-dot bar" adapted to Náufrago's pirate idiom.
+ *  - Status overlay (R92) · top-center handwritten label + ETA ·
+ *    no background · ocean reads through.
+ *  - Countdown vivo (R93) · ETA ticks down second-by-second in
+ *    Caveat handwritten font.
+ *  - Coconut confetti (R93) · 36 cocos rain when ENTREGADO ·
+ *    plus celebration mode swaps the overlay to thank-you +
+ *    star rating + "Pedir de nuevo" CTA.
  *
- * R92 retires the panel · keeps the OrderStatus enum + demo state
- * machine. The 3D canoe + house live in Scene.tsx
- * (`OrderJourneyTracker`). This file exports:
+ * Exports:
  *  - OrderStatus enum
- *  - statusToProgress · maps 6 states to a 0..1 lerp position
- *  - useDemoOrderState · auto-advances the demo cadence
- *  - OrderStatusOverlay · background-less HTML overlay showing
- *    the current step + ETA over the 3D scene
+ *  - NAUFRAGO_ORDER_STATUSES (ordered)
+ *  - statusToProgress · 0..1 for canoe lerp
+ *  - useDemoOrderState · auto-advance demo cadence
+ *  - OrderStatusOverlay · top-center label
+ *  - RopeTimeline · 6-knots rope above the scene
+ *  - CocoConfetti · ENTREGADO celebration sprites
  */
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { X } from "lucide-react"
 
@@ -89,6 +97,10 @@ export interface OrderStatusOverlayProps {
   currentStatus: OrderStatus
   orderCode?: string
   etaMinutes?: number
+  /** Called when the user taps a star rating · celebration mode */
+  onRate?: (stars: number) => void
+  /** Called when the user clicks "Pedir de nuevo" · celebration mode */
+  onReorder?: () => void
 }
 
 export function OrderStatusOverlay({
@@ -97,6 +109,8 @@ export function OrderStatusOverlay({
   currentStatus,
   orderCode,
   etaMinutes,
+  onRate,
+  onReorder,
 }: OrderStatusOverlayProps) {
   const copy = COPY[currentStatus]
   const isComplete = currentStatus === "ENTREGADO"
@@ -124,76 +138,29 @@ export function OrderStatusOverlay({
           transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
           className="pointer-events-none fixed left-1/2 top-24 z-40 -translate-x-1/2 text-center"
           style={{
-            // Background-less per user · the ocean reads through.
-            // Heavy drop-shadow + thin text-stroke keep readability.
             textShadow:
               "0 2px 12px rgba(0,0,0,0.85), 0 1px 4px rgba(0,0,0,0.95)",
           }}
         >
-          {/* Top tiny label · order code + ETA */}
+          {/* Top tiny label · order code + countdown */}
           <div
             className="font-mono uppercase tracking-[0.28em]"
             style={{ color: "#4DD4D8", fontSize: "11px" }}
           >
-            {orderCode ?? "NF · pedido"}{" "}
-            {!isComplete && etaMinutes ? (
-              <span style={{ color: "#FACC15" }}>· ~{etaMinutes} min</span>
+            {orderCode ?? "NF · pedido"}
+            {!isComplete && etaMinutes && etaMinutes > 0 ? (
+              <>
+                {" · "}
+                <CountdownTime seconds={etaMinutes * 60} />
+              </>
             ) : null}
           </div>
 
-          {/* Big status · emoji + label */}
-          <div
-            className="mt-2 flex items-center justify-center gap-3"
-            style={{
-              fontFamily:
-                'var(--font-bebas), "Bebas Neue", system-ui, sans-serif',
-              letterSpacing: "0.05em",
-            }}
-          >
-            <motion.span
-              key={copy.id}
-              initial={{ scale: 0.6, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.35 }}
-              style={{
-                fontSize: "44px",
-                filter:
-                  "drop-shadow(0 4px 16px rgba(0,0,0,0.8))",
-              }}
-            >
-              {copy.emoji}
-            </motion.span>
-            <motion.span
-              key={`${copy.id}-label`}
-              initial={{ x: -8, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ duration: 0.4 }}
-              style={{
-                color: isComplete ? "#FACC15" : "#4DD4D8",
-                fontSize: "42px",
-                lineHeight: 1,
-              }}
-            >
-              {copy.label}
-            </motion.span>
-          </div>
-
-          {/* Detail line · smaller, sepia for contrast */}
-          <motion.div
-            key={`${copy.id}-detail`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-            className="mt-1"
-            style={{
-              color: "rgba(255,255,255,0.92)",
-              fontSize: "14px",
-              fontFamily:
-                'var(--font-inter), system-ui, -apple-system, sans-serif',
-            }}
-          >
-            {copy.detail}
-          </motion.div>
+          {isComplete ? (
+            <CelebrationContent onRate={onRate} onReorder={onReorder} />
+          ) : (
+            <StandardContent copy={copy} />
+          )}
 
           {/* Close button · pointer events re-enabled */}
           <button
@@ -211,6 +178,405 @@ export function OrderStatusOverlay({
             <X className="h-4 w-4" />
           </button>
         </motion.div>
+      ) : null}
+    </AnimatePresence>
+  )
+}
+
+/* ─── Standard status content · emoji + label + detail ──────── */
+function StandardContent({ copy }: { copy: StatusCopy }) {
+  return (
+    <>
+      <div
+        className="mt-2 flex items-center justify-center gap-3"
+        style={{
+          fontFamily:
+            'var(--font-bebas), "Bebas Neue", system-ui, sans-serif',
+          letterSpacing: "0.05em",
+        }}
+      >
+        <motion.span
+          key={copy.id}
+          initial={{ scale: 0.6, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.35 }}
+          style={{
+            fontSize: "44px",
+            filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.8))",
+          }}
+        >
+          {copy.emoji}
+        </motion.span>
+        <motion.span
+          key={`${copy.id}-label`}
+          initial={{ x: -8, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.4 }}
+          style={{ color: "#4DD4D8", fontSize: "42px", lineHeight: 1 }}
+        >
+          {copy.label}
+        </motion.span>
+      </div>
+      <motion.div
+        key={`${copy.id}-detail`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+        className="mt-1"
+        style={{
+          color: "rgba(255,255,255,0.92)",
+          fontSize: "14px",
+          fontFamily:
+            'var(--font-inter), system-ui, -apple-system, sans-serif',
+        }}
+      >
+        {copy.detail}
+      </motion.div>
+    </>
+  )
+}
+
+/* ─── Celebration content · stars + reorder CTA · ENTREGADO ─── */
+function CelebrationContent({
+  onRate,
+  onReorder,
+}: {
+  onRate?: (s: number) => void
+  onReorder?: () => void
+}) {
+  const [rated, setRated] = useState<number | null>(null)
+  const [hover, setHover] = useState(0)
+  const stars = [1, 2, 3, 4, 5]
+  return (
+    <div className="mt-2 flex flex-col items-center gap-2">
+      <motion.div
+        initial={{ scale: 0.5, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+        style={{
+          fontSize: "44px",
+          filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.8))",
+        }}
+      >
+        🎉
+      </motion.div>
+      <motion.div
+        initial={{ y: 10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.15 }}
+        style={{
+          fontFamily:
+            'var(--font-handwritten), "Homemade Apple", cursive',
+          color: "#FACC15",
+          fontSize: "36px",
+          lineHeight: 1.1,
+        }}
+      >
+        ¡Que aproveche, náufrago!
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4, delay: 0.35 }}
+        className="pointer-events-auto mt-1 flex items-center gap-1.5"
+      >
+        {stars.map((s) => {
+          const active = (rated ?? hover) >= s
+          return (
+            <button
+              key={s}
+              type="button"
+              onMouseEnter={() => setHover(s)}
+              onMouseLeave={() => setHover(0)}
+              onClick={() => {
+                setRated(s)
+                onRate?.(s)
+              }}
+              aria-label={`${s} estrellas`}
+              style={{
+                fontSize: "28px",
+                lineHeight: 1,
+                color: active ? "#FACC15" : "rgba(255,255,255,0.35)",
+                filter: active
+                  ? "drop-shadow(0 0 8px rgba(252,211,77,0.7))"
+                  : "none",
+                transition: "color .15s, filter .15s",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              ★
+            </button>
+          )
+        })}
+      </motion.div>
+      {rated !== null ? (
+        <motion.button
+          type="button"
+          onClick={onReorder}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="pointer-events-auto mt-1 rounded-full bg-gradient-to-r from-[#4DD4D8] to-[#7c3aed] px-5 py-2 text-sm font-semibold text-white shadow-md shadow-violet-900/40"
+        >
+          Pedir de nuevo
+        </motion.button>
+      ) : null}
+    </div>
+  )
+}
+
+/* ─── Countdown · MM:SS handwritten · ticks every second ────── */
+function CountdownTime({ seconds }: { seconds: number }) {
+  const [remaining, setRemaining] = useState(seconds)
+  // Reset internal counter when the target seconds change (status
+  // transitions feed a new etaMinutes value).
+  useEffect(() => {
+    setRemaining(seconds)
+  }, [seconds])
+  useEffect(() => {
+    if (remaining <= 0) return
+    const id = window.setInterval(() => {
+      setRemaining((r) => Math.max(0, r - 1))
+    }, 1000)
+    return () => window.clearInterval(id)
+  }, [remaining])
+  const mm = Math.floor(remaining / 60)
+  const ss = remaining % 60
+  const display =
+    remaining <= 0
+      ? "¡llegando!"
+      : `${mm}:${ss.toString().padStart(2, "0")} min`
+  return (
+    <span
+      style={{
+        color: remaining <= 180 ? "#FACC15" : "#FACC15",
+        fontFamily:
+          'var(--font-caveat), "Caveat", "Brush Script MT", cursive',
+        fontSize: "16px",
+        letterSpacing: "0.02em",
+        textTransform: "none",
+      }}
+    >
+      {display}
+    </span>
+  )
+}
+
+/* ─── RopeTimeline · 6 knots on a nautical rope · persistent ── */
+export function RopeTimeline({
+  open,
+  currentStatus,
+}: {
+  open: boolean
+  currentStatus: OrderStatus
+}) {
+  const activeIdx = NAUFRAGO_ORDER_STATUSES.indexOf(currentStatus)
+  // Knot positions along the SVG width · 6 knots, 8% padding each side
+  const knots = useMemo(
+    () =>
+      NAUFRAGO_ORDER_STATUSES.map((id, i) => {
+        const x = 8 + (i * (100 - 16)) / (NAUFRAGO_ORDER_STATUSES.length - 1)
+        return { id, x, copy: COPY[id] }
+      }),
+    [],
+  )
+  const activeX = knots[activeIdx]?.x ?? 8
+  return (
+    <AnimatePresence>
+      {open ? (
+        <motion.div
+          key="rope"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.4 }}
+          className="pointer-events-none fixed inset-x-0 top-[68px] z-30 px-2"
+          aria-hidden
+        >
+          <svg
+            viewBox="0 0 100 22"
+            preserveAspectRatio="none"
+            className="block h-12 w-full max-w-[1000px] mx-auto"
+            style={{
+              filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.55))",
+            }}
+          >
+            {/* Inactive rope · braided look via dashed stroke */}
+            <path
+              d="M 8 12 Q 25 8 50 12 T 92 12"
+              stroke="rgba(139,96,52,0.9)"
+              strokeWidth="2"
+              fill="none"
+              strokeLinecap="round"
+              strokeDasharray="1.2 0.8"
+            />
+            {/* Active rope · celeste, trimmed to current progress */}
+            <defs>
+              <clipPath id="active-rope-clip">
+                <rect x="0" y="0" width={activeX} height="22" />
+              </clipPath>
+            </defs>
+            <path
+              d="M 8 12 Q 25 8 50 12 T 92 12"
+              stroke="#4DD4D8"
+              strokeWidth="2.2"
+              fill="none"
+              strokeLinecap="round"
+              strokeDasharray="1.2 0.8"
+              clipPath="url(#active-rope-clip)"
+            />
+
+            {/* Knots */}
+            {knots.map((k, i) => {
+              const status: "complete" | "active" | "pending" =
+                i < activeIdx ? "complete" : i === activeIdx ? "active" : "pending"
+              const cy = 12 + (i % 2 === 0 ? -0.6 : 0.6) // tiny wave offset
+              return (
+                <KnotMark key={k.id} cx={k.x} cy={cy} status={status} />
+              )
+            })}
+          </svg>
+          {/* Knot labels · below the rope · Bebas Neue uppercase */}
+          <div className="mx-auto mt-1 grid max-w-[1000px] grid-cols-6 px-2 text-center">
+            {knots.map((k, i) => {
+              const status: "complete" | "active" | "pending" =
+                i < activeIdx ? "complete" : i === activeIdx ? "active" : "pending"
+              const color =
+                status === "active"
+                  ? "#FACC15"
+                  : status === "complete"
+                    ? "#4DD4D8"
+                    : "rgba(255,255,255,0.45)"
+              return (
+                <span
+                  key={k.id}
+                  className="font-mono uppercase"
+                  style={{
+                    color,
+                    fontSize: "9px",
+                    letterSpacing: "0.18em",
+                    textShadow:
+                      "0 1px 4px rgba(0,0,0,0.85), 0 0 2px rgba(0,0,0,0.95)",
+                  }}
+                >
+                  {k.copy.label}
+                </span>
+              )
+            })}
+          </div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+  )
+}
+
+function KnotMark({
+  cx,
+  cy,
+  status,
+}: {
+  cx: number
+  cy: number
+  status: "complete" | "active" | "pending"
+}) {
+  const color =
+    status === "active"
+      ? "#FACC15"
+      : status === "complete"
+        ? "#4DD4D8"
+        : "rgba(255,255,255,0.35)"
+  return (
+    <g>
+      {status === "active" ? (
+        <motion.circle
+          cx={cx}
+          cy={cy}
+          r="3.2"
+          fill="rgba(252,211,77,0.25)"
+          animate={{ r: [3.2, 4.2, 3.2] }}
+          transition={{ duration: 1.6, repeat: Infinity }}
+        />
+      ) : null}
+      <circle
+        cx={cx}
+        cy={cy}
+        r="1.6"
+        fill={color}
+        stroke="rgba(58,40,24,0.85)"
+        strokeWidth="0.4"
+      />
+    </g>
+  )
+}
+
+/* ─── CocoConfetti · 36 cocos rain on ENTREGADO ─────────────── */
+export function CocoConfetti({ active }: { active: boolean }) {
+  // Stable random offsets per piece · regenerated only when active
+  // flips true (so re-renders during the fall don't reshuffle).
+  const pieces = useMemo(() => {
+    if (!active) return [] as Array<{
+      id: number
+      left: number
+      delay: number
+      duration: number
+      rotateStart: number
+      rotateEnd: number
+      size: number
+      emoji: string
+    }>
+    const palette = ["🥥", "🌴", "⭐", "✨"]
+    return Array.from({ length: 36 }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      delay: Math.random() * 1.5,
+      duration: 2.4 + Math.random() * 2.2,
+      rotateStart: Math.random() * 360,
+      rotateEnd: Math.random() * 720 - 360,
+      size: 18 + Math.random() * 18,
+      emoji: palette[Math.floor(Math.random() * palette.length)],
+    }))
+  }, [active])
+
+  return (
+    <AnimatePresence>
+      {active ? (
+        <div
+          key="confetti"
+          className="pointer-events-none fixed inset-0 z-40 overflow-hidden"
+          aria-hidden
+        >
+          {pieces.map((p) => (
+            <motion.span
+              key={p.id}
+              initial={{
+                top: -60,
+                opacity: 0,
+                rotate: p.rotateStart,
+              }}
+              animate={{
+                top: "110%",
+                opacity: [0, 1, 1, 0],
+                rotate: p.rotateEnd,
+              }}
+              transition={{
+                duration: p.duration,
+                delay: p.delay,
+                ease: "linear",
+                times: [0, 0.1, 0.85, 1],
+              }}
+              style={{
+                position: "absolute",
+                left: `${p.left}%`,
+                fontSize: `${p.size}px`,
+                filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.4))",
+              }}
+            >
+              {p.emoji}
+            </motion.span>
+          ))}
+        </div>
       ) : null}
     </AnimatePresence>
   )

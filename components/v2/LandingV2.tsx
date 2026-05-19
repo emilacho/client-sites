@@ -26,6 +26,8 @@ import { MenuModal } from "./MenuModal"
 // replaces it · same discount flow, more immersive reveal.
 import {
   OrderStatusOverlay,
+  RopeTimeline,
+  CocoConfetti,
   statusToProgress,
   useDemoOrderState,
 } from "./OrderTracker"
@@ -220,6 +222,12 @@ function LandingInner() {
           Ver mi pedido
         </button>
       ) : null}
+      {/* R93 · cuerda náutica horizontal con 6 nudos · siempre
+          visible mientras el tracker está abierto · el grafico
+          persistente del recorrido (versión Náufrago del 5-dot
+          bar de Domino's). */}
+      <RopeTimeline open={trackerOpen} currentStatus={demoStatus} />
+
       <OrderStatusOverlay
         open={trackerOpen}
         onClose={() => setTrackerOpen(false)}
@@ -236,7 +244,21 @@ function LandingInner() {
                   ? 18
                   : 25
         }
+        onRate={(s) => {
+          // R96 · wire this to Supabase order_ratings table
+          console.info("[order-rating]", s)
+        }}
+        onReorder={() => {
+          setTrackerOpen(false)
+          openMenu()
+        }}
       />
+
+      {/* R93 · confettis cocos cayendo cuando llega a ENTREGADO ·
+          36 sprites mezcla cocos/palms/estrellas con duración +
+          delay random · cubre toda la pantalla por encima del 3D
+          pero pointer-events-none. */}
+      <CocoConfetti active={trackerOpen && demoStatus === "ENTREGADO"} />
     </main>
   )
 }
