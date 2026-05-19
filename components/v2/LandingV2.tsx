@@ -24,12 +24,10 @@ import { MenuModal } from "./MenuModal"
 // Round 85 · TreasureRewardModal (R82 castaway SVG modal) retired ·
 // the 3D pergamino in-scene that emerges from the cofre on click
 // replaces it · same discount flow, more immersive reveal.
-import {
-  OrderStatusOverlay,
-  RopeTimeline,
-  CocoConfetti,
-  useDemoOrderState,
-} from "./OrderTracker"
+// Round 95 · OrderTracker (R91-R94 · canoa repartidor + rope +
+// confetti + status overlay) eliminado per user · approach
+// distinto en evaluación. La isla, cofre, pergamino, hover cards
+// permanecen intactos.
 import { SceneErrorBoundary } from "./SceneErrorBoundary"
 import type { AnchorKind } from "./Scene"
 
@@ -62,10 +60,8 @@ function LandingInner() {
   const [menuOpen, setMenuOpen] = useState(false)
   // Round 77 · cofre click opens the treasure reward modal.
   const [treasureOpen, setTreasureOpen] = useState(false)
-  // Round 91 · Domino's-style order tracker · demo mode for now ·
-  // Round 92+ wires this to real Supabase order state.
-  const [trackerOpen, setTrackerOpen] = useState(false)
-  const demoStatus = useDemoOrderState(trackerOpen)
+  // Round 95 · OrderTracker state eliminado · pendiente nuevo
+  // approach del usuario.
 
   const openMenu = () => setMenuOpen(true)
 
@@ -92,7 +88,6 @@ function LandingInner() {
             treasureOpen={treasureOpen}
             onTreasureClose={() => setTreasureOpen(false)}
             onOpenMenu={openMenu}
-            trackerStatus={trackerOpen ? demoStatus : null}
           />
         </SceneErrorBoundary>
       </div>
@@ -191,73 +186,6 @@ function LandingInner() {
       <MenuModal open={menuOpen} onClose={() => setMenuOpen(false)} />
       <OverlayPanels active={overlay} onClose={() => setOverlay(null)} />
 
-      {/* Round 92 · Order tracker · canoe sails from island to
-          house in the 3D scene (Scene.tsx · OrderJourneyTracker).
-          Status text rides over the scene as a background-less
-          overlay so the ocean reads through. Trigger button below
-          is subtler than R91 · text-only with celeste underline +
-          tiny gold dot when active. */}
-      {!trackerOpen ? (
-        <button
-          type="button"
-          onClick={() => setTrackerOpen(true)}
-          aria-label="Ver mi pedido"
-          className="fixed bottom-[96px] right-4 z-40 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-colors hover:bg-white/10"
-          style={{
-            color: "#4DD4D8",
-            background: "rgba(15,23,42,0.45)",
-            backdropFilter: "blur(6px)",
-            border: "1px solid rgba(77,212,216,0.35)",
-            textShadow: "0 1px 4px rgba(0,0,0,0.9)",
-          }}
-        >
-          <span
-            className="inline-block h-1.5 w-1.5 rounded-full"
-            style={{
-              background: "#FACC15",
-              boxShadow: "0 0 6px rgba(252,211,77,0.85)",
-            }}
-          />
-          Ver mi pedido
-        </button>
-      ) : null}
-      {/* R93 · cuerda náutica horizontal con 6 nudos · siempre
-          visible mientras el tracker está abierto · el grafico
-          persistente del recorrido (versión Náufrago del 5-dot
-          bar de Domino's). */}
-      <RopeTimeline open={trackerOpen} currentStatus={demoStatus} />
-
-      <OrderStatusOverlay
-        open={trackerOpen}
-        onClose={() => setTrackerOpen(false)}
-        currentStatus={demoStatus}
-        orderCode="NF-2026"
-        etaMinutes={
-          demoStatus === "ENTREGADO"
-            ? 0
-            : demoStatus === "EN_CAMINO"
-              ? 8
-              : demoStatus === "LISTO"
-                ? 12
-                : demoStatus === "COCINANDO"
-                  ? 18
-                  : 25
-        }
-        onRate={(s) => {
-          // R96 · wire this to Supabase order_ratings table
-          console.info("[order-rating]", s)
-        }}
-        onReorder={() => {
-          setTrackerOpen(false)
-          openMenu()
-        }}
-      />
-
-      {/* R93 · confettis cocos cayendo cuando llega a ENTREGADO ·
-          36 sprites mezcla cocos/palms/estrellas con duración +
-          delay random · cubre toda la pantalla por encima del 3D
-          pero pointer-events-none. */}
-      <CocoConfetti active={trackerOpen && demoStatus === "ENTREGADO"} />
     </main>
   )
 }
