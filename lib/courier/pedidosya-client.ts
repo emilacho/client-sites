@@ -1,5 +1,15 @@
 import "server-only"
 /**
+ * @deprecated Round 97 · superseded by
+ * `lib/courier/pedidosya-courier.ts` which implements the
+ * shared `CourierProvider` interface. New routes (R98+) consume
+ * the new abstraction · the old `/api/courier/{quote,order,
+ * webhook}` endpoints (R74) still use this file and will be
+ * migrated/removed in R98-R99. Do NOT import this file in new
+ * code · use `getCourierProvider('PEDIDOSYA_COURIER')` instead.
+ *
+ * --- original header below ---
+ *
  * PedidosYa Courier API client · Round 74.
  *
  *  ⚠ SCAFFOLD · the exact endpoint paths, payload field names, and
