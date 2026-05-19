@@ -63,11 +63,19 @@ interface SceneProps {
   onTreasureClose?: () => void
   onOpenMenu?: () => void
   /** Round 92 · in-scene order journey · null when no tracker is
-   *  active; a 0..1 progress value when a tracker session is on.
-   *  Drives a cloned Boat_15 from the island shore toward a house
-   *  primitive set off-shore. Status text shows separately as a
-   *  background-less overlay in LandingV2. */
-  trackerProgress?: number | null
+   *  active; otherwise the active OrderStatus driving the canoe.
+   *  Round 94 · phases RECIBIDO/ACEPTADO/COCINANDO/LISTO keep the
+   *  canoe parked at the island dock (those happen IN the kitchen);
+   *  EN_CAMINO is when the canoe physically departs. Sub-animation
+   *  is time-based inside the Scene so the journey reads smooth. */
+  trackerStatus?:
+    | null
+    | "RECIBIDO"
+    | "ACEPTADO"
+    | "COCINANDO"
+    | "LISTO"
+    | "EN_CAMINO"
+    | "ENTREGADO"
 }
 
 /**
@@ -119,7 +127,7 @@ export function Scene({
   treasureOpen = false,
   onTreasureClose,
   onOpenMenu,
-  trackerProgress = null,
+  trackerStatus = null,
 }: SceneProps) {
   // Round 85 · auto-apply discount when the cofre opens · the 3D
   // pergamino reveal handles the visual, the cart still gets
@@ -284,9 +292,9 @@ export function Scene({
 
           {/* Round 92 · in-scene order journey · cloned Boat_15 +
               house primitive · canoe sails from the island shore
-              toward the house off-shore. Visible only when the
-              tracker is active (trackerProgress != null). */}
-          <OrderJourneyTracker progress={trackerProgress} />
+              toward the house off-shore. Round 94 · phase-aware ·
+              canoe stays at dock during pre-departure phases. */}
+          <OrderJourneyTracker status={trackerStatus} />
 
           {(Object.keys(ANCHOR_POSITIONS) as AnchorKind[]).map((kind, idx) => (
             <InteractiveAnchor
@@ -657,42 +665,39 @@ function SurfboardModel(props: React.ComponentProps<"group">) {
 }
 
 /**
- * OrderJourneyTracker · Round 92.
+ * OrderJourneyTracker · Round 94 (phase-aware courier model).
  *
- * In-scene visual of an order in flight · a clone of Boat_15 from
- * the island GLB sails from the island shore toward a small house
- * primitive set off-shore. The user requested this to replace the
- * R91 bottom-sheet panel · "duplicado de la canoa que ya existe
- * saliendo de la isla y el punto de llegada es una casa · el
- * cuadro de información debe ser sin fondo".
- *
- * Progress · 0..1
- *   0   · canoe parked at the island boat dock (same XYZ as Boat_15)
- *   1   · canoe arrived at the house
- * The status text (RECIBIDO / ACEPTADO / ...) maps to a 0..1
- * fraction and the canoe lerps. Status TEXT itself is rendered as
- * a background-less overlay in LandingV2 · this component is
- * pure 3D scene chrome.
- *
- * House · 4 boxes + a cone roof + a small smoke-puff sphere.
- * Low-poly so the visual stays cohesive with the island GLB.
+ * Like every map-based delivery tracker · the courier (canoe)
+ * STAYS at the restaurant for the kitchen phases and only
+ * physically departs during EN_CAMINO. Each pre-departure phase
+ * has its own micro-animation on the island (chest pulse, kitchen
+ * smoke, the canoe getting loaded with a package) instead of
+ * dragging the courier across the map. Once status flips to
+ * EN_CAMINO, the canoe casts off and a time-based lerp glides it
+ * to the house over ~25s. ENTREGADO docks it at the house.
  */
-function OrderJourneyTracker({ progress }: { progress: number | null }) {
+type TrackerStatus =
+  | "RECIBIDO"
+  | "ACEPTADO"
+  | "COCINANDO"
+  | "LISTO"
+  | "EN_CAMINO"
+  | "ENTREGADO"
+
+function OrderJourneyTracker({ status }: { status: TrackerStatus | null }) {
   const { scene } = useGLTF(naufragoAssets.island)
   const cloneRef = useRef<THREE.Object3D | null>(null)
   const containerRef = useRef<THREE.Group>(null)
+  const packageRef = useRef<THREE.Mesh>(null!)
+  const wakeRef = useRef<THREE.Group>(null!)
   const reducedMotion = usePrefersReducedMotion()
+  // Sub-progress inside EN_CAMINO · 0 when canoe just departed,
+  // 1 when it's about to dock. Time-driven inside useFrame.
+  const journeyTRef = useRef(0)
 
-  // Boat dock origin (same world position as Boat_15 post-R22 +
-  // R25 lowering). Boat sits at ~[1.15, -0.31, 1.77] in the live
-  // scene · use as journey start.
   const START: [number, number, number] = [1.15, -0.31, 1.77]
-  // House dock · off-shore right of the island. Y=-0.36 so the
-  // base sits at water surface (ocean Y=-0.4). Z=4.5 keeps it
-  // in cam frustum (cam at Z=9 looking at origin).
   const END: [number, number, number] = [3.6, -0.36, 4.5]
 
-  // Clone Boat_15 once on mount · stored on a ref, never replaced.
   useEffect(() => {
     if (cloneRef.current) return
     const boat = scene.getObjectByName("Boat_15")
@@ -702,41 +707,191 @@ function OrderJourneyTracker({ progress }: { progress: number | null }) {
     cloneRef.current = clone
   }, [scene])
 
-  useFrame((state) => {
+  // Reset journey progress when status moves OUT of EN_CAMINO/
+  // ENTREGADO so re-opening the tracker starts the canoe back at
+  // the dock.
+  useEffect(() => {
+    if (status !== "EN_CAMINO" && status !== "ENTREGADO") {
+      journeyTRef.current = 0
+    } else if (status === "ENTREGADO") {
+      journeyTRef.current = 1
+    }
+  }, [status])
+
+  useFrame((state, delta) => {
     const c = cloneRef.current
-    if (!c) return
-    const active = progress !== null
-    // Hide the whole tracker (boat + house) when inactive · keeps
-    // the scene clean and the raycaster free.
+    const active = status !== null
     if (containerRef.current) containerRef.current.visible = active
-    if (!active) return
-    const t = Math.min(Math.max(progress ?? 0, 0), 1)
-    // Linear lerp along the journey path · simple, readable.
+    if (!c || !active) return
+
+    // Time-based sub-progression during EN_CAMINO · ~25s door-to-door
+    if (status === "EN_CAMINO") {
+      journeyTRef.current = Math.min(1, journeyTRef.current + delta / 25)
+    } else if (status === "ENTREGADO") {
+      journeyTRef.current = 1
+    } else {
+      journeyTRef.current = 0
+    }
+    const t = journeyTRef.current
+
+    // Canoe position
     const x = START[0] + (END[0] - START[0]) * t
     const z = START[2] + (END[2] - START[2]) * t
-    // Subtle Y bob while in flight (mid-journey only · idle at
-    // both ends · the R31 wave bob already runs on the original
-    // Boat_15 · we add a softer one here so the clone reads alive).
-    const inFlight = t > 0.15 && t < 0.95
+    const inFlight = status === "EN_CAMINO" && t > 0.02 && t < 0.98
     const bob =
       reducedMotion || !inFlight
         ? 0
-        : Math.sin(state.clock.elapsedTime * 1.2) * 0.018
+        : Math.sin(state.clock.elapsedTime * 1.2) * 0.022
     c.position.set(x, START[1] + bob, z)
-    // Yaw the boat to face the heading (towards house · the path
-    // is mostly +Z + slight +X · simple atan2).
     const dx = END[0] - START[0]
     const dz = END[2] - START[2]
     c.rotation.y = Math.atan2(dx, dz)
+
+    // Package on canoe · visible from LISTO onward · sits in the
+    // boat's hold (slight Y above the deck). Local position
+    // expressed in the clone's frame · since the clone keeps its
+    // GLB-native scale, position values are in meters.
+    if (packageRef.current) {
+      const showPackage =
+        status === "LISTO" ||
+        status === "EN_CAMINO" ||
+        (status === "ENTREGADO" && t < 0.98)
+      packageRef.current.visible = showPackage
+      // Ride with the canoe · copy position + bob
+      packageRef.current.position.set(x, START[1] + bob + 0.18, z)
+      packageRef.current.rotation.y = c.rotation.y
+    }
+
+    // Wake foam group · visible only during in-flight portion ·
+    // sits behind the canoe along the heading direction.
+    if (wakeRef.current) {
+      const showWake = inFlight
+      wakeRef.current.visible = showWake
+      // Place at canoe position, slightly behind on the heading
+      const heading = Math.atan2(dx, dz)
+      const back = 0.4 // meters behind canoe
+      wakeRef.current.position.set(
+        x - Math.sin(heading) * back,
+        -0.39, // sit on water plane
+        z - Math.cos(heading) * back,
+      )
+      wakeRef.current.rotation.y = heading
+    }
   })
 
+  const cooking = status === "COCINANDO"
   return (
-    <group ref={containerRef} visible={progress !== null}>
+    <group ref={containerRef} visible={status !== null}>
       {cloneRef.current ? (
         <primitive object={cloneRef.current} />
       ) : null}
       <HousePrim position={END} />
+
+      {/* Package on the canoe · brown box · rides with the boat */}
+      <mesh ref={packageRef} visible={false} castShadow>
+        <boxGeometry args={[0.22, 0.18, 0.18]} />
+        <meshStandardMaterial color="#8B6034" roughness={0.95} />
+      </mesh>
+
+      {/* Wake foam · 3 fading sprites behind the canoe during
+          EN_CAMINO · sits on the water plane Y=-0.39 */}
+      <group ref={wakeRef} visible={false}>
+        <WakeFoam />
+      </group>
+
+      {/* Cooking smoke · 4 staggered puffs above the island while
+          status === COCINANDO. Renders / animates independently. */}
+      <CookingSmoke active={cooking} />
     </group>
+  )
+}
+
+/**
+ * CookingSmoke · 4 sphere puffs rising + fading + scaling above
+ * the island's kitchen area · staggered so they read as a
+ * continuous wisp. Active only while status === COCINANDO.
+ * Honors prefers-reduced-motion · static when reduced.
+ */
+function CookingSmoke({ active }: { active: boolean }) {
+  const puffRefs = [
+    useRef<THREE.Mesh>(null!),
+    useRef<THREE.Mesh>(null!),
+    useRef<THREE.Mesh>(null!),
+    useRef<THREE.Mesh>(null!),
+  ]
+  const reducedMotion = usePrefersReducedMotion()
+  const groupRef = useRef<THREE.Group>(null)
+
+  useFrame((state) => {
+    if (!groupRef.current) return
+    groupRef.current.visible = active
+    if (!active) return
+    const t = state.clock.elapsedTime
+    const period = 3.2
+    for (let i = 0; i < puffRefs.length; i++) {
+      const m = puffRefs[i].current
+      if (!m) continue
+      // Stagger each puff by 0.8s · same cycle, different phase
+      const phase = ((t + i * 0.8) % period) / period
+      const yOffset = phase * 1.4 // rise 1.4m over the cycle
+      m.position.y = 0.6 + yOffset
+      const scale = 0.6 + phase * 0.7 // grow as it rises
+      m.scale.setScalar(scale)
+      const mat = m.material as THREE.MeshBasicMaterial
+      // Fade in fast, fade out slow
+      const op = phase < 0.2 ? phase / 0.2 : 1 - (phase - 0.2) / 0.8
+      mat.opacity = Math.max(0, op) * 0.55
+      // Subtle horizontal drift
+      m.position.x = -0.4 + Math.sin(phase * Math.PI * 2 + i) * 0.08
+      m.position.z = 0.2 + Math.cos(phase * Math.PI * 2 + i) * 0.08
+      if (reducedMotion) {
+        m.position.y = 0.9 + i * 0.18
+        mat.opacity = 0.4
+      }
+    }
+  })
+
+  return (
+    <group ref={groupRef} visible={false}>
+      {puffRefs.map((ref, i) => (
+        <mesh key={i} ref={ref} position={[-0.4, 0.6, 0.2]}>
+          <sphereGeometry args={[0.16, 12, 10]} />
+          <meshBasicMaterial
+            color="#F5E6CB"
+            transparent
+            opacity={0.5}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+/**
+ * WakeFoam · 3 disc sprites laid flat on the water plane behind
+ * the canoe · alpha decreases with distance from the boat so the
+ * trail fades naturally.
+ */
+function WakeFoam() {
+  return (
+    <>
+      {[0, 0.25, 0.55].map((back, i) => (
+        <mesh
+          key={i}
+          position={[0, 0.001, -back]}
+          rotation={[-Math.PI / 2, 0, 0]}
+        >
+          <circleGeometry args={[0.18 + i * 0.07, 18]} />
+          <meshBasicMaterial
+            color="#FFFFFF"
+            transparent
+            opacity={0.35 - i * 0.1}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
+    </>
   )
 }
 

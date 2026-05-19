@@ -47,29 +47,30 @@ export const NAUFRAGO_ORDER_STATUSES: OrderStatus[] = [
 ]
 
 /**
- * Map a status to a 0..1 progress for the in-scene canoe lerp.
- *   RECIBIDO  · 0.00 · canoe at island dock
- *   ACEPTADO  · 0.05 · canoe loaded
- *   COCINANDO · 0.18 · canoe casting off
- *   LISTO     · 0.42 · canoe mid-water
- *   EN_CAMINO · 0.78 · canoe near the house
- *   ENTREGADO · 1.00 · canoe arrived
- * Non-linear so the visual story emphasizes the journey · the
- * cook stages cluster near the start, the in-flight stage
- * dominates the middle.
+ * Round 94 · canoe-as-courier model. Phases 1-4 happen on the
+ * island (the kitchen, the dispatcher, the loading) · the canoe
+ * stays parked at its dock the entire time. ONLY when status
+ * advances to EN_CAMINO does the canoe physically leave and
+ * sail toward the house. ENTREGADO docks it at the house.
+ *
+ * This matches how every map-based delivery tracker works in
+ * production (Uber Eats, Rappi, Glovo, DoorDash, iFood) ·
+ * the courier dot is static at the restaurant until pickup ·
+ * the visual journey is the delivery, not the lifecycle.
+ *
+ * The Scene further sub-animates EN_CAMINO over ~25 seconds
+ * (time-based lerp inside useFrame) so the canoe glides
+ * smoothly rather than jumping mid-stream.
  */
 export function statusToProgress(status: OrderStatus): number {
   switch (status) {
     case "RECIBIDO":
-      return 0
     case "ACEPTADO":
-      return 0.05
     case "COCINANDO":
-      return 0.18
     case "LISTO":
-      return 0.42
+      return 0
     case "EN_CAMINO":
-      return 0.78
+      return 0.5
     case "ENTREGADO":
       return 1
   }
@@ -593,12 +594,17 @@ export function useDemoOrderState(active: boolean): OrderStatus {
     if (!active) return
     setStatus("RECIBIDO")
     const timers: number[] = []
+    // Round 94 · re-balanced cadence so COCINANDO (smoke puffs)
+    // and LISTO (package loading) have room to read · EN_CAMINO
+    // sub-animates 25s internally so we hold the status long
+    // enough to let the canoe finish the journey before going
+    // to ENTREGADO.
     const schedule: { at: number; status: OrderStatus }[] = [
-      { at: 2200, status: "ACEPTADO" },
-      { at: 5500, status: "COCINANDO" },
-      { at: 11000, status: "LISTO" },
-      { at: 15000, status: "EN_CAMINO" },
-      { at: 24000, status: "ENTREGADO" },
+      { at: 1800, status: "ACEPTADO" },
+      { at: 4500, status: "COCINANDO" },
+      { at: 14000, status: "LISTO" },
+      { at: 19000, status: "EN_CAMINO" },
+      { at: 44000, status: "ENTREGADO" },
     ]
     for (const s of schedule) {
       const id = window.setTimeout(() => setStatus(s.status), s.at)

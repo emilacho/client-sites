@@ -28,7 +28,6 @@ import {
   OrderStatusOverlay,
   RopeTimeline,
   CocoConfetti,
-  statusToProgress,
   useDemoOrderState,
 } from "./OrderTracker"
 import { SceneErrorBoundary } from "./SceneErrorBoundary"
@@ -93,7 +92,7 @@ function LandingInner() {
             treasureOpen={treasureOpen}
             onTreasureClose={() => setTreasureOpen(false)}
             onOpenMenu={openMenu}
-            trackerProgress={trackerOpen ? statusToProgress(demoStatus) : null}
+            trackerStatus={trackerOpen ? demoStatus : null}
           />
         </SceneErrorBoundary>
       </div>
