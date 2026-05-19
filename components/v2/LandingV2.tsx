@@ -24,6 +24,7 @@ import { MenuModal } from "./MenuModal"
 // Round 85 · TreasureRewardModal (R82 castaway SVG modal) retired ·
 // the 3D pergamino in-scene that emerges from the cofre on click
 // replaces it · same discount flow, more immersive reveal.
+import { OrderTracker, useDemoOrderState } from "./OrderTracker"
 import { SceneErrorBoundary } from "./SceneErrorBoundary"
 import type { AnchorKind } from "./Scene"
 
@@ -54,10 +55,12 @@ function LandingInner() {
   useCart()
   const [overlay, setOverlay] = useState<OverlayKind>(null)
   const [menuOpen, setMenuOpen] = useState(false)
-  // Round 77 · cofre click now opens the treasure reward modal
-  // (discount reveal) instead of the menu modal. Menu modal stays
-  // available · the treasure modal CTAs route into it.
+  // Round 77 · cofre click opens the treasure reward modal.
   const [treasureOpen, setTreasureOpen] = useState(false)
+  // Round 91 · Domino's-style order tracker · demo mode for now ·
+  // Round 92+ wires this to real Supabase order state.
+  const [trackerOpen, setTrackerOpen] = useState(false)
+  const demoStatus = useDemoOrderState(trackerOpen)
 
   const openMenu = () => setMenuOpen(true)
 
@@ -181,6 +184,53 @@ function LandingInner() {
       <CartDrawer />
       <MenuModal open={menuOpen} onClose={() => setMenuOpen(false)} />
       <OverlayPanels active={overlay} onClose={() => setOverlay(null)} />
+
+      {/* Round 91 · Order tracker (Domino's-style) · demo mode.
+          Floating CTA bottom-right above the PromoTicker. Click
+          opens the tracker with a scripted state machine that
+          auto-advances through the 6 stages over ~22s so the
+          experience is visible without a real order. Replaced
+          by real Supabase wiring in R92+. */}
+      <button
+        type="button"
+        onClick={() => setTrackerOpen(true)}
+        aria-label="Ver mi pedido"
+        className="fixed bottom-[96px] right-4 z-40 flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-semibold shadow-lg transition-transform hover:translate-y-[-1px]"
+        style={{
+          background:
+            "linear-gradient(120deg, rgba(76,29,149,0.96) 0%, rgba(15,23,42,0.97) 100%)",
+          borderColor: "rgba(77,212,216,0.55)",
+          color: "#4DD4D8",
+          boxShadow: "0 12px 28px rgba(76,29,149,0.45)",
+        }}
+      >
+        <span
+          className="inline-block h-2 w-2 rounded-full"
+          style={{
+            background: "#FACC15",
+            boxShadow: "0 0 8px rgba(252,211,77,0.8)",
+          }}
+        />
+        Ver mi pedido
+      </button>
+      <OrderTracker
+        open={trackerOpen}
+        onClose={() => setTrackerOpen(false)}
+        currentStatus={demoStatus}
+        orderCode="NF-2026"
+        etaMinutes={
+          demoStatus === "ENTREGADO"
+            ? 0
+            : demoStatus === "EN_CAMINO"
+              ? 8
+              : demoStatus === "LISTO"
+                ? 12
+                : demoStatus === "COCINANDO"
+                  ? 18
+                  : 25
+        }
+        riderNote="Vengo en moto azul · suena la bocina"
+      />
     </main>
   )
 }
