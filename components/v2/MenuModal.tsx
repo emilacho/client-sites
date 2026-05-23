@@ -101,11 +101,11 @@ export function MenuModal({ open, onClose }: MenuModalProps) {
             {/* Header */}
             <header className="flex items-start justify-between gap-4 border-b border-slate-800 px-6 py-5">
               <div>
-                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan-200">
-                  Menú · 17 platos
-                </span>
-                <h2 className="mt-1 font-display text-2xl font-semibold leading-tight text-white md:text-3xl">
-                  Pide lo que quieras · cocinamos al momento
+                <h2
+                  className="font-display text-2xl font-semibold uppercase leading-tight tracking-tight md:text-3xl"
+                  style={{ color: "#3D2466" }}
+                >
+                  CREA TU PEDIDO
                 </h2>
               </div>
               <button
