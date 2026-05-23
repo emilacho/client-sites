@@ -22,6 +22,24 @@ export type MenuCategoryId =
   | "bebidas"
   | "extras"
 
+/** R96.12 · allergen taxonomy estándar EC food delivery. */
+export type AllergenId =
+  | "pescado"
+  | "mariscos"
+  | "mani"
+  | "gluten"
+  | "lacteo"
+  | "huevo"
+
+export const ALLERGEN_LABELS: Record<AllergenId, { emoji: string; label: string }> = {
+  pescado:  { emoji: "🐟", label: "Pescado" },
+  mariscos: { emoji: "🦐", label: "Mariscos" },
+  mani:     { emoji: "🥜", label: "Maní" },
+  gluten:   { emoji: "🌾", label: "Gluten" },
+  lacteo:   { emoji: "🥛", label: "Lácteo" },
+  huevo:    { emoji: "🥚", label: "Huevo" },
+}
+
 export interface MenuItem {
   id: string
   /** Round 9 · category drives the MenuModal tabs (Encebollados 3 ·
@@ -49,6 +67,9 @@ export interface MenuItem {
   emoji: string
   /** Tailwind gradient classes for the 2D thumbnail. */
   gradient: string
+  /** R96.12 · allergens del plato · mostrados como badges en menu cards
+   *  · cliente puede ver de un vistazo qué evitar antes de pedir. */
+  allergens?: AllergenId[]
 }
 
 export const MENU_CATEGORIES: Array<{ id: MenuCategoryId; label: string; emoji: string }> = [
@@ -76,6 +97,7 @@ export const MENU_ITEMS: MenuItem[] = [
     priceUsd: 4.0,
     emoji: "🍲",
     gradient: "from-amber-700 via-amber-500 to-orange-400",
+    allergens: ["pescado"],
   },
   {
     id: "encebollado-mixto",
@@ -87,6 +109,7 @@ export const MENU_ITEMS: MenuItem[] = [
     priceUsd: 6.0,
     emoji: "🍲",
     gradient: "from-amber-700 via-orange-500 to-rose-400",
+    allergens: ["pescado", "mariscos"],
   },
   {
     id: "encebollado-junior",
@@ -99,6 +122,7 @@ export const MENU_ITEMS: MenuItem[] = [
     priceUsd: 3.5,
     emoji: "🥣",
     gradient: "from-amber-600 via-yellow-500 to-amber-300",
+    allergens: ["pescado"],
   },
 
   // ── Ceviches (2) ──────────────────────────────────────────────────
@@ -113,6 +137,7 @@ export const MENU_ITEMS: MenuItem[] = [
     priceUsd: 7.0,
     emoji: "🐟",
     gradient: "from-cyan-600 via-emerald-500 to-lime-400",
+    allergens: ["pescado", "mani"],
   },
   {
     id: "ceviche-mixto",
@@ -125,6 +150,7 @@ export const MENU_ITEMS: MenuItem[] = [
     priceUsd: 9.0,
     emoji: "🦐",
     gradient: "from-emerald-600 via-cyan-500 to-sky-400",
+    allergens: ["pescado", "mariscos", "mani"],
   },
 
   // ── Otros (1) ─────────────────────────────────────────────────────
@@ -138,6 +164,7 @@ export const MENU_ITEMS: MenuItem[] = [
     priceUsd: 4.0,
     emoji: "🍌",
     gradient: "from-amber-700 via-yellow-500 to-lime-400",
+    allergens: ["lacteo", "huevo"],
   },
 
   // ── Bebidas (6) ───────────────────────────────────────────────────
@@ -170,6 +197,7 @@ export const MENU_ITEMS: MenuItem[] = [
     priceUsd: 3.0,
     emoji: "🍺",
     gradient: "from-amber-700 via-yellow-500 to-amber-300",
+    allergens: ["gluten"],
   },
   {
     id: "agua",
@@ -222,6 +250,7 @@ export const MENU_ITEMS: MenuItem[] = [
     priceUsd: 0.5,
     emoji: "🍞",
     gradient: "from-amber-600 via-yellow-400 to-amber-200",
+    allergens: ["gluten"],
   },
   {
     id: "extra-huevo",
@@ -232,6 +261,7 @@ export const MENU_ITEMS: MenuItem[] = [
     priceUsd: 0.5,
     emoji: "🥚",
     gradient: "from-yellow-500 via-amber-300 to-stone-200",
+    allergens: ["huevo"],
   },
   {
     id: "extra-aguacate",

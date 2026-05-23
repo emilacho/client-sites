@@ -25,6 +25,7 @@ import { useCallback, useEffect, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { useCart } from "@/lib/v2/cart-context"
 import {
+  ALLERGEN_LABELS,
   MENU_ITEMS,
   MENU_CATEGORIES,
   type MenuCategoryId,
@@ -223,6 +224,23 @@ function MenuCard({ item }: { item: MenuItem }) {
         <p className="mt-0.5 line-clamp-2 text-sm text-slate-300">
           {item.description}
         </p>
+        {item.allergens && item.allergens.length > 0 ? (
+          <div className="mt-1 flex flex-wrap gap-1">
+            {item.allergens.map((a) => {
+              const cfg = ALLERGEN_LABELS[a]
+              return (
+                <span
+                  key={a}
+                  title={`Contiene ${cfg.label}`}
+                  className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-200 ring-1 ring-amber-500/20"
+                >
+                  <span aria-hidden>{cfg.emoji}</span>
+                  {cfg.label}
+                </span>
+              )
+            })}
+          </div>
+        ) : null}
         <div className="mt-2 flex items-center justify-between gap-2">
           <div className="flex flex-wrap gap-1">
             {item.tags.slice(0, 2).map((t) => (
