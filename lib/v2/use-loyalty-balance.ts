@@ -20,6 +20,48 @@ export function perlasToUsd(perlas: number): number {
   return Math.round(perlas * PERLA_VALUE_USD * 100) / 100
 }
 
+/** R96.24 · redemption catalog · mismo data que server-side ·
+ *  duplicated client-side para evitar importar server lib en
+ *  client component. Mantener sync con lib/loyalty-server.ts. */
+export type LoyaltyRewardType = "percent_off" | "free_item"
+
+export interface LoyaltyReward {
+  id: string
+  cost: number
+  type: LoyaltyRewardType
+  label: string
+  description: string
+  percentOff?: number
+  freeItemId?: string
+}
+
+export const LOYALTY_REWARDS: LoyaltyReward[] = [
+  {
+    id: "perlas-100-5pct",
+    cost: 100,
+    type: "percent_off",
+    label: "5% descuento",
+    description: "Aplicado al subtotal del pedido",
+    percentOff: 5,
+  },
+  {
+    id: "perlas-300-postre",
+    cost: 300,
+    type: "free_item",
+    label: "Patacones Náufrago gratis",
+    description: "Verdes fritos con queso, huevo y sal prieta · valor $4",
+    freeItemId: "patacones-naufrago",
+  },
+  {
+    id: "perlas-600-15pct",
+    cost: 600,
+    type: "percent_off",
+    label: "15% descuento",
+    description: "Para que el tesoro pese menos · aplicado al subtotal",
+    percentOff: 15,
+  },
+]
+
 export function useLoyaltyBalance(rawPhone: string): {
   balance: LoyaltyBalance | null
   loading: boolean

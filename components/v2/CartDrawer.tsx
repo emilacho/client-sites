@@ -24,7 +24,12 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useCart } from "@/lib/v2/cart-context"
 import { buildWhatsAppLink, naufragoV2 } from "@/lib/v2/naufrago-content"
 import { saveLastOrder } from "@/lib/v2/use-last-order"
-import { perlasToUsd, useLoyaltyBalance } from "@/lib/v2/use-loyalty-balance"
+import {
+  LOYALTY_REWARDS,
+  perlasToUsd,
+  useLoyaltyBalance,
+  type LoyaltyReward,
+} from "@/lib/v2/use-loyalty-balance"
 
 /** WhatsApp brand glyph · simpleicons.org path · pure white fill. */
 function WhatsAppGlyph() {
@@ -295,13 +300,25 @@ function CartFooter() {
   // R96.21 · loyalty perlas · lookup balance by form.phone debounced.
   const { balance: loyaltyBalance } = useLoyaltyBalance(form.phone)
   const [useLoyalty, setUseLoyalty] = useState(false)
-  // Spend amount · min(balance, 50% del subtotal) en perlas (capped).
+  // R96.24 · multi-tier redemption · mutually exclusive con spend directo.
+  const [selectedReward, setSelectedReward] = useState<LoyaltyReward | null>(null)
+  // Spend directo · solo activo si useLoyalty=true Y selectedReward=null
+  const directSpendActive = useLoyalty && !selectedReward
   const loyaltySpendCap = Math.floor((cart.subtotal * 0.5) / 0.01)
   const loyaltySpendPerlas =
-    useLoyalty && loyaltyBalance
+    directSpendActive && loyaltyBalance
       ? Math.min(loyaltyBalance.perlas, loyaltySpendCap)
       : 0
   const loyaltySpendUsd = perlasToUsd(loyaltySpendPerlas)
+  // Reward applied · impact en total via percentOff (free_item NO afecta
+  // el total visible · queda como nota al pedido).
+  const rewardPercentOffUsd =
+    selectedReward?.type === "percent_off" && selectedReward.percentOff
+      ? Math.round(cart.subtotal * (selectedReward.percentOff / 100) * 100) / 100
+      : 0
+  // free_item · no afecta total visible (el item se agrega gratis kitchen-side ·
+  // no se carga al cart porque cost=0 confunde el flow del cliente · solo
+  // queda como nota al pedido).
 
   const shippingPrice =
     shipping.kind === "quoted" ||
@@ -310,12 +327,18 @@ function CartFooter() {
       ? shipping.priceUsd
       : 0
   const total =
-    cart.subtotal - cart.discountUsd + shippingPrice + cart.tipUsd - loyaltySpendUsd
+    cart.subtotal -
+    cart.discountUsd +
+    shippingPrice +
+    cart.tipUsd -
+    loyaltySpendUsd -
+    rewardPercentOffUsd
   const showBreakdown =
     cart.discountUsd > 0 ||
     shippingPrice > 0 ||
     cart.tipUsd > 0 ||
-    loyaltySpendUsd > 0
+    loyaltySpendUsd > 0 ||
+    selectedReward !== null
   const buttonsDisabled = cart.lines.length === 0
 
   async function requestQuote(e: React.FormEvent) {
@@ -382,6 +405,7 @@ function CartFooter() {
           tipUsd: cart.tipUsd > 0 ? cart.tipUsd : undefined,
           loyaltySpendPerlas:
             loyaltySpendPerlas > 0 ? loyaltySpendPerlas : undefined,
+          loyaltyRewardId: selectedReward?.id,
           notes: form.notes || undefined,
         }),
       })
@@ -476,6 +500,19 @@ function CartFooter() {
             <div className="flex items-baseline justify-between text-xs" style={{ color: "#A78BFA" }}>
               <span>Perlas canjeadas · {loyaltySpendPerlas}</span>
               <span className="tabular-nums">−${loyaltySpendUsd.toFixed(2)}</span>
+            </div>
+          ) : null}
+          {selectedReward ? (
+            <div className="flex items-baseline justify-between text-xs" style={{ color: "#A78BFA" }}>
+              <span>
+                Reward · {selectedReward.label}{" "}
+                <span className="text-violet-400/70">({selectedReward.cost}p)</span>
+              </span>
+              <span className="tabular-nums">
+                {rewardPercentOffUsd > 0
+                  ? `−$${rewardPercentOffUsd.toFixed(2)}`
+                  : "gratis"}
+              </span>
             </div>
           ) : null}
           <div className="flex items-baseline justify-between pt-1">
@@ -612,26 +649,81 @@ function CartFooter() {
             />
           </div>
           {loyaltyBalance && loyaltyBalance.perlas > 0 ? (
-            <label className="flex cursor-pointer items-center justify-between gap-3 rounded-md border border-violet-500/40 bg-violet-500/10 px-3 py-2 text-xs text-violet-100">
-              <span className="flex flex-col gap-0.5">
-                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-violet-300">
-                  Perlas del náufrago
-                </span>
-                <span>
-                  Tenés <strong>{loyaltyBalance.perlas}</strong> perlas · ≈$
-                  {perlasToUsd(loyaltyBalance.perlas).toFixed(2)}
-                </span>
-                <span className="text-[10px] text-violet-300/80">
-                  Podés canjear hasta {loyaltySpendCap} perlas en este pedido
-                </span>
-              </span>
-              <input
-                type="checkbox"
-                checked={useLoyalty}
-                onChange={(e) => setUseLoyalty(e.target.checked)}
-                className="h-5 w-5 shrink-0 accent-cyan-400"
-              />
-            </label>
+            <div className="space-y-2 rounded-md border border-violet-500/40 bg-violet-500/10 p-3 text-xs text-violet-100">
+              <div className="flex items-baseline justify-between gap-2">
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-violet-300">
+                    Perlas del náufrago
+                  </span>
+                  <span>
+                    Tenés <strong>{loyaltyBalance.perlas}</strong> perlas · ≈$
+                    {perlasToUsd(loyaltyBalance.perlas).toFixed(2)}
+                  </span>
+                </div>
+                <label className="flex cursor-pointer items-center gap-2 text-[11px]">
+                  <span className="text-violet-300/80">Descuento directo</span>
+                  <input
+                    type="checkbox"
+                    checked={directSpendActive}
+                    disabled={!!selectedReward}
+                    onChange={(e) => {
+                      setUseLoyalty(e.target.checked)
+                      if (e.target.checked) setSelectedReward(null)
+                    }}
+                    className="h-4 w-4 accent-cyan-400 disabled:opacity-40"
+                  />
+                </label>
+              </div>
+              {/* R96.24 · multi-tier redemption catalog · cada reward
+                  un botón · click toggle · selección mutually exclusive
+                  con descuento directo. */}
+              <div className="space-y-1.5 border-t border-violet-500/20 pt-2">
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-violet-300">
+                  O canjeá un reward
+                </p>
+                <div className="grid grid-cols-1 gap-1">
+                  {LOYALTY_REWARDS.map((r) => {
+                    const affordable = loyaltyBalance.perlas >= r.cost
+                    const selected = selectedReward?.id === r.id
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        disabled={!affordable && !selected}
+                        onClick={() => {
+                          if (selected) {
+                            setSelectedReward(null)
+                          } else {
+                            setSelectedReward(r)
+                            setUseLoyalty(false)
+                          }
+                        }}
+                        className={[
+                          "flex items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 text-left transition-colors",
+                          selected
+                            ? "border-cyan-400 bg-cyan-500/15 text-cyan-100"
+                            : affordable
+                              ? "border-violet-500/30 bg-slate-950/50 text-violet-100 hover:bg-violet-500/15"
+                              : "cursor-not-allowed border-slate-700 bg-slate-900/30 text-slate-500",
+                        ].join(" ")}
+                      >
+                        <span className="flex min-w-0 flex-1 flex-col">
+                          <span className="text-[11px] font-semibold">
+                            {r.label}
+                          </span>
+                          <span className="truncate text-[10px] opacity-80">
+                            {r.description}
+                          </span>
+                        </span>
+                        <span className="shrink-0 font-mono text-[10px]">
+                          {r.cost}p
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
           ) : null}
           <button
             type="submit"

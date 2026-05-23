@@ -11,6 +11,51 @@ export const PERLA_VALUE_USD = 0.01
 export const EARN_RATE = 0.1 // 10% del total
 export const SPEND_CAP = 0.5 // 50% del subtotal
 
+/** R96.24 · multi-tier redemption catalog · pattern Domino's
+ *  20/40/60 tiers · 3 rewards mixed (% off + free item). Cliente
+ *  elige 1 reward por order · mutually exclusive con el spend
+ *  directo. Backend debita perlas + persist reward_id en order. */
+export type LoyaltyRewardType = "percent_off" | "free_item"
+
+export interface LoyaltyReward {
+  id: string
+  cost: number  // en perlas
+  type: LoyaltyRewardType
+  label: string
+  description: string
+  /** percent_off · valor 0-100. free_item · undefined. */
+  percentOff?: number
+  /** free_item · item_id del MENU_ITEMS a agregar gratis. */
+  freeItemId?: string
+}
+
+export const LOYALTY_REWARDS: LoyaltyReward[] = [
+  {
+    id: "perlas-100-5pct",
+    cost: 100,
+    type: "percent_off",
+    label: "5% descuento",
+    description: "Aplicado al subtotal del pedido",
+    percentOff: 5,
+  },
+  {
+    id: "perlas-300-postre",
+    cost: 300,
+    type: "free_item",
+    label: "Patacones Náufrago gratis",
+    description: "Verdes fritos con queso, huevo y sal prieta · valor $4",
+    freeItemId: "patacones-naufrago",
+  },
+  {
+    id: "perlas-600-15pct",
+    cost: 600,
+    type: "percent_off",
+    label: "15% descuento",
+    description: "Para que el tesoro pese menos · aplicado al subtotal",
+    percentOff: 15,
+  },
+]
+
 function normalizeE164(raw: string): string | null {
   const digits = raw.replace(/\D/g, "")
   if (digits.length < 8 || digits.length > 15) return null
