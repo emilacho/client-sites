@@ -324,22 +324,20 @@ const SUPABASE_BASE =
 const ASSET_BASE = `${SUPABASE_BASE}/storage/v1/object/public/client-websites/naufrago`
 
 export const naufragoAssets = {
-  // The `-optimized` variant of the island GLB is corrupt at the
-  // source (buffer offsets misaligned · GLTFLoader throws
-  // "Invalid typed array length: 4281" parsing accessor 0). The
-  // unoptimized canonical variant parses cleanly. Re-export +
-  // re-upload of the optimized version is a follow-up · the size
-  // delta (4 MB → 25 MB) is acceptable for the preview while it's
-  // pending. Diagnostic: `client-sites/scripts/test-glb-parse.mjs`.
-  island:    `${ASSET_BASE}/3d-models/island-low-poly.glb`,
-  character: `${ASSET_BASE}/3d-models/character-castaway-confused-scratch.glb`,
-  sign:      `${ASSET_BASE}/3d-models/sign-naufrago.glb`,
-  surfboard: `${ASSET_BASE}/3d-models/surfboard-old.glb`,
-  // Round 84 · pergamino pirata 3D asset (Meshy AI · Draco-compressed).
-  // Served locally from /public/models because the Supabase 3D-models
-  // bucket holds the original 4 island/character/sign/surfboard GLBs ·
-  // for new client assets we use /public/models/ for path simplicity.
-  // Original 26.7MB · post-Draco 8.5MB (-68%).
+  // Round 96 · `-compact` variants · gltf-transform pipeline ·
+  // resize textures 2K máx + Draco geometry. Generated via
+  // `scripts/compact-glbs.mjs`. Total before/after ·
+  //   island       · 23.87 MB → 419 KB    (-98%)
+  //   character    · 12.64 MB → 9.92 MB   (-23%)
+  //   sign         · 15.83 MB → 2.72 MB   (-83%)
+  //   surfboard    · 12.87 MB → 2.50 MB   (-81%)
+  //   pergamino    · 26.7 MB  → 8.5 MB    (-68% · R84)
+  // Originales sin tocar en el bucket · rollback = revertir URLs.
+  island:    `${ASSET_BASE}/3d-models/island-low-poly-compact.glb`,
+  character: `${ASSET_BASE}/3d-models/character-castaway-confused-scratch-compact.glb`,
+  sign:      `${ASSET_BASE}/3d-models/sign-naufrago-compact.glb`,
+  surfboard: `${ASSET_BASE}/3d-models/surfboard-old-compact.glb`,
+  // Pergamino pirata 3D asset (Meshy AI · Draco-compressed).
   pergamino: "/models/pergamino-pirata.glb",
   heroImage: `${ASSET_BASE}/v2/hero.png`,
 } as const

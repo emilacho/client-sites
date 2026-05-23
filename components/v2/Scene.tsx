@@ -41,15 +41,14 @@ import { useQaMode } from "@/lib/v2/use-qa-mode"
 import { naufragoAssets } from "@/lib/v2/naufrago-content"
 import { useCart } from "@/lib/v2/cart-context"
 
-// Preload the 4 GLBs at module load so the first paint of the canvas
-// doesn't kick off a 4-network-roundtrip waterfall.
-useGLTF.preload(naufragoAssets.island)
-useGLTF.preload(naufragoAssets.character)
-useGLTF.preload(naufragoAssets.sign)
-useGLTF.preload(naufragoAssets.surfboard)
-// Round 84 · pergamino Draco-compressed · second arg `true` tells
-// useGLTF to bundle the DRACOLoader with the gstatic decoder path.
-// Same call signature in useGLTF and useGLTF.preload.
+// Preload the 5 GLBs at module load so the first paint of the canvas
+// doesn't kick off a 5-network-roundtrip waterfall. Round 96 · todos
+// los GLBs ahora Draco-compressed · segundo arg `true` activa el
+// DRACOLoader (gstatic decoder path) en cada preload.
+useGLTF.preload(naufragoAssets.island, true)
+useGLTF.preload(naufragoAssets.character, true)
+useGLTF.preload(naufragoAssets.sign, true)
+useGLTF.preload(naufragoAssets.surfboard, true)
 useGLTF.preload(naufragoAssets.pergamino, true)
 
 // Round 40 · "cocos" removed from anchor kinds · coconuts now have
@@ -326,7 +325,7 @@ export function Scene({
 // ── GLB renderers ────────────────────────────────────────────────────
 
 function IslandModel(props: React.ComponentProps<"group">) {
-  const { scene } = useGLTF(naufragoAssets.island)
+  const { scene } = useGLTF(naufragoAssets.island, true)
   // Round 31 · ref holds the post-mutation base transforms for the
   // boat + 2 oars · populated at the end of the useEffect below so
   // the wave bobbing in useFrame oscillates around the correct
@@ -644,12 +643,12 @@ function IslandModel(props: React.ComponentProps<"group">) {
 }
 
 function SignModel(props: React.ComponentProps<"group">) {
-  const { scene } = useGLTF(naufragoAssets.sign)
+  const { scene } = useGLTF(naufragoAssets.sign, true)
   return <primitive object={scene} {...props} />
 }
 
 function SurfboardModel(props: React.ComponentProps<"group">) {
-  const { scene } = useGLTF(naufragoAssets.surfboard)
+  const { scene } = useGLTF(naufragoAssets.surfboard, true)
   return <primitive object={scene} {...props} />
 }
 
@@ -1070,7 +1069,7 @@ function CharacterModel(props: React.ComponentProps<"group">) {
   // mixer animates the unrendered original. Canonical drei pattern is
   // to mount the original scene · since this character is rendered
   // exactly once on the landing, there's nothing to clone for.
-  const { scene, animations } = useGLTF(naufragoAssets.character)
+  const { scene, animations } = useGLTF(naufragoAssets.character, true)
   const group = useRef<THREE.Group>(null)
   const { actions, mixer } = useAnimations(animations, group)
   useEffect(() => {
@@ -1313,7 +1312,7 @@ function ReviewCard({ review }: { review: CocoReview }) {
 }
 
 function CoconutHoverCards() {
-  const { scene } = useGLTF(naufragoAssets.island)
+  const { scene } = useGLTF(naufragoAssets.island, true)
   const [hovered, setHovered] = useState<string | null>(null)
   const [targets, setTargets] = useState<
     Array<{ review: CocoReview; pos: [number, number, number] }>
