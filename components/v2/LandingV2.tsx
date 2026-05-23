@@ -25,6 +25,7 @@ import { OverlayPanels, type OverlayKind } from "./OverlayPanels"
 import { MenuModal } from "./MenuModal"
 import { TrackOrderModal } from "./TrackOrderModal"
 import { SubscribeModal } from "./SubscribeModal"
+import { SocialProofToast } from "./SocialProofToast"
 // Round 85 · TreasureRewardModal (R82 castaway SVG modal) retired ·
 // the 3D pergamino in-scene that emerges from the cofre on click
 // replaces it · same discount flow, more immersive reveal.
@@ -294,6 +295,10 @@ function LandingInner() {
       <TrackOrderModal open={trackOpen} onClose={() => setTrackOpen(false)} />
       <SubscribeModal open={subscribeOpen} onClose={() => setSubscribeOpen(false)} />
       <OverlayPanels active={overlay} onClose={() => setOverlay(null)} />
+      {/* R96.23 · social proof toasts · pausa cuando menu/cart abierto */}
+      <SocialProofToast
+        paused={menuOpen || trackOpen || subscribeOpen || overlay !== null || cart.isOpen}
+      />
 
     </main>
   )
