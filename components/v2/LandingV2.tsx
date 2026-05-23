@@ -18,12 +18,13 @@ import { CartProvider, useCart } from "@/lib/v2/cart-context"
 import { naufragoV2 } from "@/lib/v2/naufrago-content"
 import { useLastOrder } from "@/lib/v2/use-last-order"
 import { cliente } from "@/cliente.config"
-import { RotateCw } from "lucide-react"
+import { Bell, RotateCw } from "lucide-react"
 import { TopBar } from "./TopBar"
 import { CartDrawer } from "./CartDrawer"
 import { OverlayPanels, type OverlayKind } from "./OverlayPanels"
 import { MenuModal } from "./MenuModal"
 import { TrackOrderModal } from "./TrackOrderModal"
+import { SubscribeModal } from "./SubscribeModal"
 // Round 85 · TreasureRewardModal (R82 castaway SVG modal) retired ·
 // the 3D pergamino in-scene that emerges from the cofre on click
 // replaces it · same discount flow, more immersive reveal.
@@ -69,6 +70,8 @@ function LandingInner() {
   // Round 96.7 · "Sigue tu pedido" CTA · modal pide order code
   // y redirige a /order/[code].
   const [trackOpen, setTrackOpen] = useState(false)
+  // R96.10 · "Registrate" CTA · subscriber lite opt-in.
+  const [subscribeOpen, setSubscribeOpen] = useState(false)
   // Round 95 · OrderTracker state eliminado · pendiente nuevo
   // approach del usuario.
 
@@ -258,6 +261,21 @@ function LandingInner() {
               <span>Hablar por WhatsApp</span>
             </a>
           </div>
+          {/* R96.10 · link discreto debajo de los CTAs principales
+              para no competir con la jerarquía visual · pero
+              visible para capture de leads pre-pedido. */}
+          <button
+            type="button"
+            onClick={() => setSubscribeOpen(true)}
+            className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold backdrop-blur-sm transition-colors hover:bg-white/30"
+            style={{
+              color: "#3D2466",
+              background: "rgba(255,255,255,0.40)",
+            }}
+          >
+            <Bell className="h-3 w-3" />
+            Registrate para promos y seguimiento
+          </button>
           {/* Round 5 single-issue fix · the hint paragraph
               ("Toca los objetos en la isla · cofre = pedido, barco =
               historia, cocos = reseñas, palmeras = contacto.") was
@@ -274,6 +292,7 @@ function LandingInner() {
       <CartDrawer />
       <MenuModal open={menuOpen} onClose={() => setMenuOpen(false)} />
       <TrackOrderModal open={trackOpen} onClose={() => setTrackOpen(false)} />
+      <SubscribeModal open={subscribeOpen} onClose={() => setSubscribeOpen(false)} />
       <OverlayPanels active={overlay} onClose={() => setOverlay(null)} />
 
     </main>
