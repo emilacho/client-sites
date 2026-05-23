@@ -106,7 +106,7 @@ export const MENU_ITEMS: MenuItem[] = [
     id: "ceviche-naufrago",
     category: "ceviches",
     name: "Ceviche Náufrago",
-    description: "Pescado curtido en leche de tigre · salsa de maní · chifles · aguacate.",
+    description: "Pescado curtido en leche de tigre · salsa de maní · aguacate.",
     ingredients:
       "Pescado curtido 200g · Leche de tigre · Aguacate · Salsa de maní · Chifle · Tomate cebolla pimiento",
     tags: [],
@@ -118,7 +118,7 @@ export const MENU_ITEMS: MenuItem[] = [
     id: "ceviche-mixto",
     category: "ceviches",
     name: "Ceviche Mixto",
-    description: "Pescado curtido en leche de tigre · salsa de maní · chifles · aguacate · + camarón.",
+    description: "Pescado curtido en leche de tigre · salsa de maní · aguacate · + camarón.",
     ingredients:
       "Camarón · Pescado curtido 200g · Leche de tigre · Aguacate · Salsa de maní · Chifle · Tomate cebolla pimiento",
     tags: [],
