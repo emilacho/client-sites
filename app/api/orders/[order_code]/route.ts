@@ -63,6 +63,10 @@ interface OrderRow {
   delivered_at: string | null
   cancelled_at: string | null
   cancellation_reason: string | null
+  delivery_photo_url: string | null
+  delivery_photo_lat: number | null
+  delivery_photo_lng: number | null
+  delivery_photo_at: string | null
 }
 
 function computeCanoaPct(row: OrderRow): number {
@@ -110,7 +114,7 @@ export async function GET(
   const { data, error } = await supabase
     .from("naufrago_orders")
     .select(
-      "id, order_code, status, customer_name, customer_phone, cart_lines, subtotal_usd, discount_code, discount_usd, delivery_fee_usd, total_usd, delivery_provider, delivery_provider_tracking_url, delivery_eta_minutes, rider_info, customer_notes, created_at, rider_picked_up_at, in_transit_at, delivered_at, cancelled_at, cancellation_reason",
+      "id, order_code, status, customer_name, customer_phone, cart_lines, subtotal_usd, discount_code, discount_usd, delivery_fee_usd, total_usd, delivery_provider, delivery_provider_tracking_url, delivery_eta_minutes, rider_info, customer_notes, created_at, rider_picked_up_at, in_transit_at, delivered_at, cancelled_at, cancellation_reason, delivery_photo_url, delivery_photo_lat, delivery_photo_lng, delivery_photo_at",
     )
     .eq("order_code", order_code.toUpperCase())
     .maybeSingle()
@@ -154,5 +158,9 @@ export async function GET(
     delivered_at: row.delivered_at,
     cancelled_at: row.cancelled_at,
     cancellation_reason: row.cancellation_reason,
+    delivery_photo_url: row.delivery_photo_url,
+    delivery_photo_lat: row.delivery_photo_lat,
+    delivery_photo_lng: row.delivery_photo_lng,
+    delivery_photo_at: row.delivery_photo_at,
   })
 }

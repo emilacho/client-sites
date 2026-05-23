@@ -90,5 +90,15 @@ export function buildDemoSnapshot(stageParam: string | undefined) {
     delivered_at: deliveredAt,
     cancelled_at: cancelledAt,
     cancellation_reason: stageKey === "cancelled" ? "Cliente canceló · sin razón" : null,
+    // R96.18 · demo · stage 4 muestra foto proof of delivery con un
+    // stock food image · coords cerca Olón (-1.79, -80.75) · timestamp
+    // = delivered_at.
+    delivery_photo_url:
+      stageKey === "4"
+        ? "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=70&auto=format"
+        : null,
+    delivery_photo_lat: stageKey === "4" ? -1.79135 : null,
+    delivery_photo_lng: stageKey === "4" ? -80.75612 : null,
+    delivery_photo_at: stageKey === "4" ? deliveredAt : null,
   }
 }

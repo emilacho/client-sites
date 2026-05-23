@@ -62,6 +62,10 @@ export interface OrderSnapshot {
   delivered_at: string | null
   cancelled_at: string | null
   cancellation_reason: string | null
+  delivery_photo_url?: string | null
+  delivery_photo_lat?: number | null
+  delivery_photo_lng?: number | null
+  delivery_photo_at?: string | null
 }
 
 const PURPLE = "#3D2466"
@@ -113,7 +117,12 @@ export function OrderTracker({ initial, orderCode }: Props) {
         <Header orderCode={snap.order_code} />
         <ProgressBar activeIndex={snap.stage_index} />
         <StageName stage={stage} />
-        <StageBody stage={stage} canoaPct={snap.canoa_pct} />
+        <StageBody
+          stage={stage}
+          canoaPct={snap.canoa_pct}
+          photoUrl={snap.delivery_photo_url}
+          photoAt={snap.delivery_photo_at}
+        />
         <Microcopy stage={stage} />
         <EtaBadge text={etaText} stage={stage} />
         {stage === "en_route" && snap.rider_info ? (
@@ -237,9 +246,25 @@ function EtaBadge({ text, stage }: { text: string; stage: TrackerStageKey }) {
   )
 }
 
-function StageBody({ stage, canoaPct }: { stage: TrackerStageKey; canoaPct: number }) {
+function StageBody({
+  stage,
+  canoaPct,
+  photoUrl,
+  photoAt,
+}: {
+  stage: TrackerStageKey
+  canoaPct: number
+  photoUrl?: string | null
+  photoAt?: string | null
+}) {
   if (stage === "en_route") return <CanoaScene pct={canoaPct} />
-  if (stage === "delivered") return <CofreScene />
+  if (stage === "delivered") {
+    return photoUrl ? (
+      <DeliveryProofPhoto url={photoUrl} at={photoAt} />
+    ) : (
+      <CofreScene />
+    )
+  }
   if (stage === "preparing") return <FishScene />
   return <StageIcon stage={stage} />
 }
@@ -407,6 +432,60 @@ function CanoaScene({ pct }: { pct: number }) {
           50% { transform: translateY(-3px); }
         }
       `}</style>
+    </div>
+  )
+}
+
+/* R96.18 · DeliveryProofPhoto · stage 4 cuando hay foto del
+   motorizado entregada. Pattern Amazon photo-on-delivery ·
+   adaptado Náufrago · "tu tesoro llegó" microcopy + timestamp. */
+function DeliveryProofPhoto({
+  url,
+  at,
+}: {
+  url: string
+  at?: string | null
+}) {
+  const timeText = at
+    ? new Date(at).toLocaleTimeString("es-EC", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null
+  return (
+    <div
+      className="my-5 overflow-hidden rounded-2xl"
+      style={{
+        border: `1px solid ${CYAN}55`,
+      }}
+    >
+      <div className="relative aspect-[4/3] bg-neutral-900">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={url}
+          alt="Foto del pedido entregado"
+          className="h-full w-full object-cover"
+        />
+        <span
+          className="absolute bottom-2 right-2 rounded-md bg-black/70 px-2 py-0.5 font-mono text-[10px] text-white backdrop-blur-sm"
+        >
+          📷 Entregado{timeText ? ` · ${timeText}` : ""}
+        </span>
+      </div>
+      <div
+        className="flex items-center gap-2 px-3 py-2"
+        style={{ background: `${SAND}AA` }}
+      >
+        <span aria-hidden className="text-2xl">
+          🏝️
+        </span>
+        <span
+          className="font-[family-name:var(--font-caveat)] text-lg"
+          style={{ color: PURPLE }}
+        >
+          Tu tesoro llegó · ¡salud!
+        </span>
+      </div>
     </div>
   )
 }

@@ -117,9 +117,38 @@ export async function POST(request: Request) {
       // Map courier status to naufrago order status + update naufrago_orders
       // so the tracker UI polling reflects it. Then build payload por status
       // y push send (fire-and-forget · no bloquea respuesta al webhook).
+      const orderUpdate: Record<string, unknown> = { status: event.status }
+      // R96.18 · photo proof of delivery · si PedidosYa entrega event
+      // DELIVERED con foto + GPS · persiste en naufrago_orders columns.
+      // PedidosYa schema varies · probamos shapes comunes.
+      const p = event.payload as Record<string, unknown> | undefined
+      if (event.status === "DELIVERED" && p) {
+        const photoUrl =
+          (typeof p.delivery_photo_url === "string"
+            ? p.delivery_photo_url
+            : null) ??
+          (typeof p.proof_photo_url === "string" ? p.proof_photo_url : null) ??
+          (typeof p.photoUrl === "string" ? p.photoUrl : null)
+        const lat =
+          typeof p.delivery_lat === "number"
+            ? p.delivery_lat
+            : typeof p.lat === "number"
+              ? p.lat
+              : null
+        const lng =
+          typeof p.delivery_lng === "number"
+            ? p.delivery_lng
+            : typeof p.lng === "number"
+              ? p.lng
+              : null
+        if (photoUrl) orderUpdate.delivery_photo_url = photoUrl
+        if (lat !== null) orderUpdate.delivery_photo_lat = lat
+        if (lng !== null) orderUpdate.delivery_photo_lng = lng
+        orderUpdate.delivery_photo_at = new Date().toISOString()
+      }
       await supabase
         .from("naufrago_orders")
-        .update({ status: event.status })
+        .update(orderUpdate)
         .eq("order_code", nfOrder.order_code)
       const payload = buildStagePayload(event.status, nfOrder.order_code)
       if (payload) {
