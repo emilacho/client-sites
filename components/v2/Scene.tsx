@@ -697,33 +697,12 @@ function PergaminoPropModel({
 }) {
   const { scene } = useGLTF(naufragoAssets.pergamino, true)
   const groupRef = useRef<THREE.Group>(null)
-  const textMatRef = useRef<THREE.MeshBasicMaterial>(null)
   const reducedMotion = usePrefersReducedMotion()
   const posTRef = useRef(0) // 0 = hidden in cofre, 1 = visible above
-  // Round 96 · vanish state · click sobre pergamino · scale up +
-  // lift + spin + fade · ~0.7s. Al completar · reset + onClose.
+  // Round 96.1 · vanish state · click sobre pergamino · roll-up +
+  // descenso al cofre · ~0.85s. Al completar · reset + onClose.
   const [vanishing, setVanishing] = useState(false)
   const vanishRef = useRef(0) // 0..1 progress vanish animation
-
-  const setMeshOpacity = useCallback(
-    (opacity: number) => {
-      scene.traverse((obj) => {
-        const mesh = obj as THREE.Mesh
-        if (mesh.isMesh && mesh.material) {
-          const mats = Array.isArray(mesh.material)
-            ? mesh.material
-            : [mesh.material]
-          mats.forEach((m) => {
-            const mat = m as THREE.Material & { opacity: number }
-            mat.transparent = true
-            mat.opacity = opacity
-            mat.needsUpdate = true
-          })
-        }
-      })
-    },
-    [scene],
-  )
 
   // Round 89 · switch from Permanent Marker (print-style marker)
   // to Homemade Apple (true connected-cursive handwriting) per
@@ -766,37 +745,60 @@ function PergaminoPropModel({
   useFrame((_, delta) => {
     if (!groupRef.current) return
 
-    // Vanish branch · R96 · scale up + lift + spin + fade ~0.7s
+    // Vanish branch · R96.1 · roll-up + descenso al cofre ~0.85s
+    //   Phase A · 0-0.55 · pergamino se enrolla · scale.x 1→0.08
+    //     (simula que los bordes laterales se enrollan al centro)
+    //     + spin en Z (el rollo gira mientras se enrolla)
+    //   Phase B · 0.40-1.00 · el rollo desciende al cofre ·
+    //     position Y/Z vuelven al origen + scale general → 0
+    // Sin fade opacity · puro transform · al final pergamino
+    // ocupa scale 0 dentro del cofre (igual estado pre-emerge).
     if (vanishing) {
-      vanishRef.current += delta * 1.4
+      vanishRef.current += delta * 1.18
       const v = Math.min(vanishRef.current, 1)
-      const ease = 1 - Math.pow(1 - v, 3) // easeOutCubic
+
+      // Roll progress · easeOutQuad · 0..1 across first 55% of timeline
+      const rollT = Math.min(v / 0.55, 1)
+      const rollEase = 1 - Math.pow(1 - rollT, 2)
+
+      // Return-to-cofre progress · easeInQuad · 0..1 across
+      // [0.40, 1.00] · overlaps con roll para flow continuo
+      const returnT = Math.max((v - 0.4) / 0.6, 0)
+      const returnEase = returnT * returnT
 
       groupRef.current.visible = true
 
-      // Lift up + scale up + spin + fade
-      const liftY = ease * 0.55
-      groupRef.current.position.set(-0.76, 1.4 + liftY, 0.5)
-      const scaleFactor = 1.28 * (1 + ease * 0.65)
-      groupRef.current.scale.setScalar(scaleFactor)
+      // Position · de "arriba del cofre" (1.4, 0.5) → "dentro del
+      // cofre" (0.16, 0.18) durante phase B
+      const x = -0.76
+      const y = 1.4 - returnEase * (1.4 - 0.16)
+      const z = 0.5 - returnEase * (0.5 - 0.18)
+      groupRef.current.position.set(x, y, z)
+
+      // Scale · X colapsa (enroll) · luego todo encoge hacia 0
+      const baseScale = 1.28
+      const rolledX = 1 - rollEase * 0.92 // 1 → 0.08
+      const generalShrink = 1 - returnEase // 1 → 0
+      groupRef.current.scale.set(
+        baseScale * rolledX * generalShrink,
+        baseScale * generalShrink,
+        baseScale * generalShrink,
+      )
+
+      // Rotation · mantiene tip + sway natural + agrega spin Z
+      // proporcional al roll (rollo gira mientras se enrolla)
       const tipX = 1.27
       const swayY = reducedMotion ? 0 : Math.sin(performance.now() * 0.0004) * 0.06
-      groupRef.current.rotation.set(tipX, swayY + ease * Math.PI * 0.45, 0)
-
-      const opacity = 1 - ease
-      setMeshOpacity(opacity)
-      if (textMatRef.current) textMatRef.current.opacity = opacity
+      const rollSpinZ = rollEase * Math.PI * 0.65
+      groupRef.current.rotation.set(tipX, swayY, rollSpinZ)
 
       if (v >= 1) {
-        // Animation done · reset state · pergamino vuelve a estado
-        // hidden · re-clic en cofre re-emergerá pergamino (sin
-        // discount aplicado porque ya está en cart).
+        // Reset · pergamino vuelve a estado hidden · próximo
+        // emerge (re-click cofre) lo encuentra en posT=0 limpio.
         setVanishing(false)
         vanishRef.current = 0
         posTRef.current = 0
         groupRef.current.visible = false
-        setMeshOpacity(1)
-        if (textMatRef.current) textMatRef.current.opacity = 1
         onClose?.()
       }
       return
@@ -850,7 +852,6 @@ function PergaminoPropModel({
         <mesh position={[0, 0.19, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[1.7, 1.3]} />
           <meshBasicMaterial
-            ref={textMatRef}
             map={textTexture}
             transparent
             depthWrite={false}
