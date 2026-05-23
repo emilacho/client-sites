@@ -1,0 +1,609 @@
+"use client"
+/**
+ * Náufrago order tracker · Round 103 · client island.
+ *
+ * 4-stage progress bar + per-stage icon area + microcopy (Caveat cursive) +
+ * prominent ETA. Stage 3 ("En camino") replaces the icon area with the
+ * canoa scene · canoa pictogram travels horizontally driven by
+ * `canoa_pct` from the API (0-100). When the rider is paused (e.g.
+ * traffic light) the canoa pauses too · expressing real-world physics.
+ *
+ * Identity canon · `#3D2466` morado + `#4DD4D8` cyan + Caveat cursive for
+ * microcopy + Bebas Neue display for stage names (already loaded by
+ * `app/layout.tsx`).
+ *
+ * Polling · 30s interval to `/api/orders/[order_code]`. Stops once
+ * status is DELIVERED or CANCELLED (terminal · no more updates).
+ */
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import type {
+  NaufragoOrderStatus,
+  DeliveryProvider,
+} from "@/lib/schemas"
+import { TRACKER_STAGES, type TrackerStageKey } from "@/lib/tracker/stages"
+
+export interface OrderSnapshot {
+  ok: boolean
+  order_code: string
+  status: NaufragoOrderStatus
+  stage: TrackerStageKey | "cancelled"
+  stage_index: number
+  canoa_pct: number
+  customer_name: string
+  customer_phone: string
+  cart_lines: Array<{ id: string; name: string; priceUsd: number; qty: number }>
+  subtotal_usd: number
+  discount_code: string | null
+  discount_usd: number
+  delivery_fee_usd: number
+  total_usd: number
+  delivery_provider: DeliveryProvider
+  delivery_eta_minutes: number | null
+  rider_info: {
+    name?: string
+    phone?: string
+    plate?: string
+    vehicleType?: string
+  } | null
+  customer_notes: string | null
+  created_at: string
+  rider_picked_up_at: string | null
+  delivered_at: string | null
+  cancelled_at: string | null
+  cancellation_reason: string | null
+}
+
+const PURPLE = "#3D2466"
+const CYAN = "#4DD4D8"
+const SAND = "#F5E9D2"
+const SKY_TOP = "#C8F0F2"
+
+interface Props {
+  initial: OrderSnapshot
+  orderCode: string
+}
+
+export function OrderTracker({ initial, orderCode }: Props) {
+  const [snap, setSnap] = useState<OrderSnapshot>(initial)
+
+  useEffect(() => {
+    if (snap.status === "DELIVERED" || snap.status === "CANCELLED") return
+    const id = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/orders/${encodeURIComponent(orderCode)}`, {
+          cache: "no-store",
+        })
+        if (res.ok) {
+          const next = (await res.json()) as OrderSnapshot
+          setSnap(next)
+        }
+      } catch {
+        // network blip · keep last good snapshot · next poll retries
+      }
+    }, 30_000)
+    return () => clearInterval(id)
+  }, [orderCode, snap.status])
+
+  if (snap.stage === "cancelled") {
+    return <CancelledBanner snap={snap} />
+  }
+
+  const stage = snap.stage as TrackerStageKey
+  const etaText = computeEtaText(snap)
+
+  return (
+    <main
+      className="min-h-screen"
+      style={{
+        background: `linear-gradient(180deg, ${SKY_TOP} 0%, #FFFFFF 30%, #FFFFFF 100%)`,
+      }}
+    >
+      <div className="mx-auto max-w-md px-5 py-8">
+        <Header orderCode={snap.order_code} />
+        <ProgressBar activeIndex={snap.stage_index} />
+        <StageName stage={stage} />
+        <StageBody stage={stage} canoaPct={snap.canoa_pct} />
+        <Microcopy stage={stage} />
+        <EtaBadge text={etaText} stage={stage} />
+        {stage === "en_route" && snap.rider_info ? (
+          <RiderCard info={snap.rider_info} />
+        ) : null}
+        {stage === "delivered" ? (
+          <ReorderCta />
+        ) : (
+          <OrderSummary snap={snap} />
+        )}
+      </div>
+    </main>
+  )
+}
+
+function Header({ orderCode }: { orderCode: string }) {
+  return (
+    <header className="mb-6 flex items-baseline justify-between">
+      <span
+        className="font-[family-name:var(--font-bebas)] text-2xl tracking-wider"
+        style={{ color: PURPLE }}
+      >
+        NÁUFRAGO
+      </span>
+      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-neutral-500">
+        {orderCode}
+      </span>
+    </header>
+  )
+}
+
+function ProgressBar({ activeIndex }: { activeIndex: number }) {
+  return (
+    <div className="mb-6 flex items-center gap-1">
+      {TRACKER_STAGES.map((s, i) => {
+        const done = s.index < activeIndex
+        const active = s.index === activeIndex
+        const dotColor = done || active ? CYAN : "#E5E7EB"
+        const lineColor = done ? CYAN : "#E5E7EB"
+        const dotInner = done ? "✓" : ""
+        return (
+          <div key={s.key} className="flex flex-1 items-center">
+            <div
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-bold text-white"
+              style={{
+                background: dotColor,
+                boxShadow: active
+                  ? `0 0 0 4px ${CYAN}22, 0 0 14px ${CYAN}66`
+                  : "none",
+                transition: "all 240ms ease-out",
+                animation: active ? "naufrago-pulse 1.8s ease-in-out infinite" : "none",
+              }}
+            >
+              <span className="text-[11px] leading-none">
+                {done ? dotInner : s.index}
+              </span>
+            </div>
+            {i < TRACKER_STAGES.length - 1 ? (
+              <div
+                className="h-[2px] flex-1"
+                style={{ background: lineColor, transition: "background 240ms" }}
+              />
+            ) : null}
+          </div>
+        )
+      })}
+      <style jsx global>{`
+        @keyframes naufrago-pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.08); }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+function StageName({ stage }: { stage: TrackerStageKey }) {
+  const s = TRACKER_STAGES.find((x) => x.key === stage)!
+  return (
+    <h1
+      className="font-[family-name:var(--font-bebas)] text-4xl tracking-wide"
+      style={{ color: PURPLE }}
+    >
+      {s.name}
+    </h1>
+  )
+}
+
+function Microcopy({ stage }: { stage: TrackerStageKey }) {
+  const s = TRACKER_STAGES.find((x) => x.key === stage)!
+  return (
+    <p
+      className="mt-3 font-[family-name:var(--font-caveat)] text-2xl"
+      style={{ color: PURPLE }}
+    >
+      &ldquo;{s.microcopy}&rdquo;
+    </p>
+  )
+}
+
+function EtaBadge({ text, stage }: { text: string; stage: TrackerStageKey }) {
+  if (stage === "delivered") return null
+  return (
+    <div
+      className="my-5 rounded-xl border px-4 py-3 text-center"
+      style={{ borderColor: CYAN, background: `${CYAN}11` }}
+    >
+      <span
+        className="font-mono text-base font-semibold tabular-nums"
+        style={{ color: PURPLE }}
+      >
+        {text}
+      </span>
+    </div>
+  )
+}
+
+function StageBody({ stage, canoaPct }: { stage: TrackerStageKey; canoaPct: number }) {
+  if (stage === "en_route") return <CanoaScene pct={canoaPct} />
+  if (stage === "delivered") return <CofreScene />
+  return <StageIcon stage={stage} />
+}
+
+function StageIcon({ stage }: { stage: "received" | "preparing" }) {
+  const emoji = stage === "received" ? "📜" : "🍲"
+  const label =
+    stage === "received" ? "Pedido en cocina" : "Cocina trabajando"
+  return (
+    <div
+      className="my-5 flex aspect-square items-center justify-center rounded-2xl"
+      style={{ background: `${CYAN}1A`, border: `1px solid ${CYAN}33` }}
+    >
+      <div className="flex flex-col items-center gap-2">
+        <span className="text-7xl" aria-label={label} role="img">
+          {emoji}
+        </span>
+        <span
+          className="font-[family-name:var(--font-caveat)] text-lg"
+          style={{ color: PURPLE }}
+        >
+          {label}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * The centerpiece of Round 103 · canoa traveling on the sea.
+ *
+ * Scene composition (mobile portrait · aspect ~1.4) ·
+ *   - sky gradient top
+ *   - city silhouette right
+ *   - sea waves bottom (SVG path · subtle vertical wobble)
+ *   - canoa horizontally positioned by `pct` (0-100) · with subtle bob
+ *
+ * Connected to real-time GPS · the `pct` value comes from the API which
+ * computes it from the rider's `distance_remaining_m` (Pedidos Ya
+ * webhook · R99). If rider pauses · pct stops moving · canoa pauses.
+ */
+function CanoaScene({ pct }: { pct: number }) {
+  const clamped = Math.max(0, Math.min(100, pct))
+  return (
+    <div
+      className="my-5 overflow-hidden rounded-2xl"
+      style={{
+        background: `linear-gradient(180deg, ${SKY_TOP} 0%, #FFFFFF 55%, ${CYAN}33 70%, ${CYAN}55 100%)`,
+        height: "240px",
+        position: "relative",
+        border: `1px solid ${CYAN}55`,
+      }}
+    >
+      {/* Sun · upper-left subtle */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          left: "10%",
+          top: "18%",
+          width: 38,
+          height: 38,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, #FFE57F 0%, #FFE57F00 70%)`,
+        }}
+      />
+      {/* City silhouette · right side · destination */}
+      <svg
+        aria-hidden
+        viewBox="0 0 100 60"
+        preserveAspectRatio="xMaxYMid meet"
+        style={{
+          position: "absolute",
+          right: 0,
+          bottom: "30%",
+          width: "30%",
+          height: "40%",
+        }}
+      >
+        <path
+          d="M 0,60 L 0,40 L 8,40 L 8,28 L 14,28 L 14,20 L 22,20 L 22,12 L 30,12 L 30,18 L 38,18 L 38,8 L 46,8 L 46,15 L 55,15 L 55,5 L 64,5 L 64,20 L 72,20 L 72,28 L 80,28 L 80,18 L 90,18 L 90,32 L 100,32 L 100,60 Z"
+          fill={PURPLE}
+          opacity={0.85}
+        />
+        {/* Casita Náufrago · pin destination */}
+        <circle cx="92" cy="20" r="2" fill={CYAN}>
+          <animate attributeName="r" values="2;2.6;2" dur="1.6s" repeatCount="indefinite" />
+        </circle>
+      </svg>
+      {/* Sea waves · animated SVG */}
+      <svg
+        aria-hidden
+        viewBox="0 0 100 20"
+        preserveAspectRatio="none"
+        style={{
+          position: "absolute",
+          left: 0,
+          bottom: 0,
+          width: "100%",
+          height: "32%",
+        }}
+      >
+        <defs>
+          <linearGradient id="wave-gradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={CYAN} stopOpacity="0.55" />
+            <stop offset="100%" stopColor={PURPLE} stopOpacity="0.75" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M 0,10 Q 12.5,4 25,10 T 50,10 T 75,10 T 100,10 L 100,20 L 0,20 Z"
+          fill="url(#wave-gradient)"
+        >
+          <animate
+            attributeName="d"
+            dur="3.5s"
+            repeatCount="indefinite"
+            values="
+              M 0,10 Q 12.5,4 25,10 T 50,10 T 75,10 T 100,10 L 100,20 L 0,20 Z;
+              M 0,10 Q 12.5,14 25,10 T 50,10 T 75,10 T 100,10 L 100,20 L 0,20 Z;
+              M 0,10 Q 12.5,4 25,10 T 50,10 T 75,10 T 100,10 L 100,20 L 0,20 Z
+            "
+          />
+        </path>
+      </svg>
+      {/* Canoa · horizontally positioned by pct · vertical bobbing animation */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          left: `calc(${clamped}% - 28px)`,
+          bottom: "26%",
+          transition: "left 30s linear",
+          animation: "naufrago-canoa-bob 2.8s ease-in-out infinite",
+        }}
+      >
+        <svg viewBox="0 0 60 32" style={{ width: 56, height: 30 }} aria-label="Canoa">
+          {/* Sail */}
+          <path d="M 30 4 L 30 22 L 42 22 Z" fill={SAND} stroke={PURPLE} strokeWidth="1" />
+          <line x1="30" y1="4" x2="30" y2="22" stroke={PURPLE} strokeWidth="1.5" />
+          {/* Hull */}
+          <path
+            d="M 6 22 Q 30 30 54 22 L 50 26 Q 30 32 10 26 Z"
+            fill={PURPLE}
+            stroke={PURPLE}
+            strokeWidth="1"
+          />
+        </svg>
+      </div>
+      {/* Pct label · bottom-right · small · for feedback */}
+      <div
+        className="font-mono text-[10px] tabular-nums"
+        style={{
+          position: "absolute",
+          right: 10,
+          top: 10,
+          color: PURPLE,
+          opacity: 0.65,
+        }}
+      >
+        {clamped.toFixed(0)}%
+      </div>
+      <style jsx global>{`
+        @keyframes naufrago-canoa-bob {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-3px); }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+function CofreScene() {
+  return (
+    <div
+      className="my-5 flex aspect-square items-center justify-center rounded-2xl"
+      style={{
+        background: `radial-gradient(circle, ${SAND}AA 0%, ${SAND}33 70%, transparent 100%)`,
+        border: `1px solid ${PURPLE}33`,
+      }}
+    >
+      <div className="flex flex-col items-center gap-2">
+        <span className="text-8xl" aria-label="Cofre abierto" role="img">
+          🗝️
+        </span>
+        <span
+          className="font-[family-name:var(--font-caveat)] text-xl"
+          style={{ color: PURPLE }}
+        >
+          Tesoro entregado
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function RiderCard({
+  info,
+}: {
+  info: NonNullable<OrderSnapshot["rider_info"]>
+}) {
+  return (
+    <div
+      className="my-4 rounded-xl border p-3"
+      style={{ borderColor: `${PURPLE}22`, background: `${PURPLE}06` }}
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.18em] text-neutral-500">
+            Tu rider
+          </p>
+          <p
+            className="font-[family-name:var(--font-caveat)] text-xl"
+            style={{ color: PURPLE }}
+          >
+            {info.name ?? "PedidosYa Courier"}
+          </p>
+          {info.plate || info.vehicleType ? (
+            <p className="font-mono text-[11px] text-neutral-600">
+              {info.vehicleType ?? "vehículo"} · {info.plate ?? "—"}
+            </p>
+          ) : null}
+        </div>
+        {info.phone ? (
+          <a
+            href={`tel:${info.phone}`}
+            className="rounded-lg px-3 py-2 text-sm font-semibold"
+            style={{ background: CYAN, color: PURPLE }}
+          >
+            Llamar
+          </a>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+function OrderSummary({ snap }: { snap: OrderSnapshot }) {
+  return (
+    <section className="mt-6">
+      <h2 className="mb-2 text-[10px] uppercase tracking-[0.18em] text-neutral-500">
+        Tu pedido
+      </h2>
+      <ul className="space-y-1">
+        {snap.cart_lines.map((line) => (
+          <li
+            key={line.id}
+            className="flex items-baseline justify-between font-mono text-sm"
+          >
+            <span>
+              {line.qty}× {line.name}
+            </span>
+            <span className="tabular-nums">
+              ${(line.priceUsd * line.qty).toFixed(2)}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-3 space-y-1 border-t pt-2 font-mono text-[12px]">
+        <Row label="Subtotal" value={snap.subtotal_usd} />
+        {snap.delivery_fee_usd > 0 ? (
+          <Row label="Envío" value={snap.delivery_fee_usd} />
+        ) : null}
+        {snap.discount_usd > 0 ? (
+          <Row
+            label={`Desc ${snap.discount_code ?? ""}`}
+            value={-snap.discount_usd}
+          />
+        ) : null}
+        <Row label="Total" value={snap.total_usd} bold />
+      </div>
+    </section>
+  )
+}
+
+function Row({
+  label,
+  value,
+  bold,
+}: {
+  label: string
+  value: number
+  bold?: boolean
+}) {
+  return (
+    <div className="flex items-baseline justify-between">
+      <span className={bold ? "font-semibold" : ""} style={{ color: PURPLE }}>
+        {label}
+      </span>
+      <span
+        className={`tabular-nums ${bold ? "font-semibold" : ""}`}
+        style={{ color: PURPLE }}
+      >
+        {value < 0 ? "-" : ""}${Math.abs(value).toFixed(2)}
+      </span>
+    </div>
+  )
+}
+
+function ReorderCta() {
+  return (
+    <div className="my-4 space-y-3">
+      <p
+        className="text-center font-[family-name:var(--font-caveat)] text-lg"
+        style={{ color: PURPLE }}
+      >
+        ¿Cómo estuvo el tesoro?
+      </p>
+      <div className="flex justify-center gap-1.5">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            className="text-3xl transition-transform hover:scale-110"
+            aria-label={`${n} estrella${n === 1 ? "" : "s"}`}
+          >
+            ☆
+          </button>
+        ))}
+      </div>
+      <Link
+        href="/"
+        className="block rounded-xl px-4 py-3 text-center text-sm font-semibold"
+        style={{ background: PURPLE, color: "#FFFFFF" }}
+      >
+        Volver a pedir
+      </Link>
+    </div>
+  )
+}
+
+function CancelledBanner({ snap }: { snap: OrderSnapshot }) {
+  return (
+    <main className="min-h-screen bg-white">
+      <div className="mx-auto max-w-md px-5 py-12 text-center">
+        <h1
+          className="font-[family-name:var(--font-bebas)] text-4xl"
+          style={{ color: "#B22" }}
+        >
+          Pedido cancelado
+        </h1>
+        <p
+          className="mt-3 font-[family-name:var(--font-caveat)] text-xl"
+          style={{ color: PURPLE }}
+        >
+          {snap.cancellation_reason ?? "Cancelado · sin razón registrada"}
+        </p>
+        <Link
+          href="/"
+          className="mt-6 inline-block rounded-xl px-5 py-3 text-sm font-semibold"
+          style={{ background: PURPLE, color: "#FFFFFF" }}
+        >
+          Volver al inicio
+        </Link>
+      </div>
+    </main>
+  )
+}
+
+function computeEtaText(snap: OrderSnapshot): string {
+  if (snap.status === "DELIVERED") {
+    return snap.delivered_at
+      ? `Entregado a las ${new Date(snap.delivered_at).toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" })}`
+      : "Entregado"
+  }
+  // For en-route, use ETA based on rider_picked_up_at + delivery_eta_minutes
+  if (snap.stage === "en_route") {
+    const pickup = snap.rider_picked_up_at
+      ? new Date(snap.rider_picked_up_at).getTime()
+      : null
+    const etaMin = snap.delivery_eta_minutes ?? 20
+    if (pickup) {
+      const arrivalMs = pickup + etaMin * 60_000
+      const remaining = Math.max(0, Math.round((arrivalMs - Date.now()) / 60_000))
+      return remaining > 0 ? `Llega en ~${remaining} min` : "Llegando…"
+    }
+    return `Llega en ~${etaMin} min`
+  }
+  // Pre-rider stages · estimate from created_at + 25 min default
+  const created = new Date(snap.created_at).getTime()
+  const totalEta = (snap.delivery_eta_minutes ?? 20) + 8
+  const arrivalMs = created + totalEta * 60_000
+  const remaining = Math.max(0, Math.round((arrivalMs - Date.now()) / 60_000))
+  return `Listo en ~${remaining} min`
+}
