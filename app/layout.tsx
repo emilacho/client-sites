@@ -24,10 +24,9 @@ const marker = Permanent_Marker({
   variable: "--font-marker",
   display: "swap",
 })
-// Bebas Neue · Round 24 · powers the PromoTicker · classic news-ticker
-// silhouette (tall, narrow, naturally bold uppercase) · fits the
-// "ALERTA NÁUFRAGO" headline tone better than the casual marker.
-// Bebas only ships weight 400 · the typeface already reads as bold.
+// Bebas Neue · classic newsstand silhouette (tall, narrow, naturally
+// bold uppercase) · usado por el header NÁUFRAGO del OrderTracker
+// (/order/[code]) + 404 not-found surface.
 const bebas = Bebas_Neue({
   weight: "400",
   subsets: ["latin"],

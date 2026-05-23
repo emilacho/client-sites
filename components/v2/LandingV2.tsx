@@ -3,7 +3,7 @@
  * LandingV2 · the root client component for the v2 Náufrago landing.
  *
  *  - mounts the CartProvider context
- *  - composes the 3D scene + TopBar + PromoTicker + CartDrawer +
+ *  - composes the 3D scene + TopBar + CartDrawer +
  *    OverlayPanels (historia · reseñas · contacto)
  *  - cofre anchor opens the cart · the other 3 anchors open the
  *    corresponding overlay panel
@@ -19,7 +19,6 @@ import { naufragoV2 } from "@/lib/v2/naufrago-content"
 import { TopBar } from "./TopBar"
 import { CartDrawer } from "./CartDrawer"
 import { OverlayPanels, type OverlayKind } from "./OverlayPanels"
-import { PromoTicker } from "./PromoTicker"
 import { MenuModal } from "./MenuModal"
 // Round 85 · TreasureRewardModal (R82 castaway SVG modal) retired ·
 // the 3D pergamino in-scene that emerges from the cofre on click
@@ -96,10 +95,8 @@ function LandingInner() {
           so it stays readable over the GLB. Round 72 · pushed all the
           way into the bottom-left corner per user "completamente hacia
           la esquina inferior izquierda". Lateral padding 20px → 12px
-          and bottom padding 128/160px → 88px so the block sits 8px
-          above the 80px-tall PromoTicker (which is fixed at z-30 ·
-          can't go below it). pt removed · irrelevant under
-          justify-end + min-h-[100svh]. */}
+          and bottom padding 128/160px → 88px. pt removed ·
+          irrelevant under justify-end + min-h-[100svh]. */}
       <div className="pointer-events-none relative z-10 flex min-h-[100svh] flex-col items-start justify-end px-3 pb-[88px]">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -168,9 +165,6 @@ function LandingInner() {
               already gone in b2b8cdd. No other change in this commit. */}
         </motion.div>
       </div>
-
-      {/* Round 19 · bottom sticky promo strip (was MenuQuickAdd) */}
-      <PromoTicker />
 
       {/* Drawers + modals · z-40+ to sit above the 3D layer.
           Round 85 · TreasureRewardModal unmounted · cofre click
