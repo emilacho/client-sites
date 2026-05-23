@@ -699,8 +699,9 @@ function PergaminoPropModel({
   const groupRef = useRef<THREE.Group>(null)
   const reducedMotion = usePrefersReducedMotion()
   const posTRef = useRef(0) // 0 = hidden in cofre, 1 = visible above
-  // Round 96.1 · vanish state · click sobre pergamino · roll-up +
-  // descenso al cofre · ~0.85s. Al completar · reset + onClose.
+  // Round 96.2 · vanish state · click sobre pergamino · roll-up +
+  // descenso al cofre · ~0.28s (3× velocidad vs R96.1).
+  // Al completar · reset + onClose.
   const [vanishing, setVanishing] = useState(false)
   const vanishRef = useRef(0) // 0..1 progress vanish animation
 
@@ -745,7 +746,8 @@ function PergaminoPropModel({
   useFrame((_, delta) => {
     if (!groupRef.current) return
 
-    // Vanish branch · R96.1 · roll-up + descenso al cofre ~0.85s
+    // Vanish branch · R96.2 · roll-up + descenso al cofre ~0.28s
+    //   (R96.1 era ~0.85s · Emilio "3 veces la velocidad")
     //   Phase A · 0-0.55 · pergamino se enrolla · scale.x 1→0.08
     //     (simula que los bordes laterales se enrollan al centro)
     //     + spin en Z (el rollo gira mientras se enrolla)
@@ -754,7 +756,7 @@ function PergaminoPropModel({
     // Sin fade opacity · puro transform · al final pergamino
     // ocupa scale 0 dentro del cofre (igual estado pre-emerge).
     if (vanishing) {
-      vanishRef.current += delta * 1.18
+      vanishRef.current += delta * 3.54
       const v = Math.min(vanishRef.current, 1)
 
       // Roll progress · easeOutQuad · 0..1 across first 55% of timeline
