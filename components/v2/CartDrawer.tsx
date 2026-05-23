@@ -364,6 +364,25 @@ function CartFooter() {
         lines: cart.lines,
         totalUsd: total,
       })
+      // R96.14 · WhatsApp confirmation fire-and-forget · si Twilio
+      // no está configurado el endpoint degrada graceful · UI no
+      // se entera del status del send.
+      const trackingUrl =
+        typeof window !== "undefined" && json.orderId
+          ? `${window.location.origin}/order/${json.orderId}`
+          : (json.trackingUrl ?? "")
+      void fetch("/api/notifications/order-confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderCode: json.orderId,
+          customerPhone: form.phone,
+          trackingUrl,
+          totalUsd: total,
+          itemCount: cart.itemCount,
+        }),
+        keepalive: true,
+      }).catch(() => {})
       setShipping({
         kind: "success",
         orderId: json.orderId,
