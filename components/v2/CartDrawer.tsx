@@ -19,7 +19,7 @@
  *          ready · sustituye los botones temporalmente cuando activo
  */
 import { useEffect, useState } from "react"
-import { Loader2, Minus, Plus, ShoppingCart, Trash2, X } from "lucide-react"
+import { Loader2, MessageSquare, Minus, Plus, ShoppingCart, Trash2, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useCart } from "@/lib/v2/cart-context"
 import { buildWhatsAppLink, naufragoV2 } from "@/lib/v2/naufrago-content"
@@ -94,6 +94,15 @@ type ShippingState =
 export function CartDrawer() {
   const cart = useCart()
   const [isMobile, setIsMobile] = useState(false)
+  // R96.11 · qué líneas tienen el editor de notas expandido.
+  const [notesExpanded, setNotesExpanded] = useState<Set<string>>(new Set())
+  const toggleNoteEditor = (id: string) =>
+    setNotesExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)")
@@ -165,56 +174,85 @@ export function CartDrawer() {
                 <ul className="flex flex-col gap-2">
                   {cart.lines.map((line) => {
                     const item = naufragoV2.menu.find((m) => m.id === line.id)
+                    const noteOpen = notesExpanded.has(line.id) || !!line.notes
                     return (
                       <li
                         key={line.id}
-                        className="flex items-center gap-2 rounded-md border border-slate-800 bg-slate-900/60 p-2"
+                        className="flex flex-col gap-1.5 rounded-md border border-slate-800 bg-slate-900/60 p-2"
                       >
-                        <MenuThumb id={line.id} emoji={item?.emoji ?? "🍽"} />
-                        <div className="flex min-w-0 flex-1 flex-col gap-1">
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span className="truncate text-sm font-medium leading-tight">
-                              {line.name}
-                              <span className="ml-1.5 font-mono text-[10px] font-normal text-slate-500 tabular-nums">
-                                ${line.priceUsd.toFixed(2)} c/u
+                        <div className="flex items-center gap-2">
+                          <MenuThumb id={line.id} emoji={item?.emoji ?? "🍽"} />
+                          <div className="flex min-w-0 flex-1 flex-col gap-1">
+                            <div className="flex items-baseline justify-between gap-2">
+                              <span className="truncate text-sm font-medium leading-tight">
+                                {line.name}
+                                <span className="ml-1.5 font-mono text-[10px] font-normal text-slate-500 tabular-nums">
+                                  ${line.priceUsd.toFixed(2)} c/u
+                                </span>
                               </span>
-                            </span>
-                            <span className="font-mono text-sm tabular-nums text-cyan-200">
-                              ${(line.priceUsd * line.qty).toFixed(2)}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="inline-flex items-center rounded-full border border-slate-700 bg-slate-950">
-                              <button
-                                type="button"
-                                onClick={() => cart.setQty(line.id, line.qty - 1)}
-                                aria-label="Quitar uno"
-                                className="rounded-full p-1 text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100"
-                              >
-                                <Minus className="h-3 w-3" />
-                              </button>
-                              <span className="min-w-[20px] text-center font-mono text-xs tabular-nums">
-                                {line.qty}
+                              <span className="font-mono text-sm tabular-nums text-cyan-200">
+                                ${(line.priceUsd * line.qty).toFixed(2)}
                               </span>
-                              <button
-                                type="button"
-                                onClick={() => cart.setQty(line.id, line.qty + 1)}
-                                aria-label="Agregar uno"
-                                className="rounded-full p-1 text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100"
-                              >
-                                <Plus className="h-3 w-3" />
-                              </button>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => cart.remove(line.id)}
-                              aria-label="Eliminar producto"
-                              className="rounded-md p-1 text-rose-300/70 transition-colors hover:bg-rose-500/10 hover:text-rose-200"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="inline-flex items-center rounded-full border border-slate-700 bg-slate-950">
+                                <button
+                                  type="button"
+                                  onClick={() => cart.setQty(line.id, line.qty - 1)}
+                                  aria-label="Quitar uno"
+                                  className="rounded-full p-1 text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100"
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </button>
+                                <span className="min-w-[20px] text-center font-mono text-xs tabular-nums">
+                                  {line.qty}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => cart.setQty(line.id, line.qty + 1)}
+                                  aria-label="Agregar uno"
+                                  className="rounded-full p-1 text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100"
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </button>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleNoteEditor(line.id)}
+                                  aria-label={line.notes ? "Editar nota" : "Agregar nota"}
+                                  className={[
+                                    "inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] font-medium transition-colors",
+                                    line.notes
+                                      ? "bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20"
+                                      : "text-slate-400 hover:bg-slate-800 hover:text-slate-200",
+                                  ].join(" ")}
+                                >
+                                  <MessageSquare className="h-3 w-3" />
+                                  {line.notes ? "Nota" : "+ Nota"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => cart.remove(line.id)}
+                                  aria-label="Eliminar producto"
+                                  className="rounded-md p-1 text-rose-300/70 transition-colors hover:bg-rose-500/10 hover:text-rose-200"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         </div>
+                        {noteOpen ? (
+                          <input
+                            type="text"
+                            value={line.notes ?? ""}
+                            onChange={(e) => cart.setNotes(line.id, e.target.value)}
+                            placeholder="Notas · alergias · sin cilantro · poco picante"
+                            maxLength={140}
+                            className="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-[12px] text-slate-100 placeholder:text-slate-500 focus:border-cyan-500"
+                          />
+                        ) : null}
                       </li>
                     )
                   })}
@@ -266,6 +304,7 @@ function CartFooter() {
             name: l.name,
             priceUsd: l.priceUsd,
             qty: l.qty,
+            notes: l.notes,
           })),
         }),
       })
@@ -310,6 +349,7 @@ function CartFooter() {
             name: l.name,
             priceUsd: l.priceUsd,
             qty: l.qty,
+            notes: l.notes,
           })),
           notes: form.notes || undefined,
         }),

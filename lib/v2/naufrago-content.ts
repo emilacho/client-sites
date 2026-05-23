@@ -357,6 +357,8 @@ export interface CartLine {
   name: string
   priceUsd: number
   qty: number
+  /** R96.11 · notas opcionales del cliente · "sin cilantro · alergias". */
+  notes?: string
 }
 
 export interface AppliedDiscountSummary {
@@ -372,7 +374,10 @@ export function buildWhatsAppMessage(
     return "Hola, quiero pedir."
   }
   const items = lines
-    .map((l) => `• ${l.qty}× ${l.name} — $${(l.priceUsd * l.qty).toFixed(2)}`)
+    .map((l) => {
+      const base = `• ${l.qty}× ${l.name} — $${(l.priceUsd * l.qty).toFixed(2)}`
+      return l.notes ? `${base}\n    ↳ ${l.notes}` : base
+    })
     .join("\n")
   const subtotal = lines.reduce((s, l) => s + l.priceUsd * l.qty, 0)
   // Round 77 · include the discount line + adjusted total when a

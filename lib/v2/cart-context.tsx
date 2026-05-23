@@ -32,6 +32,9 @@ export interface CartLine {
   name: string
   priceUsd: number
   qty: number
+  /** Round 96.11 · notas opcionales por ítem · "sin cilantro · alergia
+   *  al maní · poco picante". Visible al motorizado + cocina. */
+  notes?: string
 }
 
 export interface AppliedDiscount {
@@ -52,6 +55,8 @@ interface CartCtx {
   add: (line: Omit<CartLine, "qty">, qty?: number) => void
   remove: (id: string) => void
   setQty: (id: string, qty: number) => void
+  /** R96.11 · update notes opcionales para una línea. */
+  setNotes: (id: string, notes: string) => void
   clear: () => void
   isOpen: boolean
   open: () => void
@@ -159,6 +164,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const setNotes = useCallback((id: string, notes: string) => {
+    setLines((prev) =>
+      prev.map((l) =>
+        l.id === id ? { ...l, notes: notes.trim() || undefined } : l,
+      ),
+    )
+  }, [])
+
   const clear = useCallback(() => setLines([]), [])
 
   const applyCode = useCallback((code: string) => {
@@ -191,6 +204,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       add,
       remove,
       setQty,
+      setNotes,
       clear,
       isOpen,
       open: () => setIsOpen(true),
@@ -200,7 +214,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       applyCode,
       removeDiscount,
     }
-  }, [lines, isOpen, discount, add, remove, setQty, clear, applyCode, removeDiscount])
+  }, [lines, isOpen, discount, add, remove, setQty, setNotes, clear, applyCode, removeDiscount])
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
