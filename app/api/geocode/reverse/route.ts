@@ -22,6 +22,8 @@ const GOOGLE_KEY = process.env.GOOGLE_MAPS_API_KEY
 
 interface GeocodeResult {
   short: string
+  street: string | null
+  streetNumber: string | null
   neighbourhood: string | null
   city: string | null
   country: string | null
@@ -30,9 +32,26 @@ interface GeocodeResult {
   source: "google" | "nominatim"
 }
 
-function formatShort(neighbourhood: string | null, city: string | null): string {
+/**
+ * Build the street-level label · objetivo · el usuario debe ver
+ * SU DIRECCIÓN EXACTA (calle + número) desde el primer render.
+ * Fallback cascade · street+num → street+barrio → street → barrio
+ * +ciudad → ciudad → "Olón" sentinel.
+ */
+function formatExact(parts: {
+  street: string | null
+  streetNumber: string | null
+  neighbourhood: string | null
+  city: string | null
+}): string {
+  const { street, streetNumber, neighbourhood, city } = parts
+  if (street && streetNumber && city) return `${street} ${streetNumber} · ${city}`
+  if (street && streetNumber) return `${street} ${streetNumber}`
+  if (street && neighbourhood) return `${street} · ${neighbourhood}`
+  if (street && city) return `${street} · ${city}`
+  if (street) return street
   if (neighbourhood && city) return `${neighbourhood} · ${city}`
-  return neighbourhood ?? city ?? "Olón"
+  return city ?? "Olón"
 }
 
 interface GoogleAddressComponent {
@@ -66,6 +85,8 @@ async function reverseGoogle(
   const data = (await res.json()) as GoogleGeocodeResponse
   if (data.status !== "OK" || !data.results?.length) return null
 
+  let street: string | null = null
+  let streetNumber: string | null = null
   let neighbourhood: string | null = null
   let city: string | null = null
   let country: string | null = null
@@ -74,6 +95,12 @@ async function reverseGoogle(
   for (const result of data.results) {
     for (const c of result.address_components ?? []) {
       const types = c.types
+      if (!streetNumber && types.includes("street_number")) {
+        streetNumber = c.long_name
+      }
+      if (!street && types.includes("route")) {
+        street = c.long_name
+      }
       if (!neighbourhood && (types.includes("neighborhood") || types.includes("sublocality_level_1") || types.includes("sublocality"))) {
         neighbourhood = c.long_name
       }
@@ -85,11 +112,13 @@ async function reverseGoogle(
         countryCode = c.short_name.toLowerCase()
       }
     }
-    if (neighbourhood && city) break
+    if (street && streetNumber && city) break
   }
 
   return {
-    short: formatShort(neighbourhood, city),
+    short: formatExact({ street, streetNumber, neighbourhood, city }),
+    street,
+    streetNumber,
     neighbourhood,
     city,
     country,
@@ -100,6 +129,7 @@ async function reverseGoogle(
 }
 
 interface NominatimAddress {
+  house_number?: string
   road?: string
   pedestrian?: string
   neighbourhood?: string
@@ -126,7 +156,7 @@ async function reverseNominatim(
   const url =
     `https://nominatim.openstreetmap.org/reverse` +
     `?format=jsonv2&lat=${lat.toFixed(5)}&lon=${lng.toFixed(5)}` +
-    `&zoom=16&addressdetails=1&accept-language=es`
+    `&zoom=18&addressdetails=1&accept-language=es`
   const res = await fetch(url, {
     headers: {
       "User-Agent": NOMINATIM_UA,
@@ -137,11 +167,15 @@ async function reverseNominatim(
   if (!res.ok) return null
   const data = (await res.json()) as NominatimResponse
   const addr = data.address
+  const street = addr?.road ?? addr?.pedestrian ?? null
+  const streetNumber = addr?.house_number ?? null
   const neighbourhood =
     addr?.neighbourhood ?? addr?.suburb ?? addr?.city_district ?? null
   const city = addr?.city ?? addr?.town ?? addr?.village ?? null
   return {
-    short: formatShort(neighbourhood, city),
+    short: formatExact({ street, streetNumber, neighbourhood, city }),
+    street,
+    streetNumber,
     neighbourhood,
     city,
     country: addr?.country ?? null,

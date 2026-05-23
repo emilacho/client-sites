@@ -121,9 +121,12 @@ export function useUserLocation(): Result {
         else setState("error")
       },
       {
-        enableHighAccuracy: false,
-        timeout: 10_000,
-        maximumAge: 5 * 60 * 1000,
+        // Objetivo · dirección EXACTA (calle + número). HighAccuracy
+        // activa GPS hardware en móvil · battery cost OK · UX
+        // requirement gana sobre power saving.
+        enableHighAccuracy: true,
+        timeout: 15_000,
+        maximumAge: 2 * 60 * 1000,
       },
     )
 
