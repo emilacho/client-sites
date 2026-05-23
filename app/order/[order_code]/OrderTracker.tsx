@@ -16,12 +16,21 @@
  * status is DELIVERED or CANCELLED (terminal · no more updates).
  */
 import { useEffect, useState } from "react"
+import dynamic from "next/dynamic"
 import Link from "next/link"
 import type {
   NaufragoOrderStatus,
   DeliveryProvider,
 } from "@/lib/schemas"
 import { TRACKER_STAGES, type TrackerStageKey } from "@/lib/tracker/stages"
+
+// R96.6 · escena 3D del pescado para stage "preparando". Dynamic
+// import sin SSR · r3f Canvas no puede server-render. Loading state
+// fallback al emoji clásico mientras el bundle carga.
+const FishScene = dynamic(
+  () => import("./FishScene").then((m) => m.FishScene),
+  { ssr: false, loading: () => null },
+)
 
 export interface OrderSnapshot {
   ok: boolean
@@ -224,6 +233,7 @@ function EtaBadge({ text, stage }: { text: string; stage: TrackerStageKey }) {
 function StageBody({ stage, canoaPct }: { stage: TrackerStageKey; canoaPct: number }) {
   if (stage === "en_route") return <CanoaScene pct={canoaPct} />
   if (stage === "delivered") return <CofreScene />
+  if (stage === "preparing") return <FishScene />
   return <StageIcon stage={stage} />
 }
 
