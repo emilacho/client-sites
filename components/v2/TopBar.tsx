@@ -14,11 +14,13 @@ import { AnimatePresence, motion } from "framer-motion"
 import { Loader2, MapPin, ShoppingCart } from "lucide-react"
 import { useCart } from "@/lib/v2/cart-context"
 import { useUserLocation } from "@/lib/v2/use-user-location"
+import { useBusinessHours } from "@/lib/v2/use-business-hours"
 import { cliente } from "@/cliente.config"
 
 export function TopBar() {
   const cart = useCart()
   const { state: locState, label: locLabel } = useUserLocation()
+  const hours = useBusinessHours()
   const showLocation = locState === "ready" && !!locLabel
   const showSpinner = locState === "asking" || locState === "loading"
 
@@ -93,6 +95,35 @@ export function TopBar() {
             · ghost kitchen Olón
           </span>
         </div>
+        {/* R96.13 · open/closed badge · pulsing dot + texto compact */}
+        <span
+          className={[
+            "mr-2 hidden shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium sm:inline-flex",
+            hours.isOpen
+              ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+              : "border-rose-500/40 bg-rose-500/10 text-rose-200",
+          ].join(" ")}
+          title={
+            hours.isOpen
+              ? `Cerramos a las ${hours.closesAtText}`
+              : `Abrimos ${hours.opensAtText ?? "pronto"}`
+          }
+        >
+          <span
+            aria-hidden
+            className={[
+              "h-1.5 w-1.5 rounded-full",
+              hours.isOpen
+                ? "bg-emerald-400 animate-pulse"
+                : "bg-rose-400",
+            ].join(" ")}
+          />
+          {hours.isOpen ? (
+            <>Abierto · hasta {hours.closesAtText}</>
+          ) : (
+            <>Cerrado · {hours.opensAtText ? `vuelve ${hours.opensAtText}` : "vuelve pronto"}</>
+          )}
+        </span>
         <button
           type="button"
           onClick={cart.open}
