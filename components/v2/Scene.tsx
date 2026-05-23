@@ -49,6 +49,8 @@ useGLTF.preload(naufragoAssets.island, true)
 useGLTF.preload(naufragoAssets.character, true)
 useGLTF.preload(naufragoAssets.sign, true)
 useGLTF.preload(naufragoAssets.surfboard, true)
+useGLTF.preload(naufragoAssets.cangrejo, true)
+useGLTF.preload(naufragoAssets.botella, true)
 useGLTF.preload(naufragoAssets.pergamino, true)
 
 // Round 40 · "cocos" removed from anchor kinds · coconuts now have
@@ -271,6 +273,14 @@ export function Scene({
               the front face of the trunk (trunk Z range
               [-2.14..-1.81]). */}
           <SurfboardModel position={[-1.307, 0.4, -1.7]} rotation={[0.3, Math.PI / 2, Math.PI / 2]} scale={0.7} />
+
+          {/* Round 96.5 · props secundarios decorativos · cangrejo
+              en la arena front-right (orilla del agua) · botella
+              acostada front-left (message-in-a-bottle vibe). Scale
+              + position son tentativos · ajustar visualmente post
+              first deploy si quedan fuera de proporción. */}
+          <CrabModel position={[1.4, 0.12, 1.2]} rotation={[0, -0.6, 0]} scale={0.35} />
+          <BottleModel position={[-0.9, 0.08, 1.6]} rotation={[Math.PI / 2, 0, 0.4]} scale={0.4} />
 
           {/* Round 85 · pergamino emerges FROM the cofre on click.
               Round 96 · click sobre el pergamino · dispara vanish
@@ -649,6 +659,16 @@ function SignModel(props: React.ComponentProps<"group">) {
 
 function SurfboardModel(props: React.ComponentProps<"group">) {
   const { scene } = useGLTF(naufragoAssets.surfboard, true)
+  return <primitive object={scene} {...props} />
+}
+
+function CrabModel(props: React.ComponentProps<"group">) {
+  const { scene } = useGLTF(naufragoAssets.cangrejo, true)
+  return <primitive object={scene} {...props} />
+}
+
+function BottleModel(props: React.ComponentProps<"group">) {
+  const { scene } = useGLTF(naufragoAssets.botella, true)
   return <primitive object={scene} {...props} />
 }
 
@@ -1179,7 +1199,7 @@ const COCONUT_REVIEWS: CocoReview[] = [
     review: "Patacones perfectos · sal prieta auténtica.",
     rating: 5,
     proxyYOffset: 0.1,
-    // No photo · DiceBear fallback
+    photoUrl: "/reviews/reviewer-5.jpg",
   },
   {
     coconutName: "Coconut_11_44",
@@ -1189,7 +1209,7 @@ const COCONUT_REVIEWS: CocoReview[] = [
       "Hicieron mi pedido completo en 25 minutos · calidad como en mesa.",
     rating: 5,
     proxyYOffset: 0.1,
-    // No photo · DiceBear fallback
+    photoUrl: "/reviews/reviewer-6.jpg",
   },
   {
     coconutName: "Coconut_12_45",

@@ -337,6 +337,13 @@ export const naufragoAssets = {
   character: `${ASSET_BASE}/3d-models/character-castaway-confused-scratch-compact.glb`,
   sign:      `${ASSET_BASE}/3d-models/sign-naufrago-compact.glb`,
   surfboard: `${ASSET_BASE}/3d-models/surfboard-old-compact.glb`,
+  // Round 96.5 · props secundarios para la isla · Meshy AI ·
+  // pipeline resize+draco compactado (atún 14→2 MB · cangrejo 30
+  // →4 MB · botella 7→0.6 MB). Atún disponible pero no renderizado
+  // todavía · pending decisión Emilio sobre placement.
+  cangrejo:  `${ASSET_BASE}/3d-models/cangrejo-compact.glb`,
+  botella:   `${ASSET_BASE}/3d-models/botella-compact.glb`,
+  atun:      `${ASSET_BASE}/3d-models/atun-compact.glb`,
   // Pergamino pirata 3D asset (Meshy AI · Draco-compressed).
   pergamino: "/models/pergamino-pirata.glb",
   heroImage: `${ASSET_BASE}/v2/hero.png`,
