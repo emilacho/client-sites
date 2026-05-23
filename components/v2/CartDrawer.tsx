@@ -24,6 +24,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useCart } from "@/lib/v2/cart-context"
 import { buildWhatsAppLink, naufragoV2 } from "@/lib/v2/naufrago-content"
 import { saveLastOrder } from "@/lib/v2/use-last-order"
+import { perlasToUsd, useLoyaltyBalance } from "@/lib/v2/use-loyalty-balance"
 
 /** WhatsApp brand glyph · simpleicons.org path · pure white fill. */
 function WhatsAppGlyph() {
@@ -291,6 +292,16 @@ function CartFooter() {
     email: "",
     notes: "",
   })
+  // R96.21 · loyalty perlas · lookup balance by form.phone debounced.
+  const { balance: loyaltyBalance } = useLoyaltyBalance(form.phone)
+  const [useLoyalty, setUseLoyalty] = useState(false)
+  // Spend amount · min(balance, 50% del subtotal) en perlas (capped).
+  const loyaltySpendCap = Math.floor((cart.subtotal * 0.5) / 0.01)
+  const loyaltySpendPerlas =
+    useLoyalty && loyaltyBalance
+      ? Math.min(loyaltyBalance.perlas, loyaltySpendCap)
+      : 0
+  const loyaltySpendUsd = perlasToUsd(loyaltySpendPerlas)
 
   const shippingPrice =
     shipping.kind === "quoted" ||
@@ -298,9 +309,13 @@ function CartFooter() {
     shipping.kind === "success"
       ? shipping.priceUsd
       : 0
-  const total = cart.subtotal - cart.discountUsd + shippingPrice + cart.tipUsd
+  const total =
+    cart.subtotal - cart.discountUsd + shippingPrice + cart.tipUsd - loyaltySpendUsd
   const showBreakdown =
-    cart.discountUsd > 0 || shippingPrice > 0 || cart.tipUsd > 0
+    cart.discountUsd > 0 ||
+    shippingPrice > 0 ||
+    cart.tipUsd > 0 ||
+    loyaltySpendUsd > 0
   const buttonsDisabled = cart.lines.length === 0
 
   async function requestQuote(e: React.FormEvent) {
@@ -365,6 +380,8 @@ function CartFooter() {
             notes: l.notes,
           })),
           tipUsd: cart.tipUsd > 0 ? cart.tipUsd : undefined,
+          loyaltySpendPerlas:
+            loyaltySpendPerlas > 0 ? loyaltySpendPerlas : undefined,
           notes: form.notes || undefined,
         }),
       })
@@ -453,6 +470,12 @@ function CartFooter() {
             <div className="flex items-baseline justify-between text-xs text-slate-300">
               <span>Propina motorizado</span>
               <span className="tabular-nums">${cart.tipUsd.toFixed(2)}</span>
+            </div>
+          ) : null}
+          {loyaltySpendUsd > 0 ? (
+            <div className="flex items-baseline justify-between text-xs" style={{ color: "#A78BFA" }}>
+              <span>Perlas canjeadas · {loyaltySpendPerlas}</span>
+              <span className="tabular-nums">−${loyaltySpendUsd.toFixed(2)}</span>
             </div>
           ) : null}
           <div className="flex items-baseline justify-between pt-1">
@@ -588,6 +611,28 @@ function CartFooter() {
               className="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500"
             />
           </div>
+          {loyaltyBalance && loyaltyBalance.perlas > 0 ? (
+            <label className="flex cursor-pointer items-center justify-between gap-3 rounded-md border border-violet-500/40 bg-violet-500/10 px-3 py-2 text-xs text-violet-100">
+              <span className="flex flex-col gap-0.5">
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-violet-300">
+                  Perlas del náufrago
+                </span>
+                <span>
+                  Tenés <strong>{loyaltyBalance.perlas}</strong> perlas · ≈$
+                  {perlasToUsd(loyaltyBalance.perlas).toFixed(2)}
+                </span>
+                <span className="text-[10px] text-violet-300/80">
+                  Podés canjear hasta {loyaltySpendCap} perlas en este pedido
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={useLoyalty}
+                onChange={(e) => setUseLoyalty(e.target.checked)}
+                className="h-5 w-5 shrink-0 accent-cyan-400"
+              />
+            </label>
+          ) : null}
           <button
             type="submit"
             style={{

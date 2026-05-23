@@ -6,6 +6,7 @@ import {
 import { verifyWebhookSignature } from "@/lib/courier/pedidosya-client"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { buildStagePayload, sendPushForOrder } from "@/lib/push-server"
+import { earnPerlas } from "@/lib/loyalty-server"
 
 export const runtime = "nodejs"
 // PedidosYa retries non-2xx responses · keep this route fast.
@@ -110,7 +111,7 @@ export async function POST(request: Request) {
     // si VAPID env vars no set o no hay subs registradas.
     const { data: nfOrder } = await supabase
       .from("naufrago_orders")
-      .select("order_code, status")
+      .select("order_code, status, customer_phone, total_usd")
       .eq("delivery_provider_order_id", event.orderId)
       .maybeSingle()
     if (nfOrder?.order_code) {
@@ -218,6 +219,16 @@ export async function POST(request: Request) {
       if (payload) {
         void sendPushForOrder(nfOrder.order_code, payload).catch((err) => {
           console.warn("[courier-webhook] push send failed", err)
+        })
+      }
+      // R96.21 · earn perlas al DELIVERED · idempotent vía ledger check.
+      if (event.status === "DELIVERED" && nfOrder.customer_phone) {
+        void earnPerlas({
+          phone: nfOrder.customer_phone,
+          totalUsd: nfOrder.total_usd ?? 0,
+          orderCode: nfOrder.order_code,
+        }).catch((err) => {
+          console.warn("[courier-webhook] loyalty earn failed", err)
         })
       }
     }
