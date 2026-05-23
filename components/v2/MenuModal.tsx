@@ -6,7 +6,7 @@
  *    item counts driven from MENU_ITEMS · order is canonical (3 · 2 ·
  *    1 · 6 · 5 · pinned in naufrago-content.ts).
  *  - Card grid · each card has emoji thumbnail, name, description,
- *    ingredients line, price, and a "+ Agregar" button that calls
+ *    price, and a "+ Agregar" button that calls
  *    `cart.add({ id, name, priceUsd })` and flashes "Agregado" for
  *    1.2s so the user gets visual confirmation without leaving the
  *    modal.
@@ -223,11 +223,6 @@ function MenuCard({ item }: { item: MenuItem }) {
         <p className="mt-0.5 line-clamp-2 text-sm text-slate-300">
           {item.description}
         </p>
-        {item.ingredients && (
-          <p className="mt-1 line-clamp-1 text-[11px] text-slate-400">
-            {item.ingredients}
-          </p>
-        )}
         <div className="mt-2 flex items-center justify-between gap-2">
           <div className="flex flex-wrap gap-1">
             {item.tags.slice(0, 2).map((t) => (
