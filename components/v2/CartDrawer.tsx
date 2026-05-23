@@ -5,30 +5,58 @@
  *  - desktop · slide-in from the right (Radix Dialog · framer-motion)
  *  - mobile  · bottom-sheet drawer (`<md` viewport)
  *
- * Amazon-style line items with 2D thumbnail (gradient + emoji until
- * real food photography lands in Storage). Checkout button opens
- * `https://wa.me/593997744288?text=...` with the spec template.
+ * Round 89 compaction · item cards reduced (10x10 thumb · p-2 · 2-row
+ * layout) so 8 lines fit in 800px portrait viewport without scroll.
+ *
+ * Footer flow ·
+ *   1. DiscountCodeRow · code input or applied chip
+ *   2. Totals · Subtotal · Descuento · Envío · Total (breakdown
+ *      appears as lines become non-zero)
+ *   3. Action surface · 2 buttons side-by-side
+ *        · "Pedir por WhatsApp" · opens wa.me
+ *        · "Pedir por PedidosYa" · inline quote flow (address form ·
+ *          quote · confirm) · injects Envío line in step 2 on quote
+ *          ready · sustituye los botones temporalmente cuando activo
  */
 import { useEffect, useState } from "react"
-import { Minus, Plus, ShoppingCart, Trash2, X } from "lucide-react"
-// useState imported above is reused by the DiscountCodeRow helper.
+import { Loader2, Minus, Plus, ShoppingCart, Trash2, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useCart } from "@/lib/v2/cart-context"
 import { buildWhatsAppLink, naufragoV2 } from "@/lib/v2/naufrago-content"
-import { CourierQuoteFlow } from "./CourierQuoteFlow"
 
 function MenuThumb({ id, emoji }: { id: string; emoji: string }) {
   const item = naufragoV2.menu.find((m) => m.id === id)
   const gradient = item?.gradient ?? "from-slate-700 to-slate-900"
   return (
     <div
-      className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${gradient} text-2xl shadow-inner ring-1 ring-white/20`}
+      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gradient-to-br ${gradient} text-lg shadow-inner ring-1 ring-white/20`}
       aria-hidden
     >
       {emoji}
     </div>
   )
 }
+
+type ShippingState =
+  | { kind: "none" }
+  | { kind: "address" }
+  | { kind: "quoting" }
+  | {
+      kind: "quoted"
+      quoteToken: string
+      priceUsd: number
+      etaMinutes: number
+      expiresAt: string
+    }
+  | { kind: "ordering"; priceUsd: number; etaMinutes: number }
+  | {
+      kind: "success"
+      orderId: string
+      trackingUrl?: string
+      status: string
+      priceUsd: number
+    }
+  | { kind: "error"; message: string; previous: "address" | "quoted" }
 
 export function CartDrawer() {
   const cart = useCart()
@@ -46,7 +74,6 @@ export function CartDrawer() {
     <AnimatePresence>
       {cart.isOpen ? (
         <>
-          {/* Backdrop */}
           <motion.div
             key="backdrop"
             initial={{ opacity: 0 }}
@@ -56,7 +83,6 @@ export function CartDrawer() {
             onClick={cart.close}
             className="fixed inset-0 z-40 bg-black/55 backdrop-blur-sm"
           />
-          {/* Panel · slide-in right on md+ · bottom-sheet on mobile */}
           <motion.aside
             key="panel"
             role="dialog"
@@ -69,19 +95,17 @@ export function CartDrawer() {
               "fixed z-50 flex flex-col bg-slate-950/95 text-slate-100 shadow-2xl backdrop-blur-xl",
               "border-violet-500/20",
               isMobile
-                ? "inset-x-0 bottom-0 max-h-[85vh] rounded-t-2xl border-t-2"
+                ? "inset-x-0 bottom-0 max-h-[90vh] rounded-t-2xl border-t-2"
                 : "inset-y-0 right-0 w-full max-w-md border-l-2",
             ].join(" ")}
           >
-            {/* Mobile grip handle */}
             {isMobile ? (
               <div className="flex justify-center pt-2 pb-1">
                 <span className="h-1.5 w-12 rounded-full bg-slate-700" />
               </div>
             ) : null}
 
-            {/* Header */}
-            <header className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+            <header className="flex items-center justify-between border-b border-slate-800 px-5 py-3">
               <div className="flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5 text-cyan-300" />
                 <h2 className="text-base font-semibold tracking-tight">Tu pedido</h2>
@@ -101,48 +125,49 @@ export function CartDrawer() {
               </button>
             </header>
 
-            {/* Items */}
-            <div className="flex-1 overflow-y-auto px-4 py-4">
+            <div className="flex-1 overflow-y-auto px-4 py-3">
               {cart.lines.length === 0 ? (
                 <EmptyState />
               ) : (
-                <ul className="flex flex-col gap-3">
+                <ul className="flex flex-col gap-2">
                   {cart.lines.map((line) => {
                     const item = naufragoV2.menu.find((m) => m.id === line.id)
                     return (
                       <li
                         key={line.id}
-                        className="flex items-start gap-3 rounded-lg border border-slate-800 bg-slate-900/60 p-3"
+                        className="flex items-center gap-2 rounded-md border border-slate-800 bg-slate-900/60 p-2"
                       >
                         <MenuThumb id={line.id} emoji={item?.emoji ?? "🍽"} />
-                        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                        <div className="flex min-w-0 flex-1 flex-col gap-1">
                           <div className="flex items-baseline justify-between gap-2">
-                            <span className="font-medium leading-tight">{line.name}</span>
+                            <span className="truncate text-sm font-medium leading-tight">
+                              {line.name}
+                              <span className="ml-1.5 font-mono text-[10px] font-normal text-slate-500 tabular-nums">
+                                ${line.priceUsd.toFixed(2)} c/u
+                              </span>
+                            </span>
                             <span className="font-mono text-sm tabular-nums text-cyan-200">
                               ${(line.priceUsd * line.qty).toFixed(2)}
                             </span>
                           </div>
-                          <span className="text-[11px] text-slate-400">
-                            ${line.priceUsd.toFixed(2)} c/u
-                          </span>
-                          <div className="mt-1 flex items-center justify-between">
+                          <div className="flex items-center justify-between">
                             <div className="inline-flex items-center rounded-full border border-slate-700 bg-slate-950">
                               <button
                                 type="button"
                                 onClick={() => cart.setQty(line.id, line.qty - 1)}
                                 aria-label="Quitar uno"
-                                className="rounded-full p-1.5 text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100"
+                                className="rounded-full p-1 text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100"
                               >
                                 <Minus className="h-3 w-3" />
                               </button>
-                              <span className="min-w-[24px] text-center font-mono text-sm tabular-nums">
+                              <span className="min-w-[20px] text-center font-mono text-xs tabular-nums">
                                 {line.qty}
                               </span>
                               <button
                                 type="button"
                                 onClick={() => cart.setQty(line.id, line.qty + 1)}
                                 aria-label="Agregar uno"
-                                className="rounded-full p-1.5 text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100"
+                                className="rounded-full p-1 text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100"
                               >
                                 <Plus className="h-3 w-3" />
                               </button>
@@ -150,9 +175,10 @@ export function CartDrawer() {
                             <button
                               type="button"
                               onClick={() => cart.remove(line.id)}
-                              className="inline-flex items-center gap-1 text-[11px] text-rose-300/80 hover:text-rose-200"
+                              aria-label="Eliminar producto"
+                              className="rounded-md p-1 text-rose-300/70 transition-colors hover:bg-rose-500/10 hover:text-rose-200"
                             >
-                              <Trash2 className="h-3 w-3" /> Quitar
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </div>
@@ -163,68 +189,325 @@ export function CartDrawer() {
               )}
             </div>
 
-            {/* Footer · totals + discount + checkout */}
-            <footer className="border-t border-slate-800 bg-slate-950/80 px-5 py-4">
-              {/* Round 77 · discount surface · code input visible
-                  when no code is active · applied chip + remove
-                  when one is. */}
-              <DiscountCodeRow />
-
-              {/* Subtotal + discount line + total breakdown.
-                  When no discount is active, subtotal === total and
-                  the discount line is hidden · the row count
-                  collapses to a single line like before. */}
-              {cart.discountUsd > 0 ? (
-                <div className="mb-3 space-y-1">
-                  <div className="flex items-baseline justify-between text-xs text-slate-400">
-                    <span>Subtotal</span>
-                    <span className="tabular-nums">${cart.subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex items-baseline justify-between text-xs" style={{ color: "#4DD4D8" }}>
-                    <span>Descuento · {cart.discount?.code}</span>
-                    <span className="tabular-nums">−${cart.discountUsd.toFixed(2)}</span>
-                  </div>
-                  <div className="flex items-baseline justify-between pt-1">
-                    <span className="text-sm text-slate-300">Total</span>
-                    <span className="font-display text-xl font-semibold tabular-nums text-cyan-200">
-                      ${cart.total.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <div className="mb-3 flex items-baseline justify-between">
-                  <span className="text-sm text-slate-400">Total</span>
-                  <span className="font-display text-xl font-semibold tabular-nums text-cyan-200">
-                    ${cart.total.toFixed(2)}
-                  </span>
-                </div>
-              )}
-              {/* Round 74 · PedidosYa Courier integration · sits
-                  between the total and the WhatsApp CTA. Renders
-                  nothing when the cart is empty. */}
-              <CourierQuoteFlow />
-              <a
-                href={buildWhatsAppLink(cart.lines, cart.discount)}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-disabled={cart.lines.length === 0}
-                className={[
-                  "flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 font-semibold transition-all",
-                  cart.lines.length === 0
-                    ? "pointer-events-none bg-slate-800 text-slate-500"
-                    : "bg-gradient-to-r from-violet-500 to-cyan-500 text-white shadow-lg shadow-violet-500/30 hover:translate-y-[-1px] hover:shadow-violet-500/50",
-                ].join(" ")}
-              >
-                Confirmar por WhatsApp
-              </a>
-              <p className="mt-2 text-center text-[11px] text-slate-500">
-                Te confirmamos tiempo de entrega en el chat · pagas al recibir.
-              </p>
-            </footer>
+            <CartFooter />
           </motion.aside>
         </>
       ) : null}
     </AnimatePresence>
+  )
+}
+
+function CartFooter() {
+  const cart = useCart()
+  const [shipping, setShipping] = useState<ShippingState>({ kind: "none" })
+  const [form, setForm] = useState({
+    street: "",
+    detail: "",
+    name: "",
+    phone: "",
+    email: "",
+    notes: "",
+  })
+
+  const shippingPrice =
+    shipping.kind === "quoted" ||
+    shipping.kind === "ordering" ||
+    shipping.kind === "success"
+      ? shipping.priceUsd
+      : 0
+  const total = cart.subtotal - cart.discountUsd + shippingPrice
+  const showBreakdown = cart.discountUsd > 0 || shippingPrice > 0
+  const buttonsDisabled = cart.lines.length === 0
+
+  async function requestQuote(e: React.FormEvent) {
+    e.preventDefault()
+    setShipping({ kind: "quoting" })
+    try {
+      const res = await fetch("/api/courier/quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dropoff: { street: form.street, detail: form.detail || undefined },
+          lines: cart.lines.map((l) => ({
+            id: l.id,
+            name: l.name,
+            priceUsd: l.priceUsd,
+            qty: l.qty,
+          })),
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.ok) {
+        throw new Error(json.detail || json.error || "quote_failed")
+      }
+      setShipping({
+        kind: "quoted",
+        quoteToken: json.quoteToken,
+        priceUsd: json.priceUsd,
+        etaMinutes: json.etaMinutes,
+        expiresAt: json.expiresAt,
+      })
+    } catch (err) {
+      setShipping({
+        kind: "error",
+        message: err instanceof Error ? err.message : String(err),
+        previous: "address",
+      })
+    }
+  }
+
+  async function confirmOrder() {
+    if (shipping.kind !== "quoted") return
+    const { quoteToken, priceUsd, etaMinutes } = shipping
+    setShipping({ kind: "ordering", priceUsd, etaMinutes })
+    try {
+      const res = await fetch("/api/courier/order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quoteToken,
+          dropoff: { street: form.street, detail: form.detail || undefined },
+          customer: {
+            name: form.name,
+            phone: form.phone,
+            email: form.email || undefined,
+          },
+          lines: cart.lines.map((l) => ({
+            id: l.id,
+            name: l.name,
+            priceUsd: l.priceUsd,
+            qty: l.qty,
+          })),
+          notes: form.notes || undefined,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.ok) {
+        throw new Error(json.detail || json.error || "order_failed")
+      }
+      setShipping({
+        kind: "success",
+        orderId: json.orderId,
+        trackingUrl: json.trackingUrl,
+        status: json.status,
+        priceUsd,
+      })
+      cart.clear()
+    } catch (err) {
+      setShipping({
+        kind: "error",
+        message: err instanceof Error ? err.message : String(err),
+        previous: "quoted",
+      })
+    }
+  }
+
+  function resetShipping() {
+    setShipping({ kind: "none" })
+  }
+
+  return (
+    <footer className="border-t border-slate-800 bg-slate-950/80 px-5 py-3">
+      <DiscountCodeRow />
+
+      {/* Totals · breakdown when discount o envío activos · single
+          row Total otherwise. */}
+      {showBreakdown ? (
+        <div className="mb-3 space-y-1">
+          <div className="flex items-baseline justify-between text-xs text-slate-400">
+            <span>Subtotal</span>
+            <span className="tabular-nums">${cart.subtotal.toFixed(2)}</span>
+          </div>
+          {cart.discountUsd > 0 ? (
+            <div className="flex items-baseline justify-between text-xs" style={{ color: "#4DD4D8" }}>
+              <span>Descuento · {cart.discount?.code}</span>
+              <span className="tabular-nums">−${cart.discountUsd.toFixed(2)}</span>
+            </div>
+          ) : null}
+          {shippingPrice > 0 ? (
+            <div className="flex items-baseline justify-between text-xs text-slate-300">
+              <span>
+                Envío · PedidosYa
+                {shipping.kind === "quoted" || shipping.kind === "ordering" ? (
+                  <span className="ml-1 text-slate-500">
+                    ({shipping.kind === "quoted" ? shipping.etaMinutes : "—"} min)
+                  </span>
+                ) : null}
+              </span>
+              <span className="tabular-nums">${shippingPrice.toFixed(2)}</span>
+            </div>
+          ) : null}
+          <div className="flex items-baseline justify-between pt-1">
+            <span className="text-sm text-slate-300">Total</span>
+            <span className="font-display text-xl font-semibold tabular-nums text-cyan-200">
+              ${total.toFixed(2)}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="mb-3 flex items-baseline justify-between">
+          <span className="text-sm text-slate-400">Total</span>
+          <span className="font-display text-xl font-semibold tabular-nums text-cyan-200">
+            ${total.toFixed(2)}
+          </span>
+        </div>
+      )}
+
+      {/* Action surface · changes with shipping state. */}
+      {shipping.kind === "none" ? (
+        <div className="grid grid-cols-2 gap-2">
+          <a
+            href={buildWhatsAppLink(cart.lines, cart.discount)}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-disabled={buttonsDisabled}
+            className={[
+              "flex items-center justify-center rounded-full px-3 py-2.5 text-sm font-semibold transition-all",
+              buttonsDisabled
+                ? "pointer-events-none bg-slate-800 text-slate-500"
+                : "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/30 hover:translate-y-[-1px] hover:shadow-emerald-500/50",
+            ].join(" ")}
+          >
+            Pedir por WhatsApp
+          </a>
+          <button
+            type="button"
+            onClick={() => setShipping({ kind: "address" })}
+            disabled={buttonsDisabled}
+            className={[
+              "flex items-center justify-center rounded-full px-3 py-2.5 text-sm font-semibold transition-all",
+              buttonsDisabled
+                ? "bg-slate-800 text-slate-500"
+                : "bg-gradient-to-r from-violet-500 to-cyan-500 text-white shadow-lg shadow-violet-500/30 hover:translate-y-[-1px] hover:shadow-violet-500/50",
+            ].join(" ")}
+          >
+            Pedir por PedidosYa
+          </button>
+        </div>
+      ) : shipping.kind === "address" ? (
+        <form onSubmit={requestQuote} className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-300">
+              Datos de entrega
+            </span>
+            <button
+              type="button"
+              onClick={resetShipping}
+              className="text-[11px] text-slate-400 hover:text-slate-200"
+            >
+              Cancelar
+            </button>
+          </div>
+          <input
+            required
+            placeholder="Dirección · calle y número"
+            value={form.street}
+            onChange={(e) => setForm((f) => ({ ...f, street: e.target.value }))}
+            className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500"
+          />
+          <input
+            placeholder="Piso · depto · referencia (opcional)"
+            value={form.detail}
+            onChange={(e) => setForm((f) => ({ ...f, detail: e.target.value }))}
+            className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500"
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              required
+              placeholder="Tu nombre"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              className="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500"
+            />
+            <input
+              required
+              type="tel"
+              placeholder="Teléfono"
+              value={form.phone}
+              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+              className="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500"
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-3 py-2.5 text-sm font-semibold text-white"
+          >
+            Cotizar envío
+          </button>
+        </form>
+      ) : shipping.kind === "quoting" ? (
+        <div className="flex items-center justify-center gap-2 py-3 text-sm text-cyan-200">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Cotizando envío…
+        </div>
+      ) : shipping.kind === "quoted" ? (
+        <div className="space-y-2">
+          <textarea
+            placeholder="Notas para el motorizado (opcional)"
+            value={form.notes}
+            onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+            rows={2}
+            className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500"
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={resetShipping}
+              className="rounded-full border border-slate-700 px-3 py-2.5 text-sm font-medium text-slate-200"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={confirmOrder}
+              className="rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-3 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/30"
+            >
+              Confirmar pedido
+            </button>
+          </div>
+        </div>
+      ) : shipping.kind === "ordering" ? (
+        <div className="flex items-center justify-center gap-2 py-3 text-sm text-cyan-200">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Confirmando pedido…
+        </div>
+      ) : shipping.kind === "success" ? (
+        <div className="space-y-2 text-sm">
+          <div className="font-semibold text-emerald-300">¡Pedido confirmado!</div>
+          <div className="text-xs text-slate-300">
+            ID · <code className="font-mono">{shipping.orderId}</code>
+          </div>
+          {shipping.trackingUrl ? (
+            <a
+              href={shipping.trackingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-3 py-2.5 text-center text-sm font-semibold text-white"
+            >
+              Seguir el envío
+            </a>
+          ) : null}
+        </div>
+      ) : shipping.kind === "error" ? (
+        <div className="space-y-2 text-sm">
+          <div className="font-semibold text-rose-300">No pudimos cotizar</div>
+          <div className="text-xs text-slate-300">{shipping.message}</div>
+          <button
+            type="button"
+            onClick={() => setShipping({ kind: "address" })}
+            className="w-full rounded-full border border-slate-700 px-3 py-2 text-sm font-medium text-slate-200"
+          >
+            Reintentar
+          </button>
+        </div>
+      ) : null}
+
+      {shipping.kind === "none" ? (
+        <p className="mt-2 text-center text-[11px] text-slate-500">
+          WhatsApp · te confirmamos en chat · pagás al recibir. PedidosYa · envío motorizado · cotización al instante.
+        </p>
+      ) : null}
+    </footer>
   )
 }
 
@@ -243,11 +526,6 @@ function EmptyState() {
   )
 }
 
-/* Round 77 · standalone discount row above the totals · two states:
- *   - no discount · text input + "Aplicar" button · invalid input
- *     shakes and shows a brief "código inválido" hint
- *   - active discount · chip with the code + label + remove button
- */
 function DiscountCodeRow() {
   const cart = useCart()
   const [code, setCode] = useState("")
@@ -256,7 +534,7 @@ function DiscountCodeRow() {
   if (cart.discount) {
     return (
       <div
-        className="mb-3 flex items-center justify-between rounded-xl border px-3 py-2"
+        className="mb-2 flex items-center justify-between rounded-xl border px-3 py-1.5"
         style={{
           borderColor: "rgba(77,212,216,0.5)",
           background: "rgba(76,29,149,0.18)",
@@ -300,7 +578,7 @@ function DiscountCodeRow() {
           setCode("")
         }
       }}
-      className="mb-3 flex gap-2"
+      className="mb-2 flex gap-2"
     >
       <input
         type="text"
