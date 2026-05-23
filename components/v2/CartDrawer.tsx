@@ -194,6 +194,18 @@ export function CartDrawer() {
                                 ${(line.priceUsd * line.qty).toFixed(2)}
                               </span>
                             </div>
+                            {line.customizations && line.customizations.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {line.customizations.map((c) => (
+                                  <span
+                                    key={c.id}
+                                    className="inline-flex items-center gap-0.5 rounded-full bg-violet-500/10 px-1.5 py-0.5 text-[9px] text-violet-200 ring-1 ring-violet-500/20"
+                                  >
+                                    {c.label}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : null}
                             <div className="flex items-center justify-between gap-2">
                               <div className="inline-flex items-center rounded-full border border-slate-700 bg-slate-950">
                                 <button

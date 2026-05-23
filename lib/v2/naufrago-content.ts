@@ -22,6 +22,16 @@ export type MenuCategoryId =
   | "bebidas"
   | "extras"
 
+/** R96.20 · modificadores per ítem · cliente puede tunear el plato
+ *  desde el menu modal. priceDelta puede ser 0 (sin costo) · positivo
+ *  (cargo extra) · o negativo (rebaja por sacar algo). */
+export interface MenuItemModifier {
+  id: string
+  label: string
+  priceDelta: number
+  defaultOn?: boolean
+}
+
 /** R96.12 · allergen taxonomy estándar EC food delivery. */
 export type AllergenId =
   | "pescado"
@@ -70,6 +80,9 @@ export interface MenuItem {
   /** R96.12 · allergens del plato · mostrados como badges en menu cards
    *  · cliente puede ver de un vistazo qué evitar antes de pedir. */
   allergens?: AllergenId[]
+  /** R96.20 · modifiers opcionales · cliente toggle en el menu modal ·
+   *  affect precio + persisten en CartLine.customizations. */
+  modifiers?: MenuItemModifier[]
 }
 
 export const MENU_CATEGORIES: Array<{ id: MenuCategoryId; label: string; emoji: string }> = [
@@ -98,6 +111,12 @@ export const MENU_ITEMS: MenuItem[] = [
     emoji: "🍲",
     gradient: "from-amber-700 via-amber-500 to-orange-400",
     allergens: ["pescado"],
+    modifiers: [
+      { id: "extra-yuca", label: "+ porción extra yuca", priceDelta: 1.0 },
+      { id: "extra-pan", label: "+ pan adicional", priceDelta: 0.5 },
+      { id: "no-cebolla", label: "Sin cebolla cruda", priceDelta: 0 },
+      { id: "extra-limon", label: "Limón extra", priceDelta: 0 },
+    ],
   },
   {
     id: "encebollado-mixto",
@@ -138,6 +157,13 @@ export const MENU_ITEMS: MenuItem[] = [
     emoji: "🐟",
     gradient: "from-cyan-600 via-emerald-500 to-lime-400",
     allergens: ["pescado", "mani"],
+    modifiers: [
+      { id: "extra-aguacate", label: "+ aguacate extra", priceDelta: 1.0 },
+      { id: "extra-camaron", label: "+ doble camarón", priceDelta: 2.0 },
+      { id: "no-cebolla", label: "Sin cebolla", priceDelta: 0 },
+      { id: "no-mani", label: "Sin salsa de maní", priceDelta: 0 },
+      { id: "extra-limon", label: "Limón extra", priceDelta: 0 },
+    ],
   },
   {
     id: "ceviche-mixto",
@@ -151,6 +177,13 @@ export const MENU_ITEMS: MenuItem[] = [
     emoji: "🦐",
     gradient: "from-emerald-600 via-cyan-500 to-sky-400",
     allergens: ["pescado", "mariscos", "mani"],
+    modifiers: [
+      { id: "extra-aguacate", label: "+ aguacate extra", priceDelta: 1.0 },
+      { id: "extra-camaron", label: "+ doble camarón", priceDelta: 2.0 },
+      { id: "no-cebolla", label: "Sin cebolla", priceDelta: 0 },
+      { id: "no-mani", label: "Sin salsa de maní", priceDelta: 0 },
+      { id: "extra-limon", label: "Limón extra", priceDelta: 0 },
+    ],
   },
 
   // ── Otros (1) ─────────────────────────────────────────────────────
@@ -165,6 +198,11 @@ export const MENU_ITEMS: MenuItem[] = [
     emoji: "🍌",
     gradient: "from-amber-700 via-yellow-500 to-lime-400",
     allergens: ["lacteo", "huevo"],
+    modifiers: [
+      { id: "extra-queso", label: "+ queso extra", priceDelta: 0.5 },
+      { id: "no-huevo", label: "Sin huevo", priceDelta: 0 },
+      { id: "no-queso", label: "Sin queso", priceDelta: 0 },
+    ],
   },
 
   // ── Bebidas (6) ───────────────────────────────────────────────────
@@ -389,6 +427,9 @@ export interface CartLine {
   qty: number
   /** R96.11 · notas opcionales del cliente · "sin cilantro · alergias". */
   notes?: string
+  /** R96.20 · modifiers seleccionados · cada uno con su priceDelta
+   *  ya sumado al priceUsd. */
+  customizations?: Array<{ id: string; label: string; priceDelta: number }>
 }
 
 export interface AppliedDiscountSummary {
@@ -407,7 +448,13 @@ export function buildWhatsAppMessage(
   const items = lines
     .map((l) => {
       const base = `• ${l.qty}× ${l.name} — $${(l.priceUsd * l.qty).toFixed(2)}`
-      return l.notes ? `${base}\n    ↳ ${l.notes}` : base
+      const extras: string[] = []
+      if (l.customizations) {
+        for (const c of l.customizations) extras.push(c.label)
+      }
+      if (l.notes) extras.push(l.notes)
+      if (extras.length === 0) return base
+      return `${base}\n${extras.map((e) => `    ↳ ${e}`).join("\n")}`
     })
     .join("\n")
   const subtotal = lines.reduce((s, l) => s + l.priceUsd * l.qty, 0)

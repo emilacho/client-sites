@@ -35,6 +35,10 @@ export interface CartLine {
   /** Round 96.11 · notas opcionales por ítem · "sin cilantro · alergia
    *  al maní · poco picante". Visible al motorizado + cocina. */
   notes?: string
+  /** R96.20 · modifiers seleccionados · array de labels procesados
+   *  ya con priceDelta sumado al priceUsd resuelto. Visibles al
+   *  cocinero igual que las notas. */
+  customizations?: Array<{ id: string; label: string; priceDelta: number }>
 }
 
 export interface AppliedDiscount {

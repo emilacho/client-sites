@@ -197,76 +197,152 @@ export function MenuModal({ open, onClose }: MenuModalProps) {
 function MenuCard({ item }: { item: MenuItem }) {
   const cart = useCart()
   const [flash, setFlash] = useState(false)
+  // R96.20 · panel modifiers · toggle open + selected ids set.
+  const [modOpen, setModOpen] = useState(false)
+  const [selectedMods, setSelectedMods] = useState<Set<string>>(new Set())
+
+  const modifiers = item.modifiers ?? []
+  const modPriceDelta = modifiers.reduce((sum, m) => {
+    return selectedMods.has(m.id) ? sum + m.priceDelta : sum
+  }, 0)
+  const totalPrice = item.priceUsd + modPriceDelta
 
   const handleAdd = () => {
-    cart.add({ id: item.id, name: item.name, priceUsd: item.priceUsd })
+    const customizations = modifiers
+      .filter((m) => selectedMods.has(m.id))
+      .map((m) => ({ id: m.id, label: m.label, priceDelta: m.priceDelta }))
+    // Cart context · agregar línea con precio resuelto + customizations.
+    // ID es item.id + hash de customizations para que ítems con diferentes
+    // modifiers no se mergeen (mismo plato customizado distinto = 2 líneas).
+    const lineId = customizations.length
+      ? `${item.id}::${customizations.map((c) => c.id).sort().join("+")}`
+      : item.id
+    cart.add({
+      id: lineId,
+      name: item.name,
+      priceUsd: totalPrice,
+      ...(customizations.length ? { customizations } : {}),
+    })
     setFlash(true)
+    setSelectedMods(new Set())
+    setModOpen(false)
     window.setTimeout(() => setFlash(false), 1200)
   }
 
+  const toggleMod = (id: string) =>
+    setSelectedMods((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
   return (
-    <article className="flex gap-3 rounded-2xl border border-slate-800 bg-slate-900/60 p-3 transition-colors hover:bg-slate-900">
-      <div
-        aria-hidden
-        className={`flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${item.gradient} text-3xl shadow-inner`}
-      >
-        <span>{item.emoji}</span>
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="truncate font-display text-base font-semibold text-white">
-            {item.name}
-          </h3>
-          <span className="shrink-0 font-mono text-sm font-semibold text-cyan-200">
-            ${item.priceUsd.toFixed(2)}
-          </span>
+    <article className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3 transition-colors hover:bg-slate-900">
+      <div className="flex gap-3">
+        <div
+          aria-hidden
+          className={`flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${item.gradient} text-3xl shadow-inner`}
+        >
+          <span>{item.emoji}</span>
         </div>
-        <p className="mt-0.5 line-clamp-2 text-sm text-slate-300">
-          {item.description}
-        </p>
-        {item.allergens && item.allergens.length > 0 ? (
-          <div className="mt-1 flex flex-wrap gap-1">
-            {item.allergens.map((a) => {
-              const cfg = ALLERGEN_LABELS[a]
-              return (
-                <span
-                  key={a}
-                  title={`Contiene ${cfg.label}`}
-                  className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-200 ring-1 ring-amber-500/20"
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="truncate font-display text-base font-semibold text-white">
+              {item.name}
+            </h3>
+            <span className="shrink-0 font-mono text-sm font-semibold text-cyan-200">
+              ${totalPrice.toFixed(2)}
+            </span>
+          </div>
+          <p className="mt-0.5 line-clamp-2 text-sm text-slate-300">
+            {item.description}
+          </p>
+          {item.allergens && item.allergens.length > 0 ? (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {item.allergens.map((a) => {
+                const cfg = ALLERGEN_LABELS[a]
+                return (
+                  <span
+                    key={a}
+                    title={`Contiene ${cfg.label}`}
+                    className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-200 ring-1 ring-amber-500/20"
+                  >
+                    <span aria-hidden>{cfg.emoji}</span>
+                    {cfg.label}
+                  </span>
+                )
+              })}
+            </div>
+          ) : null}
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-1">
+              {modifiers.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setModOpen((v) => !v)}
+                  className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium text-violet-200 ring-1 ring-violet-500/20 hover:bg-violet-500/20"
                 >
-                  <span aria-hidden>{cfg.emoji}</span>
-                  {cfg.label}
+                  {modOpen ? "− Cerrar" : "+ Customizar"}
+                  {selectedMods.size > 0 && !modOpen ? (
+                    <span className="ml-0.5 rounded-full bg-violet-500/40 px-1.5 text-[9px] font-bold">
+                      {selectedMods.size}
+                    </span>
+                  ) : null}
+                </button>
+              ) : null}
+              {item.tags.slice(0, 2).map((t) => (
+                <span
+                  key={t}
+                  className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300"
+                >
+                  {t}
                 </span>
-              )
-            })}
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={handleAdd}
+              aria-label={`Agregar ${item.name}`}
+              className={
+                "inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors " +
+                (flash
+                  ? "bg-emerald-500 text-white"
+                  : "bg-slate-800 text-slate-100 hover:bg-slate-700")
+              }
+            >
+              {flash ? "✓ Agregado" : "+ Agregar"}
+            </button>
           </div>
-        ) : null}
-        <div className="mt-2 flex items-center justify-between gap-2">
-          <div className="flex flex-wrap gap-1">
-            {item.tags.slice(0, 2).map((t) => (
-              <span
-                key={t}
-                className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300"
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={handleAdd}
-            aria-label={`Agregar ${item.name}`}
-            className={
-              "inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors " +
-              (flash
-                ? "bg-emerald-500 text-white"
-                : "bg-slate-800 text-slate-100 hover:bg-slate-700")
-            }
-          >
-            {flash ? "✓ Agregado" : "+ Agregar"}
-          </button>
         </div>
       </div>
+      {modOpen && modifiers.length > 0 ? (
+        <div className="mt-3 grid grid-cols-2 gap-1.5 border-t border-slate-800 pt-3">
+          {modifiers.map((m) => {
+            const active = selectedMods.has(m.id)
+            return (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => toggleMod(m.id)}
+                className={[
+                  "flex items-center justify-between gap-1 rounded-md border px-2 py-1.5 text-left text-[11px] transition-colors",
+                  active
+                    ? "border-cyan-500 bg-cyan-500/15 text-cyan-100"
+                    : "border-slate-700 bg-slate-950 text-slate-300 hover:bg-slate-800",
+                ].join(" ")}
+              >
+                <span className="truncate">{m.label}</span>
+                {m.priceDelta > 0 ? (
+                  <span className="shrink-0 font-mono text-[10px] text-cyan-200">
+                    +${m.priceDelta.toFixed(2)}
+                  </span>
+                ) : null}
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
     </article>
   )
 }
