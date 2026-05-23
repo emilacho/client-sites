@@ -5,6 +5,7 @@ import {
 } from "@/lib/schemas"
 import { verifyWebhookSignature } from "@/lib/courier/pedidosya-client"
 import { getSupabaseAdmin } from "@/lib/supabase"
+import { buildStagePayload, sendPushForOrder } from "@/lib/push-server"
 
 export const runtime = "nodejs"
 // PedidosYa retries non-2xx responses · keep this route fast.
@@ -102,6 +103,31 @@ export async function POST(request: Request) {
       .then(undefined, (err: unknown) => {
         console.warn("[courier-webhook] event log skipped", err)
       })
+
+    // R96.17 · push notification al cliente · query naufrago_orders
+    // por delivery_provider_order_id → get order_code → send push a
+    // todas las subscriptions activas para ese order. Graceful no-op
+    // si VAPID env vars no set o no hay subs registradas.
+    const { data: nfOrder } = await supabase
+      .from("naufrago_orders")
+      .select("order_code, status")
+      .eq("delivery_provider_order_id", event.orderId)
+      .maybeSingle()
+    if (nfOrder?.order_code) {
+      // Map courier status to naufrago order status + update naufrago_orders
+      // so the tracker UI polling reflects it. Then build payload por status
+      // y push send (fire-and-forget · no bloquea respuesta al webhook).
+      await supabase
+        .from("naufrago_orders")
+        .update({ status: event.status })
+        .eq("order_code", nfOrder.order_code)
+      const payload = buildStagePayload(event.status, nfOrder.order_code)
+      if (payload) {
+        void sendPushForOrder(nfOrder.order_code, payload).catch((err) => {
+          console.warn("[courier-webhook] push send failed", err)
+        })
+      }
+    }
   } catch (err) {
     console.warn("[courier-webhook] supabase update failed", err)
     // Even if persistence fails, return 200 so PedidosYa doesn't

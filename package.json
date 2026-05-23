@@ -34,6 +34,7 @@
     "@tsparticles/engine": "^4.0.0",
     "@tsparticles/react": "^4.0.0",
     "@tsparticles/slim": "^4.0.0",
+    "@types/web-push": "^3.6.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^11.15.0",
@@ -48,6 +49,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "three": "^0.184.0",
+    "web-push": "^3.6.7",
     "zod": "^3.25.76"
   },
   "devDependencies": {

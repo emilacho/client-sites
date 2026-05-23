@@ -23,6 +23,7 @@ import type {
   DeliveryProvider,
 } from "@/lib/schemas"
 import { TRACKER_STAGES, type TrackerStageKey } from "@/lib/tracker/stages"
+import { usePushSubscription } from "@/lib/v2/use-push-subscription"
 
 // R96.6 · escena 3D del pescado para stage "preparando". Dynamic
 // import sin SSR · r3f Canvas no puede server-render. Loading state
@@ -117,6 +118,9 @@ export function OrderTracker({ initial, orderCode }: Props) {
         <EtaBadge text={etaText} stage={stage} />
         {stage === "en_route" && snap.rider_info ? (
           <RiderCard info={snap.rider_info} />
+        ) : null}
+        {stage !== "delivered" && snap.status !== "CANCELLED" ? (
+          <PushCta orderCode={orderCode} />
         ) : null}
         {stage === "delivered" ? (
           <>
@@ -619,6 +623,50 @@ function computeEtaText(snap: OrderSnapshot): string {
   const arrivalMs = created + totalEta * 60_000
   const remaining = Math.max(0, Math.round((arrivalMs - Date.now()) / 60_000))
   return `Listo en ~${remaining} min`
+}
+
+/* R96.17 · PushCta · pide permiso de notifications y suscribe
+   al order code · render solo si el browser soporta y el cliente
+   no se suscribió todavía · pill compact por encima del summary. */
+function PushCta({ orderCode }: { orderCode: string }) {
+  const { state, subscribe, errorMessage } = usePushSubscription(orderCode)
+  if (
+    state === "unsupported" ||
+    state === "subscribed" ||
+    state === "denied"
+  ) {
+    return null
+  }
+  return (
+    <div
+      className="my-3 flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-sm"
+      style={{
+        borderColor: `${CYAN}55`,
+        background: `${CYAN}10`,
+      }}
+    >
+      <div className="min-w-0 flex-1">
+        <p
+          className="font-[family-name:var(--font-caveat)] text-base"
+          style={{ color: PURPLE }}
+        >
+          ¿Te avisamos cuando esté lista?
+        </p>
+        {errorMessage ? (
+          <p className="text-[11px] text-rose-500">{errorMessage}</p>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        onClick={subscribe}
+        disabled={state === "subscribing"}
+        className="shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold text-white shadow-md transition-all disabled:opacity-50"
+        style={{ background: PURPLE }}
+      >
+        {state === "subscribing" ? "Activando…" : "Activar avisos"}
+      </button>
+    </div>
+  )
 }
 
 /* R96.16 · ReviewCard · stage delivered · stars 1-5 + comment
