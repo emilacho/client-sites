@@ -166,7 +166,7 @@ export function MenuModal({ open, onClose }: MenuModalProps) {
               </div>
             </div>
 
-            {/* Footer · Confirmar por WhatsApp */}
+            {/* Footer · "Canoa de compras" CTA · abre el cart drawer. */}
             <footer className="flex items-center justify-between gap-3 border-t border-slate-800 bg-slate-950/95 px-5 py-4">
               <div className="text-sm">
                 <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">
@@ -183,7 +183,7 @@ export function MenuModal({ open, onClose }: MenuModalProps) {
                 disabled={cart.itemCount === 0}
                 className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 px-5 py-3 font-semibold text-white shadow-lg shadow-emerald-500/30 transition-transform hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:from-slate-700 disabled:to-slate-700 disabled:text-slate-400 disabled:shadow-none disabled:hover:translate-y-0"
               >
-                Confirmar por WhatsApp
+                Canoa de compras
               </button>
             </footer>
           </motion.div>
