@@ -24,6 +24,38 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useCart } from "@/lib/v2/cart-context"
 import { buildWhatsAppLink, naufragoV2 } from "@/lib/v2/naufrago-content"
 
+/** WhatsApp brand glyph · simpleicons.org path · pure white fill. */
+function WhatsAppGlyph() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden
+      className="h-4 w-4 shrink-0"
+      fill="currentColor"
+    >
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
+    </svg>
+  )
+}
+
+/** PedidosYa brand mark · rounded white tile + red "P" inset.
+ *  Aproximación al brand bug oficial (Pantone Red 032 C #F52F41). */
+function PedidosYaGlyph() {
+  return (
+    <span
+      className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] bg-white"
+      aria-hidden
+    >
+      <span
+        className="font-display text-[13px] font-black leading-none"
+        style={{ color: "#F52F41" }}
+      >
+        P
+      </span>
+    </span>
+  )
+}
+
 function MenuThumb({ id, emoji }: { id: string; emoji: string }) {
   const item = naufragoV2.menu.find((m) => m.id === id)
   const gradient = item?.gradient ?? "from-slate-700 to-slate-900"
@@ -353,7 +385,10 @@ function CartFooter() {
         </div>
       )}
 
-      {/* Action surface · changes with shipping state. */}
+      {/* Action surface · changes with shipping state.
+          Brand-accurate buttons · WhatsApp #25D366 verde oficial
+          con glyph SDR · PedidosYa #F52F41 rojo Pantone 032 C con
+          "P" mark blanca. */}
       {shipping.kind === "none" ? (
         <div className="grid grid-cols-2 gap-2">
           <a
@@ -361,27 +396,47 @@ function CartFooter() {
             target="_blank"
             rel="noopener noreferrer"
             aria-disabled={buttonsDisabled}
+            style={
+              buttonsDisabled
+                ? undefined
+                : {
+                    background:
+                      "linear-gradient(180deg, #25D366 0%, #1FB855 100%)",
+                    boxShadow: "0 10px 24px -10px rgba(37,211,102,0.55)",
+                  }
+            }
             className={[
-              "flex items-center justify-center rounded-full px-3 py-2.5 text-sm font-semibold transition-all",
+              "flex items-center justify-center gap-2 rounded-full px-3 py-2.5 text-sm font-semibold transition-all",
               buttonsDisabled
                 ? "pointer-events-none bg-slate-800 text-slate-500"
-                : "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/30 hover:translate-y-[-1px] hover:shadow-emerald-500/50",
+                : "text-white hover:translate-y-[-1px]",
             ].join(" ")}
           >
-            Pedir por WhatsApp
+            {!buttonsDisabled ? <WhatsAppGlyph /> : null}
+            <span>Pedir por WhatsApp</span>
           </a>
           <button
             type="button"
             onClick={() => setShipping({ kind: "address" })}
             disabled={buttonsDisabled}
+            style={
+              buttonsDisabled
+                ? undefined
+                : {
+                    background:
+                      "linear-gradient(180deg, #F52F41 0%, #D92235 100%)",
+                    boxShadow: "0 10px 24px -10px rgba(245,47,65,0.55)",
+                  }
+            }
             className={[
-              "flex items-center justify-center rounded-full px-3 py-2.5 text-sm font-semibold transition-all",
+              "flex items-center justify-center gap-2 rounded-full px-3 py-2.5 text-sm font-semibold transition-all",
               buttonsDisabled
                 ? "bg-slate-800 text-slate-500"
-                : "bg-gradient-to-r from-violet-500 to-cyan-500 text-white shadow-lg shadow-violet-500/30 hover:translate-y-[-1px] hover:shadow-violet-500/50",
+                : "text-white hover:translate-y-[-1px]",
             ].join(" ")}
           >
-            Pedir por PedidosYa
+            {!buttonsDisabled ? <PedidosYaGlyph /> : null}
+            <span>Pedir por PedidosYa</span>
           </button>
         </div>
       ) : shipping.kind === "address" ? (
@@ -430,9 +485,15 @@ function CartFooter() {
           </div>
           <button
             type="submit"
-            className="w-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-3 py-2.5 text-sm font-semibold text-white"
+            style={{
+              background:
+                "linear-gradient(180deg, #F52F41 0%, #D92235 100%)",
+              boxShadow: "0 10px 24px -10px rgba(245,47,65,0.55)",
+            }}
+            className="flex w-full items-center justify-center gap-2 rounded-full px-3 py-2.5 text-sm font-semibold text-white"
           >
-            Cotizar envío
+            <PedidosYaGlyph />
+            <span>Cotizar envío</span>
           </button>
         </form>
       ) : shipping.kind === "quoting" ? (
@@ -460,9 +521,15 @@ function CartFooter() {
             <button
               type="button"
               onClick={confirmOrder}
-              className="rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-3 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/30"
+              style={{
+                background:
+                  "linear-gradient(180deg, #F52F41 0%, #D92235 100%)",
+                boxShadow: "0 10px 24px -10px rgba(245,47,65,0.55)",
+              }}
+              className="flex items-center justify-center gap-2 rounded-full px-3 py-2.5 text-sm font-semibold text-white"
             >
-              Confirmar pedido
+              <PedidosYaGlyph />
+              <span>Confirmar pedido</span>
             </button>
           </div>
         </div>
