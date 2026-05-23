@@ -238,7 +238,7 @@ export function CourierQuoteFlow() {
             <span>{state.etaMinutes} min</span>
           </div>
           <textarea
-            placeholder="Notas para el rider (opcional)"
+            placeholder="Notas para el motorizado (opcional)"
             value={form.notes}
             onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
             rows={2}

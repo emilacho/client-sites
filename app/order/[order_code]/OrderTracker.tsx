@@ -431,7 +431,7 @@ function RiderCard({
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[10px] uppercase tracking-[0.18em] text-neutral-500">
-            Tu rider
+            Tu motorizado
           </p>
           <p
             className="font-[family-name:var(--font-caveat)] text-xl"
