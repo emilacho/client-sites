@@ -31,6 +31,7 @@ import {
   type MenuCategoryId,
   type MenuItem,
 } from "@/lib/v2/naufrago-content"
+import { usePopularItems, type PopularItem } from "@/lib/v2/use-popular-items"
 
 export interface MenuModalProps {
   open: boolean
@@ -119,6 +120,11 @@ export function MenuModal({ open, onClose }: MenuModalProps) {
               </button>
             </header>
 
+            {/* R96.22 · popular items strip · más pedidos en Olón 30d.
+                Pattern Amazon recommendations. Quick-add un click ·
+                bypass del browse en MenuModal tabs. */}
+            <PopularStrip />
+
             {/* Tabs */}
             <nav
               role="tablist"
@@ -191,6 +197,73 @@ export function MenuModal({ open, onClose }: MenuModalProps) {
         </motion.div>
       )}
     </AnimatePresence>
+  )
+}
+
+/* R96.22 · PopularStrip · top 3 más pedidos · horizontal scroll
+   cards compactas + quick-add un click. Cuando source !== 'live'
+   muestra badge 'sugeridos' (fallback). */
+function PopularStrip() {
+  const { items, source, loading } = usePopularItems()
+  const cart = useCart()
+  const [flashId, setFlashId] = useState<string | null>(null)
+
+  if (loading || items.length === 0) return null
+
+  const handleAdd = (item: PopularItem) => {
+    cart.add({ id: item.id, name: item.name, priceUsd: item.priceUsd })
+    setFlashId(item.id)
+    window.setTimeout(() => setFlashId(null), 1100)
+  }
+
+  const headline = source === "live" ? "🔥 Los más pedidos en Olón" : "✨ Sugeridos para empezar"
+
+  return (
+    <section className="border-b border-slate-800 bg-slate-950/40 px-4 py-3">
+      <h3 className="mb-2 font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-200">
+        {headline}
+      </h3>
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {items.map((it) => (
+          <button
+            key={it.id}
+            type="button"
+            onClick={() => handleAdd(it)}
+            className={
+              "flex w-[136px] shrink-0 flex-col items-start gap-1 rounded-xl border p-2 text-left transition-colors " +
+              (flashId === it.id
+                ? "border-emerald-500 bg-emerald-500/10"
+                : "border-slate-700 bg-slate-900/60 hover:bg-slate-800")
+            }
+          >
+            <div
+              aria-hidden
+              className={`flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br ${it.gradient} text-2xl shadow-inner`}
+            >
+              <span>{it.emoji}</span>
+            </div>
+            <span className="line-clamp-1 text-xs font-semibold text-white">
+              {it.name}
+            </span>
+            <div className="flex w-full items-center justify-between">
+              <span className="font-mono text-[10px] text-cyan-200">
+                ${it.priceUsd.toFixed(2)}
+              </span>
+              <span
+                className={
+                  "rounded-full px-2 py-0.5 text-[9px] font-bold transition-colors " +
+                  (flashId === it.id
+                    ? "bg-emerald-500 text-white"
+                    : "bg-slate-800 text-slate-200")
+                }
+              >
+                {flashId === it.id ? "✓" : "+ Agregar"}
+              </span>
+            </div>
+          </button>
+        ))}
+      </div>
+    </section>
   )
 }
 
