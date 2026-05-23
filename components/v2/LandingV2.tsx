@@ -155,13 +155,6 @@ function LandingInner() {
               onClick={openMenu}
               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-5 py-3 font-semibold text-white shadow-lg shadow-violet-500/30 transition-transform hover:translate-y-[-1px]"
             >
-              {naufragoV2.hero.ctaPrimary}
-            </button>
-            <button
-              type="button"
-              onClick={openMenu}
-              className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/60 px-5 py-3 font-medium text-slate-100 backdrop-blur-sm transition-colors hover:bg-slate-800"
-            >
               {naufragoV2.hero.ctaSecondary}
               <ChevronDown className="h-4 w-4" />
             </button>
