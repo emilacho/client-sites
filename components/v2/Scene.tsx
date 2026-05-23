@@ -746,8 +746,8 @@ function PergaminoPropModel({
   useFrame((_, delta) => {
     if (!groupRef.current) return
 
-    // Vanish branch · R96.2 · roll-up + descenso al cofre ~0.28s
-    //   (R96.1 era ~0.85s · Emilio "3 veces la velocidad")
+    // Vanish branch · R96.3 · roll-up + descenso al cofre ~0.22s
+    //   (R96.1 ~0.85s · R96.2 ~0.28s · más violento bump final)
     //   Phase A · 0-0.55 · pergamino se enrolla · scale.x 1→0.08
     //     (simula que los bordes laterales se enrollan al centro)
     //     + spin en Z (el rollo gira mientras se enrolla)
@@ -756,7 +756,7 @@ function PergaminoPropModel({
     // Sin fade opacity · puro transform · al final pergamino
     // ocupa scale 0 dentro del cofre (igual estado pre-emerge).
     if (vanishing) {
-      vanishRef.current += delta * 3.54
+      vanishRef.current += delta * 4.6
       const v = Math.min(vanishRef.current, 1)
 
       // Roll progress · easeOutQuad · 0..1 across first 55% of timeline
