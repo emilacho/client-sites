@@ -20,6 +20,7 @@ import { TopBar } from "./TopBar"
 import { CartDrawer } from "./CartDrawer"
 import { OverlayPanels, type OverlayKind } from "./OverlayPanels"
 import { MenuModal } from "./MenuModal"
+import { TrackOrderModal } from "./TrackOrderModal"
 // Round 85 · TreasureRewardModal (R82 castaway SVG modal) retired ·
 // the 3D pergamino in-scene that emerges from the cofre on click
 // replaces it · same discount flow, more immersive reveal.
@@ -59,6 +60,9 @@ function LandingInner() {
   const [menuOpen, setMenuOpen] = useState(false)
   // Round 77 · cofre click opens the treasure reward modal.
   const [treasureOpen, setTreasureOpen] = useState(false)
+  // Round 96.7 · "Sigue tu pedido" CTA · modal pide order code
+  // y redirige a /order/[code].
+  const [trackOpen, setTrackOpen] = useState(false)
   // Round 95 · OrderTracker state eliminado · pendiente nuevo
   // approach del usuario.
 
@@ -97,7 +101,7 @@ function LandingInner() {
           la esquina inferior izquierda". Lateral padding 20px → 12px
           and bottom padding 128/160px → 88px. pt removed ·
           irrelevant under justify-end + min-h-[100svh]. */}
-      <div className="pointer-events-none relative z-10 flex min-h-[100svh] flex-col items-start justify-end px-3 pb-[88px]">
+      <div className="pointer-events-none relative z-10 flex min-h-[100svh] flex-col items-start justify-end px-3 pb-3">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -140,12 +144,12 @@ function LandingInner() {
             <span style={{ color: "#4DD4D8" }}>NÁUFRAGO</span>{" "}
             te espera!
           </h1>
-          <p
-            className="mt-3 text-sm drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] md:text-base"
-            style={{ color: "#3D2466" }}
-          >
-            {naufragoV2.hero.subheadline}
-          </p>
+          {/* R96.7 · subheadline removida (Emilio · "borralo") +
+              botones movidos al bottom edge (parent pb-3 + flex
+              justify-end · removida la subheadline + el mt-5
+              spacing). Round 96.7 agrega 2do CTA "Sigue tu pedido"
+              · pattern Domino's "Track Order" para clientes que
+              ya pidieron y vuelven a buscar el tracker. */}
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <button
               type="button"
@@ -154,6 +158,18 @@ function LandingInner() {
             >
               {naufragoV2.hero.ctaSecondary}
               <ChevronDown className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setTrackOpen(true)}
+              className="inline-flex items-center gap-2 rounded-full border-2 px-5 py-3 font-semibold backdrop-blur-sm transition-all hover:translate-y-[-1px]"
+              style={{
+                borderColor: "#3D2466",
+                color: "#3D2466",
+                background: "rgba(255,255,255,0.55)",
+              }}
+            >
+              Sigue tu pedido
             </button>
           </div>
           {/* Round 5 single-issue fix · the hint paragraph
@@ -171,6 +187,7 @@ function LandingInner() {
           drives the in-scene 3D pergamino emerge (Scene.tsx). */}
       <CartDrawer />
       <MenuModal open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <TrackOrderModal open={trackOpen} onClose={() => setTrackOpen(false)} />
       <OverlayPanels active={overlay} onClose={() => setOverlay(null)} />
 
     </main>
