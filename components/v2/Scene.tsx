@@ -18,7 +18,7 @@
  * meshes and use them as interaction surfaces + bubble anchors. This
  * keeps the visual identical to the GLB ground truth.
  */
-import { Suspense, useEffect, useMemo, useRef, useState } from "react"
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
 import {
   Environment,
@@ -116,14 +116,16 @@ export function Scene({
   onTreasureClose,
   onOpenMenu,
 }: SceneProps) {
-  // Round 85 · auto-apply discount when the cofre opens · the 3D
-  // pergamino reveal handles the visual, the cart still gets
-  // the NAUFRAGO5 code so the WhatsApp checkout includes it.
+  // Round 96 · auto-apply RETIRED. El descuento "SurfBollado" se
+  // aplica solo cuando el usuario hace click sobre el pergamino
+  // (pasada a onClaim callback en PergaminoPropModel · al click
+  // dispara la animación de desaparición mágica + applyCode).
+  // Antes auto-aplicaba al abrir el cofre · Emilio ·
+  // "necesito que eso solo salga si se le da click al pergamino".
   const cart = useCart()
-  useEffect(() => {
-    // Round 87 · code rebrand · NAUFRAGO5 → SurfBollado
-    if (treasureOpen) cart.applyCode("SurfBollado")
-  }, [treasureOpen, cart])
+  const handleClaimDiscount = useCallback(() => {
+    cart.applyCode("SurfBollado")
+  }, [cart])
   // Suppress unused warnings · these props are wired into the
   // PergaminoPropModel below.
   void onTreasureClose
@@ -271,10 +273,13 @@ export function Scene({
               [-2.14..-1.81]). */}
           <SurfboardModel position={[-1.307, 0.4, -1.7]} rotation={[0.3, Math.PI / 2, Math.PI / 2]} scale={0.7} />
 
-          {/* Round 85 · pergamino emerges FROM the cofre on click. */}
+          {/* Round 85 · pergamino emerges FROM the cofre on click.
+              Round 96 · click sobre el pergamino · dispara vanish
+              mágico + onClaim (aplica código de descuento). */}
           <PergaminoPropModel
             open={treasureOpen}
             onClose={onTreasureClose}
+            onClaim={handleClaimDiscount}
           />
           {/* Round 95 · OrderJourneyTracker (canoa repartidor +
               casa offshore + humo + paquete + estela) eliminado ·
@@ -684,14 +689,41 @@ function SurfboardModel(props: React.ComponentProps<"group">) {
 function PergaminoPropModel({
   open,
   onClose,
+  onClaim,
 }: {
   open?: boolean
   onClose?: () => void
+  onClaim?: () => void
 }) {
   const { scene } = useGLTF(naufragoAssets.pergamino, true)
   const groupRef = useRef<THREE.Group>(null)
+  const textMatRef = useRef<THREE.MeshBasicMaterial>(null)
   const reducedMotion = usePrefersReducedMotion()
   const posTRef = useRef(0) // 0 = hidden in cofre, 1 = visible above
+  // Round 96 · vanish state · click sobre pergamino · scale up +
+  // lift + spin + fade · ~0.7s. Al completar · reset + onClose.
+  const [vanishing, setVanishing] = useState(false)
+  const vanishRef = useRef(0) // 0..1 progress vanish animation
+
+  const setMeshOpacity = useCallback(
+    (opacity: number) => {
+      scene.traverse((obj) => {
+        const mesh = obj as THREE.Mesh
+        if (mesh.isMesh && mesh.material) {
+          const mats = Array.isArray(mesh.material)
+            ? mesh.material
+            : [mesh.material]
+          mats.forEach((m) => {
+            const mat = m as THREE.Material & { opacity: number }
+            mat.transparent = true
+            mat.opacity = opacity
+            mat.needsUpdate = true
+          })
+        }
+      })
+    },
+    [scene],
+  )
 
   // Round 89 · switch from Permanent Marker (print-style marker)
   // to Homemade Apple (true connected-cursive handwriting) per
@@ -733,6 +765,44 @@ function PergaminoPropModel({
 
   useFrame((_, delta) => {
     if (!groupRef.current) return
+
+    // Vanish branch · R96 · scale up + lift + spin + fade ~0.7s
+    if (vanishing) {
+      vanishRef.current += delta * 1.4
+      const v = Math.min(vanishRef.current, 1)
+      const ease = 1 - Math.pow(1 - v, 3) // easeOutCubic
+
+      groupRef.current.visible = true
+
+      // Lift up + scale up + spin + fade
+      const liftY = ease * 0.55
+      groupRef.current.position.set(-0.76, 1.4 + liftY, 0.5)
+      const scaleFactor = 1.28 * (1 + ease * 0.65)
+      groupRef.current.scale.setScalar(scaleFactor)
+      const tipX = 1.27
+      const swayY = reducedMotion ? 0 : Math.sin(performance.now() * 0.0004) * 0.06
+      groupRef.current.rotation.set(tipX, swayY + ease * Math.PI * 0.45, 0)
+
+      const opacity = 1 - ease
+      setMeshOpacity(opacity)
+      if (textMatRef.current) textMatRef.current.opacity = opacity
+
+      if (v >= 1) {
+        // Animation done · reset state · pergamino vuelve a estado
+        // hidden · re-clic en cofre re-emergerá pergamino (sin
+        // discount aplicado porque ya está en cart).
+        setVanishing(false)
+        vanishRef.current = 0
+        posTRef.current = 0
+        groupRef.current.visible = false
+        setMeshOpacity(1)
+        if (textMatRef.current) textMatRef.current.opacity = 1
+        onClose?.()
+      }
+      return
+    }
+
+    // Normal emerge/retract branch
     const target = open ? 1 : 0
     // Round 87 · MORE VIOLENT emerge · open rate 1.6 → 3.5/s
     // (full open ~0.4s · was ~0.9s). Close rate also bumped
@@ -765,9 +835,14 @@ function PergaminoPropModel({
       ref={groupRef}
       visible={false}
       onClick={(e) => {
-        if (!open) return
+        // Click sólo válido cuando pergamino está completamente
+        // visible y no está en proceso de desvanecerse. Evita
+        // dobles claims o triggers durante la animación emerge.
+        if (!open || vanishing || posTRef.current < 0.95) return
         e.stopPropagation()
-        onClose?.()
+        onClaim?.()
+        vanishRef.current = 0
+        setVanishing(true)
       }}
     >
       <primitive object={scene} />
@@ -775,6 +850,7 @@ function PergaminoPropModel({
         <mesh position={[0, 0.19, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[1.7, 1.3]} />
           <meshBasicMaterial
+            ref={textMatRef}
             map={textTexture}
             transparent
             depthWrite={false}
