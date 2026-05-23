@@ -23,6 +23,7 @@ import { Loader2, Minus, Plus, ShoppingCart, Trash2, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useCart } from "@/lib/v2/cart-context"
 import { buildWhatsAppLink, naufragoV2 } from "@/lib/v2/naufrago-content"
+import { saveLastOrder } from "@/lib/v2/use-last-order"
 
 /** WhatsApp brand glyph · simpleicons.org path · pure white fill. */
 function WhatsAppGlyph() {
@@ -317,6 +318,12 @@ function CartFooter() {
       if (!res.ok || !json.ok) {
         throw new Error(json.detail || json.error || "order_failed")
       }
+      // R96.9 · persist last order para pattern "Pedí lo mismo"
+      saveLastOrder({
+        orderCode: json.orderId ?? null,
+        lines: cart.lines,
+        totalUsd: total,
+      })
       setShipping({
         kind: "success",
         orderId: json.orderId,
@@ -396,6 +403,16 @@ function CartFooter() {
             target="_blank"
             rel="noopener noreferrer"
             aria-disabled={buttonsDisabled}
+            onClick={() => {
+              if (buttonsDisabled) return
+              // R96.9 · save intent · WhatsApp flow no tiene callback
+              // de confirmación · best-effort persist al click.
+              saveLastOrder({
+                orderCode: null,
+                lines: cart.lines,
+                totalUsd: total,
+              })
+            }}
             style={
               buttonsDisabled
                 ? undefined

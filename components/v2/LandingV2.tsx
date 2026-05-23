@@ -16,7 +16,9 @@ import { motion } from "framer-motion"
 import { ChevronDown } from "lucide-react"
 import { CartProvider, useCart } from "@/lib/v2/cart-context"
 import { naufragoV2 } from "@/lib/v2/naufrago-content"
+import { useLastOrder } from "@/lib/v2/use-last-order"
 import { cliente } from "@/cliente.config"
+import { RotateCw } from "lucide-react"
 import { TopBar } from "./TopBar"
 import { CartDrawer } from "./CartDrawer"
 import { OverlayPanels, type OverlayKind } from "./OverlayPanels"
@@ -56,7 +58,10 @@ function LandingInner() {
   // own "Confirmar por WhatsApp" + MenuModal's footer Confirmar CTA.
   // Round 9 narrows the entry points · cofre + hero CTAs now route to
   // the catalog instead of the empty cart drawer.
-  useCart()
+  const cart = useCart()
+  // R96.9 · pattern Domino's "Pedí lo mismo" · CTA conditional
+  // basado en localStorage del último pedido (TTL 30 días).
+  const { order: lastOrder, clear: clearLastOrder } = useLastOrder()
   const [overlay, setOverlay] = useState<OverlayKind>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   // Round 77 · cofre click opens the treasure reward modal.
@@ -68,6 +73,19 @@ function LandingInner() {
   // approach del usuario.
 
   const openMenu = () => setMenuOpen(true)
+
+  const reorderLast = () => {
+    if (!lastOrder) return
+    // Re-popular cart con los items del último pedido + abrir
+    // cart drawer. NO auto-confirma · solo pre-carga.
+    for (const line of lastOrder.lines) {
+      cart.add(
+        { id: line.id, name: line.name, priceUsd: line.priceUsd },
+        line.qty,
+      )
+    }
+    cart.open()
+  }
 
   const handleAnchor = (kind: AnchorKind) => {
     if (kind === "cofre") {
@@ -151,7 +169,58 @@ function LandingInner() {
               spacing). Round 96.7 agrega 2do CTA "Sigue tu pedido"
               · pattern Domino's "Track Order" para clientes que
               ya pidieron y vuelven a buscar el tracker. */}
-          <div className="mt-5 flex flex-wrap items-center gap-3">
+          {/* R96.9 · "Pedí lo mismo" hero strip · pattern Domino's
+              "Your usual" · render condicional · solo aparece cuando
+              hay last-order válido en localStorage. Estilo card
+              prominente (sand background + indigo border) por encima
+              de los 3 CTAs default. Click pre-popula cart + abre
+              drawer · botón × discreto borra el last-order. */}
+          {lastOrder ? (
+            <div
+              className="mb-3 flex items-center justify-between gap-3 rounded-2xl border-2 px-3 py-2 shadow-lg backdrop-blur-sm"
+              style={{
+                borderColor: "#3D2466",
+                background: "rgba(245,233,210,0.85)",
+              }}
+            >
+              <div className="min-w-0 flex-1">
+                <span
+                  className="block font-mono text-[10px] uppercase tracking-[0.2em]"
+                  style={{ color: "#3D2466" }}
+                >
+                  La última vez pediste
+                </span>
+                <span
+                  className="block truncate text-sm font-semibold"
+                  style={{ color: "#3D2466" }}
+                >
+                  {lastOrder.lines.length}{" "}
+                  {lastOrder.lines.length === 1 ? "plato" : "platos"} · $
+                  {lastOrder.totalUsd.toFixed(2)}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={reorderLast}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform hover:translate-y-[-1px]"
+                style={{ background: "#3D2466" }}
+              >
+                <RotateCw className="h-3.5 w-3.5" />
+                Pedí lo mismo
+              </button>
+              <button
+                type="button"
+                onClick={clearLastOrder}
+                aria-label="Quitar"
+                className="rounded-full p-1 text-[11px] opacity-60 hover:opacity-100"
+                style={{ color: "#3D2466" }}
+              >
+                ✕
+              </button>
+            </div>
+          ) : null}
+
+          <div className={`${lastOrder ? "" : "mt-5"} flex flex-wrap items-center gap-3`}>
             <button
               type="button"
               onClick={openMenu}
