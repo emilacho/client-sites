@@ -82,6 +82,11 @@ export function buildDemoSnapshot(stageParam: string | undefined) {
             phone: "+593997744288",
             plate: "ABC-123",
             vehicleType: "moto",
+            // R96.19 · driver profile enrichment · auto-fill demo
+            photoUrl:
+              "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200&h=200&fit=crop&crop=faces&q=70",
+            rating: 4.8,
+            tenureMonths: 14,
           }
         : null,
     customer_notes: null,

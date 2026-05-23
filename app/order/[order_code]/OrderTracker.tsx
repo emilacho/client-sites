@@ -55,6 +55,9 @@ export interface OrderSnapshot {
     phone?: string
     plate?: string
     vehicleType?: string
+    photoUrl?: string
+    rating?: number
+    tenureMonths?: number
   } | null
   customer_notes: string | null
   created_at: string
@@ -519,22 +522,69 @@ function RiderCard({
 }: {
   info: NonNullable<OrderSnapshot["rider_info"]>
 }) {
+  // R96.19 · foto + rating estrellas + tenure · auto-fill desde
+  // tabla naufrago_drivers vía webhook · denormalized en order
+  // rider_info JSONB para que el tracker no necesite JOIN.
+  const initials = (info.name ?? "M")
+    .split(" ")
+    .map((s) => s[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase()
   return (
     <div
       className="my-4 rounded-xl border p-3"
       style={{ borderColor: `${PURPLE}22`, background: `${PURPLE}06` }}
     >
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center gap-3">
+        <div className="relative shrink-0">
+          {info.photoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={info.photoUrl}
+              alt={info.name ?? "Motorizado"}
+              className="h-14 w-14 rounded-full object-cover ring-2"
+              style={{ outlineColor: CYAN, boxShadow: `0 0 0 2px ${CYAN}` }}
+            />
+          ) : (
+            <div
+              className="flex h-14 w-14 items-center justify-center rounded-full font-semibold ring-2"
+              style={{
+                background: `${PURPLE}`,
+                color: SAND,
+                boxShadow: `0 0 0 2px ${CYAN}`,
+              }}
+            >
+              {initials || "M"}
+            </div>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
           <p className="text-[10px] uppercase tracking-[0.18em] text-neutral-500">
             Tu motorizado
           </p>
           <p
-            className="font-[family-name:var(--font-caveat)] text-xl"
+            className="truncate font-[family-name:var(--font-caveat)] text-xl"
             style={{ color: PURPLE }}
           >
             {info.name ?? "PedidosYa Courier"}
           </p>
+          <div className="mt-0.5 flex items-center gap-2">
+            {typeof info.rating === "number" ? (
+              <span className="inline-flex items-center gap-0.5 text-[11px]">
+                <span style={{ color: "#FFC93C" }}>★</span>
+                <span className="font-mono text-neutral-700">
+                  {info.rating.toFixed(1)}
+                </span>
+              </span>
+            ) : null}
+            {typeof info.tenureMonths === "number" ? (
+              <span className="font-mono text-[11px] text-neutral-500">
+                · {info.tenureMonths}m en la plataforma
+              </span>
+            ) : null}
+          </div>
           {info.plate || info.vehicleType ? (
             <p className="font-mono text-[11px] text-neutral-600">
               {info.vehicleType ?? "vehículo"} · {info.plate ?? "—"}
@@ -544,7 +594,7 @@ function RiderCard({
         {info.phone ? (
           <a
             href={`tel:${info.phone}`}
-            className="rounded-lg px-3 py-2 text-sm font-semibold"
+            className="shrink-0 rounded-lg px-3 py-2 text-sm font-semibold"
             style={{ background: CYAN, color: PURPLE }}
           >
             Llamar

@@ -118,10 +118,74 @@ export async function POST(request: Request) {
       // so the tracker UI polling reflects it. Then build payload por status
       // y push send (fire-and-forget · no bloquea respuesta al webhook).
       const orderUpdate: Record<string, unknown> = { status: event.status }
+      const p = event.payload as Record<string, unknown> | undefined
+
+      // R96.19 · driver auto-fill · si payload trae rider info ·
+      // upsert en naufrago_drivers + denormalize a rider_info JSONB
+      // del order (tracker UI lee desde ahí · no necesita JOIN).
+      const riderRaw = p?.rider as Record<string, unknown> | undefined
+      const riderPhone =
+        typeof riderRaw?.phone === "string"
+          ? riderRaw.phone
+          : typeof p?.rider_phone === "string"
+            ? (p.rider_phone as string)
+            : null
+      if (riderPhone) {
+        const driverRow = {
+          client_slug: "naufrago",
+          phone: riderPhone,
+          name:
+            typeof riderRaw?.name === "string"
+              ? (riderRaw.name as string)
+              : null,
+          photo_url:
+            typeof riderRaw?.photo_url === "string"
+              ? (riderRaw.photo_url as string)
+              : typeof riderRaw?.avatar === "string"
+                ? (riderRaw.avatar as string)
+                : null,
+          rating:
+            typeof riderRaw?.rating === "number"
+              ? (riderRaw.rating as number)
+              : null,
+          plate:
+            typeof riderRaw?.plate === "string"
+              ? (riderRaw.plate as string)
+              : null,
+          vehicle_type:
+            typeof riderRaw?.vehicle_type === "string"
+              ? (riderRaw.vehicle_type as string)
+              : null,
+        }
+        await supabase
+          .from("naufrago_drivers")
+          .upsert(driverRow, { onConflict: "client_slug,phone" })
+
+        // Re-read full driver row to get tenure
+        const { data: driver } = await supabase
+          .from("naufrago_drivers")
+          .select(
+            "name, photo_url, rating, platform_tenure_months, plate, vehicle_type",
+          )
+          .eq("client_slug", "naufrago")
+          .eq("phone", riderPhone)
+          .maybeSingle()
+
+        if (driver) {
+          orderUpdate.rider_info = {
+            phone: riderPhone,
+            name: driver.name,
+            photoUrl: driver.photo_url,
+            rating: driver.rating,
+            tenureMonths: driver.platform_tenure_months,
+            plate: driver.plate,
+            vehicleType: driver.vehicle_type,
+          }
+        }
+      }
       // R96.18 · photo proof of delivery · si PedidosYa entrega event
       // DELIVERED con foto + GPS · persiste en naufrago_orders columns.
       // PedidosYa schema varies · probamos shapes comunes.
-      const p = event.payload as Record<string, unknown> | undefined
       if (event.status === "DELIVERED" && p) {
         const photoUrl =
           (typeof p.delivery_photo_url === "string"
