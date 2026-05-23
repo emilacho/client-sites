@@ -49,7 +49,9 @@ interface CartCtx {
   subtotal: number
   /** Active discount amount in USD (rounded to 2 decimals). */
   discountUsd: number
-  /** subtotal − discountUsd. */
+  /** R96.15 · propina al motorizado (USD · 0 si no aplica). */
+  tipUsd: number
+  /** subtotal − discountUsd + tipUsd. */
   total: number
   itemCount: number
   add: (line: Omit<CartLine, "qty">, qty?: number) => void
@@ -67,6 +69,8 @@ interface CartCtx {
   /** Try to apply a code. Returns true on success. */
   applyCode: (code: string) => boolean
   removeDiscount: () => void
+  /** R96.15 · setter para tipUsd · maps a discrete chip or custom value. */
+  setTip: (usd: number) => void
 }
 
 const Ctx = createContext<CartCtx | null>(null)
@@ -74,8 +78,17 @@ const Ctx = createContext<CartCtx | null>(null)
 export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([])
   const [discount, setDiscount] = useState<AppliedDiscount | null>(null)
+  const [tipUsd, setTipUsdState] = useState(0)
   const [hydrated, setHydrated] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+
+  const setTip = useCallback((usd: number) => {
+    if (!Number.isFinite(usd) || usd < 0) {
+      setTipUsdState(0)
+      return
+    }
+    setTipUsdState(Math.round(usd * 100) / 100)
+  }, [])
 
   // Hydrate from localStorage on mount
   useEffect(() => {
@@ -172,7 +185,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     )
   }, [])
 
-  const clear = useCallback(() => setLines([]), [])
+  const clear = useCallback(() => {
+    setLines([])
+    setTipUsdState(0)
+  }, [])
 
   const applyCode = useCallback((code: string) => {
     // Round 87 · preserve the user-typed casing for display
@@ -194,11 +210,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const discountUsd = discount
       ? Math.round(subtotal * (discount.percent / 100) * 100) / 100
       : 0
-    const total = Math.max(0, subtotal - discountUsd)
+    const total = Math.max(0, subtotal - discountUsd + tipUsd)
     return {
       lines,
       subtotal,
       discountUsd,
+      tipUsd,
       total,
       itemCount,
       add,
@@ -213,8 +230,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       discount,
       applyCode,
       removeDiscount,
+      setTip,
     }
-  }, [lines, isOpen, discount, add, remove, setQty, setNotes, clear, applyCode, removeDiscount])
+  }, [lines, isOpen, discount, tipUsd, add, remove, setQty, setNotes, clear, applyCode, removeDiscount, setTip])
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

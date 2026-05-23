@@ -286,8 +286,9 @@ function CartFooter() {
     shipping.kind === "success"
       ? shipping.priceUsd
       : 0
-  const total = cart.subtotal - cart.discountUsd + shippingPrice
-  const showBreakdown = cart.discountUsd > 0 || shippingPrice > 0
+  const total = cart.subtotal - cart.discountUsd + shippingPrice + cart.tipUsd
+  const showBreakdown =
+    cart.discountUsd > 0 || shippingPrice > 0 || cart.tipUsd > 0
   const buttonsDisabled = cart.lines.length === 0
 
   async function requestQuote(e: React.FormEvent) {
@@ -351,6 +352,7 @@ function CartFooter() {
             qty: l.qty,
             notes: l.notes,
           })),
+          tipUsd: cart.tipUsd > 0 ? cart.tipUsd : undefined,
           notes: form.notes || undefined,
         }),
       })
@@ -435,6 +437,12 @@ function CartFooter() {
               <span className="tabular-nums">${shippingPrice.toFixed(2)}</span>
             </div>
           ) : null}
+          {cart.tipUsd > 0 ? (
+            <div className="flex items-baseline justify-between text-xs text-slate-300">
+              <span>Propina motorizado</span>
+              <span className="tabular-nums">${cart.tipUsd.toFixed(2)}</span>
+            </div>
+          ) : null}
           <div className="flex items-baseline justify-between pt-1">
             <span className="text-sm text-slate-300">Total</span>
             <span className="font-display text-xl font-semibold tabular-nums text-cyan-200">
@@ -451,6 +459,15 @@ function CartFooter() {
         </div>
       )}
 
+      {/* R96.15 · tip chips · solo cuando hay items y no estás en
+          medio del flow PedidosYa. */}
+      {cart.lines.length > 0 && shipping.kind === "none" ? (
+        <TipChips
+          value={cart.tipUsd}
+          onChange={(v) => cart.setTip(v)}
+        />
+      ) : null}
+
       {/* Action surface · changes with shipping state.
           Brand-accurate buttons · WhatsApp #25D366 verde oficial
           con glyph SDR · PedidosYa #F52F41 rojo Pantone 032 C con
@@ -458,7 +475,7 @@ function CartFooter() {
       {shipping.kind === "none" ? (
         <div className="grid grid-cols-2 gap-2">
           <a
-            href={buildWhatsAppLink(cart.lines, cart.discount)}
+            href={buildWhatsAppLink(cart.lines, cart.discount, cart.tipUsd)}
             target="_blank"
             rel="noopener noreferrer"
             aria-disabled={buttonsDisabled}
@@ -665,6 +682,93 @@ function EmptyState() {
         Toca el <strong className="text-cyan-300">cofre</strong> en la isla
         para reclamar tu descuento, luego explorá el menú.
       </p>
+    </div>
+  )
+}
+
+/* R96.15 · TipChips · 4 chips (0 · 1 · 2 · custom) · custom abre input
+   inline. Mismo border-radius que botones del cart para coherencia
+   visual. Pattern Domino's tip selection en checkout. */
+const TIP_PRESETS = [0, 1, 2] as const
+
+function TipChips({
+  value,
+  onChange,
+}: {
+  value: number
+  onChange: (usd: number) => void
+}) {
+  const isPreset = TIP_PRESETS.some((p) => Math.abs(p - value) < 0.005)
+  const [customOpen, setCustomOpen] = useState(!isPreset && value > 0)
+  const [customStr, setCustomStr] = useState(
+    !isPreset && value > 0 ? value.toFixed(2) : "",
+  )
+
+  return (
+    <div className="mb-3">
+      <div className="mb-1.5 flex items-baseline justify-between">
+        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate-400">
+          Propina motorizado
+        </span>
+        {value > 0 ? (
+          <span className="text-[10px] text-slate-500">opcional</span>
+        ) : null}
+      </div>
+      <div className="grid grid-cols-4 gap-1.5">
+        {TIP_PRESETS.map((preset) => {
+          const active =
+            !customOpen && Math.abs(preset - value) < 0.005
+          return (
+            <button
+              key={preset}
+              type="button"
+              onClick={() => {
+                setCustomOpen(false)
+                setCustomStr("")
+                onChange(preset)
+              }}
+              className={[
+                "rounded-md border px-2 py-1.5 text-xs font-semibold transition-colors",
+                active
+                  ? "border-cyan-500 bg-cyan-500/15 text-cyan-200"
+                  : "border-slate-700 bg-slate-950 text-slate-300 hover:bg-slate-800",
+              ].join(" ")}
+            >
+              {preset === 0 ? "Sin propina" : `$${preset}`}
+            </button>
+          )
+        })}
+        <button
+          type="button"
+          onClick={() => setCustomOpen((v) => !v)}
+          className={[
+            "rounded-md border px-2 py-1.5 text-xs font-semibold transition-colors",
+            customOpen
+              ? "border-cyan-500 bg-cyan-500/15 text-cyan-200"
+              : "border-slate-700 bg-slate-950 text-slate-300 hover:bg-slate-800",
+          ].join(" ")}
+        >
+          Otro
+        </button>
+      </div>
+      {customOpen ? (
+        <div className="mt-1.5 flex items-center gap-2">
+          <span className="font-mono text-sm text-slate-400">$</span>
+          <input
+            type="text"
+            inputMode="decimal"
+            value={customStr}
+            onChange={(e) => {
+              const raw = e.target.value.replace(/[^0-9.]/g, "")
+              setCustomStr(raw)
+              const n = parseFloat(raw)
+              onChange(Number.isFinite(n) ? n : 0)
+            }}
+            placeholder="0.00"
+            className="flex-1 rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-cyan-500"
+          />
+        </div>
+      ) : null}
     </div>
   )
 }
