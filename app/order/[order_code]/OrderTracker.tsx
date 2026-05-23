@@ -119,7 +119,10 @@ export function OrderTracker({ initial, orderCode }: Props) {
           <RiderCard info={snap.rider_info} />
         ) : null}
         {stage === "delivered" ? (
-          <ReorderCta />
+          <>
+            <ReviewCard orderCode={orderCode} />
+            <ReorderCta />
+          </>
         ) : (
           <OrderSummary snap={snap} />
         )}
@@ -616,4 +619,115 @@ function computeEtaText(snap: OrderSnapshot): string {
   const arrivalMs = created + totalEta * 60_000
   const remaining = Math.max(0, Math.round((arrivalMs - Date.now()) / 60_000))
   return `Listo en ~${remaining} min`
+}
+
+/* R96.16 · ReviewCard · stage delivered · stars 1-5 + comment
+   opcional · POST /api/orders/[code]/review · estado submitted
+   muestra "Gracias por tu review!" + edit option. */
+function ReviewCard({ orderCode }: { orderCode: string }) {
+  const [stars, setStars] = useState(0)
+  const [hoverStars, setHoverStars] = useState(0)
+  const [comment, setComment] = useState("")
+  const [state, setState] = useState<
+    "idle" | "submitting" | "submitted" | "error"
+  >("idle")
+  const [error, setError] = useState<string | null>(null)
+
+  const displayStars = hoverStars || stars
+
+  async function submit() {
+    if (stars < 1) return
+    setState("submitting")
+    setError(null)
+    try {
+      const res = await fetch(`/api/orders/${orderCode}/review`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          stars,
+          comment: comment.trim() || undefined,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.ok) {
+        throw new Error(json.detail || json.error || "review_failed")
+      }
+      setState("submitted")
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al guardar")
+      setState("error")
+    }
+  }
+
+  if (state === "submitted") {
+    return (
+      <div
+        className="my-4 rounded-xl border p-4 text-center"
+        style={{ borderColor: `${CYAN}55`, background: `${CYAN}15` }}
+      >
+        <p
+          className="font-[family-name:var(--font-caveat)] text-xl"
+          style={{ color: PURPLE }}
+        >
+          ¡Gracias por tu review!
+        </p>
+        <p className="mt-1 text-xs text-neutral-600">
+          Tu opinión nos ayuda a mejorar.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className="my-4 rounded-xl border p-4"
+      style={{ borderColor: `${CYAN}55`, background: "#FFFFFF" }}
+    >
+      <p
+        className="text-center font-[family-name:var(--font-caveat)] text-xl"
+        style={{ color: PURPLE }}
+      >
+        ¿Cómo estuvo?
+      </p>
+      <div className="my-3 flex items-center justify-center gap-1.5">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => setStars(n)}
+            onMouseEnter={() => setHoverStars(n)}
+            onMouseLeave={() => setHoverStars(0)}
+            aria-label={`${n} estrellas`}
+            className="text-3xl transition-transform hover:scale-110"
+            style={{
+              color: n <= displayStars ? "#FFC93C" : "#E5E5E5",
+            }}
+          >
+            ★
+          </button>
+        ))}
+      </div>
+      <textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        placeholder="¿Qué te pareció? (opcional)"
+        rows={2}
+        maxLength={500}
+        className="w-full resize-none rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 placeholder:text-neutral-400 focus:border-cyan-500 focus:outline-none"
+        style={{ color: PURPLE }}
+      />
+      {error ? (
+        <p className="mt-2 text-xs text-rose-500">{error}</p>
+      ) : null}
+      <button
+        type="button"
+        onClick={submit}
+        disabled={stars < 1 || state === "submitting"}
+        className="mt-3 w-full rounded-full px-4 py-2.5 text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-40"
+        style={{ background: PURPLE }}
+      >
+        {state === "submitting" ? "Enviando…" : "Enviar review"}
+      </button>
+    </div>
+  )
 }
