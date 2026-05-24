@@ -426,7 +426,7 @@ function MenuCard({ item }: { item: MenuItem }) {
         </div>
       </div>
       {modOpen && hasCustomization ? (
-        <div className="mt-3 space-y-1.5 border-t border-slate-800 pt-3">
+        <div className="mt-2 space-y-1 border-t border-slate-800 pt-2">
           <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-slate-500">
             Ingredientes · ajustá lo que quieras
           </p>
@@ -451,11 +451,10 @@ function MenuCard({ item }: { item: MenuItem }) {
   )
 }
 
-/* R96.27 · IngredientStepper rediseñado · botones +/− prominentes
-   con lucide icons + colores activos · 32×32 px tap target · −1 rose
-   filled · +1 cyan filled · 0 neutral outline · whole row tinted con
-   estado. Si el toggle no tiene removeLabel · botón − disabled (es
-   un add-on que no viene por default · solo permite 0→+1). */
+/* R96.28 · IngredientStepper compact ~40% reducido vs R96.27 ·
+   botones +/− 20×20 (eran 32×32) · padding row reducido · text
+   menor · gap entre rows menor · entran más sin scroll. Mantiene
+   prominente vía colores activos rose/cyan + scale press feedback. */
 function IngredientStepper({
   toggle,
   state,
@@ -490,41 +489,41 @@ function IngredientStepper({
   return (
     <div
       className={[
-        "flex items-center justify-between gap-3 rounded-lg border-2 px-3 py-2 transition-all",
+        "flex items-center justify-between gap-2 rounded-md border px-2 py-1 transition-all",
         containerStyle,
       ].join(" ")}
     >
-      <div className="flex min-w-0 items-center gap-2.5">
+      <div className="flex min-w-0 items-center gap-1.5">
         {toggle.emoji ? (
-          <span aria-hidden className="text-xl leading-none">
+          <span aria-hidden className="text-sm leading-none">
             {toggle.emoji}
           </span>
         ) : null}
         <div className="flex min-w-0 flex-col">
-          <span className="truncate text-xs font-semibold leading-snug">
+          <span className="truncate text-[11px] font-semibold leading-snug">
             {stateText}
           </span>
           {state === 1 && toggle.extraPriceDelta ? (
-            <span className="font-mono text-[10px] text-cyan-200">
+            <span className="font-mono text-[9px] text-cyan-200">
               +${toggle.extraPriceDelta.toFixed(2)}
             </span>
           ) : null}
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-1.5">
+      <div className="flex shrink-0 items-center gap-1">
         <button
           type="button"
           onClick={onMinus}
           disabled={state === -1 || (state === 0 && !canRemove)}
           aria-label={`Quitar ${toggle.label}`}
           className={[
-            "flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all active:scale-90 disabled:cursor-not-allowed disabled:border-slate-700 disabled:bg-slate-900/40 disabled:text-slate-600",
+            "flex h-5 w-5 items-center justify-center rounded-full border transition-all active:scale-90 disabled:cursor-not-allowed disabled:border-slate-700 disabled:bg-slate-900/40 disabled:text-slate-600",
             state === -1
-              ? "border-rose-400 bg-rose-500 text-white shadow-lg shadow-rose-500/40"
+              ? "border-rose-400 bg-rose-500 text-white shadow shadow-rose-500/40"
               : "border-rose-400/50 bg-rose-500/10 text-rose-200 hover:bg-rose-500/25 hover:text-rose-100",
           ].join(" ")}
         >
-          <Minus className="h-4 w-4" strokeWidth={3} />
+          <Minus className="h-2.5 w-2.5" strokeWidth={3} />
         </button>
         <button
           type="button"
@@ -532,13 +531,13 @@ function IngredientStepper({
           disabled={state === 1}
           aria-label={`Agregar ${toggle.label}`}
           className={[
-            "flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all active:scale-90 disabled:cursor-not-allowed",
+            "flex h-5 w-5 items-center justify-center rounded-full border transition-all active:scale-90 disabled:cursor-not-allowed",
             state === 1
-              ? "border-cyan-300 bg-cyan-500 text-white shadow-lg shadow-cyan-500/40"
+              ? "border-cyan-300 bg-cyan-500 text-white shadow shadow-cyan-500/40"
               : "border-cyan-400/50 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/25 hover:text-cyan-100",
           ].join(" ")}
         >
-          <Plus className="h-4 w-4" strokeWidth={3} />
+          <Plus className="h-2.5 w-2.5" strokeWidth={3} />
         </button>
       </div>
     </div>

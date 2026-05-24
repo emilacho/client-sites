@@ -53,6 +53,23 @@ export interface MenuItemIngredientToggle {
   extraPriceDelta?: number
 }
 
+/** R96.28 · brand badge SVG inline data URL · genera placeholder
+ *  branded para cada variant de cola sin dependencia CDN externa.
+ *  Brand colors + wordmark grande · visualmente más distintivo
+ *  que emoji genérico 🥤. */
+function brandBadgeUrl(bg1: string, bg2: string, fg: string, label: string): string {
+  const svg =
+    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'>` +
+    `<defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'>` +
+    `<stop offset='0' stop-color='${bg1}'/>` +
+    `<stop offset='1' stop-color='${bg2}'/>` +
+    `</linearGradient></defs>` +
+    `<rect width='200' height='200' rx='24' fill='url(#g)'/>` +
+    `<text x='100' y='115' text-anchor='middle' font-family='Inter,system-ui,sans-serif' font-size='26' font-weight='900' fill='${fg}'>${label}</text>` +
+    `</svg>`
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
+}
+
 /** R96.25 · variants single-select · cliente elige UNO de N obligatorio
  *  antes de agregar al cart. Usado para bebidas brand-multi · jugos por
  *  sabor · etc. priceDelta normalmente 0 (el variant es el "subtipo"
@@ -214,9 +231,9 @@ export const MENU_ITEMS: MenuItem[] = [
     allergens: ["pescado"],
     ingredientToggles: [
       ...ENCEBOLLADO_TOGGLES,
-      { id: "pescado", label: "Pescado adicional 50g", emoji: "🐟", extraLabel: "+ 50g pescado adicional", extraPriceDelta: 1.5 },
+      { id: "pescado", label: "Pescado", emoji: "🐟", removeLabel: "Sin pescado", extraLabel: "+ 50g pescado adicional", extraPriceDelta: 1.5 },
       { id: "aguacate", label: "Aguacate", emoji: "🥑", extraLabel: "+ aguacate", extraPriceDelta: 1.0 },
-      { id: "yuca", label: "Yuca", emoji: "🥔", extraLabel: "+ porción extra yuca", extraPriceDelta: 1.0 },
+      { id: "yuca", label: "Yuca", emoji: "🥔", removeLabel: "Sin yuca", extraLabel: "+ porción extra yuca", extraPriceDelta: 1.0 },
       { id: "pan", label: "Pan", emoji: "🍞", extraLabel: "+ pan adicional", extraPriceDelta: 0.5 },
       { id: "limon", label: "Limón", emoji: "🍋", extraLabel: "+ limón extra" },
     ],
@@ -234,10 +251,10 @@ export const MENU_ITEMS: MenuItem[] = [
     allergens: ["pescado", "mariscos"],
     ingredientToggles: [
       ...ENCEBOLLADO_TOGGLES,
-      { id: "pescado", label: "Pescado adicional 50g", emoji: "🐟", extraLabel: "+ 50g pescado adicional", extraPriceDelta: 1.5 },
+      { id: "pescado", label: "Pescado", emoji: "🐟", removeLabel: "Sin pescado", extraLabel: "+ 50g pescado adicional", extraPriceDelta: 1.5 },
       { id: "camaron", label: "Camarón adicional", emoji: "🦐", extraLabel: "+ camarón adicional", extraPriceDelta: 2.0 },
       { id: "aguacate", label: "Aguacate", emoji: "🥑", extraLabel: "+ aguacate", extraPriceDelta: 1.0 },
-      { id: "yuca", label: "Yuca", emoji: "🥔", extraLabel: "+ porción extra yuca", extraPriceDelta: 1.0 },
+      { id: "yuca", label: "Yuca", emoji: "🥔", removeLabel: "Sin yuca", extraLabel: "+ porción extra yuca", extraPriceDelta: 1.0 },
       { id: "pan", label: "Pan", emoji: "🍞", extraLabel: "+ pan adicional", extraPriceDelta: 0.5 },
       { id: "limon", label: "Limón", emoji: "🍋", extraLabel: "+ limón extra" },
     ],
@@ -256,9 +273,9 @@ export const MENU_ITEMS: MenuItem[] = [
     allergens: ["pescado"],
     ingredientToggles: [
       ...ENCEBOLLADO_TOGGLES,
-      { id: "pescado", label: "Pescado adicional 50g", emoji: "🐟", extraLabel: "+ 50g pescado adicional", extraPriceDelta: 1.5 },
+      { id: "pescado", label: "Pescado", emoji: "🐟", removeLabel: "Sin pescado", extraLabel: "+ 50g pescado adicional", extraPriceDelta: 1.5 },
       { id: "aguacate", label: "Aguacate", emoji: "🥑", extraLabel: "+ aguacate", extraPriceDelta: 1.0 },
-      { id: "yuca", label: "Yuca", emoji: "🥔", extraLabel: "+ porción extra yuca", extraPriceDelta: 1.0 },
+      { id: "yuca", label: "Yuca", emoji: "🥔", removeLabel: "Sin yuca", extraLabel: "+ porción extra yuca", extraPriceDelta: 1.0 },
       { id: "pan", label: "Pan", emoji: "🍞", extraLabel: "+ pan adicional", extraPriceDelta: 0.5 },
       { id: "limon", label: "Limón", emoji: "🍋", extraLabel: "+ limón extra" },
     ],
@@ -279,9 +296,8 @@ export const MENU_ITEMS: MenuItem[] = [
     allergens: ["pescado", "mani"],
     ingredientToggles: [
       ...CEVICHE_TOGGLES,
-      { id: "pescado", label: "Pescado adicional 50g", emoji: "🐟", extraLabel: "+ 50g pescado adicional", extraPriceDelta: 1.5 },
-      { id: "camaron", label: "Camarón", emoji: "🦐", extraLabel: "+ doble camarón", extraPriceDelta: 2.0 },
-      { id: "aguacate", label: "Aguacate", emoji: "🥑", extraLabel: "+ aguacate", extraPriceDelta: 1.0 },
+      { id: "pescado", label: "Pescado", emoji: "🐟", removeLabel: "Sin pescado", extraLabel: "+ 50g pescado adicional", extraPriceDelta: 1.5 },
+      { id: "aguacate", label: "Aguacate", emoji: "🥑", removeLabel: "Sin aguacate", extraLabel: "+ aguacate extra", extraPriceDelta: 1.0 },
       { id: "limon", label: "Limón", emoji: "🍋", extraLabel: "+ limón extra" },
     ],
   },
@@ -299,9 +315,9 @@ export const MENU_ITEMS: MenuItem[] = [
     allergens: ["pescado", "mariscos", "mani"],
     ingredientToggles: [
       ...CEVICHE_TOGGLES,
-      { id: "pescado", label: "Pescado adicional 50g", emoji: "🐟", extraLabel: "+ 50g pescado adicional", extraPriceDelta: 1.5 },
-      { id: "camaron", label: "Camarón", emoji: "🦐", extraLabel: "+ doble camarón", extraPriceDelta: 2.0 },
-      { id: "aguacate", label: "Aguacate", emoji: "🥑", extraLabel: "+ aguacate", extraPriceDelta: 1.0 },
+      { id: "pescado", label: "Pescado", emoji: "🐟", removeLabel: "Sin pescado", extraLabel: "+ 50g pescado adicional", extraPriceDelta: 1.5 },
+      { id: "camaron", label: "Camarón", emoji: "🦐", removeLabel: "Sin camarón", extraLabel: "+ doble camarón", extraPriceDelta: 2.0 },
+      { id: "aguacate", label: "Aguacate", emoji: "🥑", removeLabel: "Sin aguacate", extraLabel: "+ aguacate extra", extraPriceDelta: 1.0 },
       { id: "limon", label: "Limón", emoji: "🍋", extraLabel: "+ limón extra" },
     ],
   },
@@ -355,36 +371,31 @@ export const MENU_ITEMS: MenuItem[] = [
         id: "coca-cola",
         label: "Coca-Cola",
         priceDelta: 0,
-        emoji: "🥤",
-        gradient: "from-red-700 via-red-600 to-red-500",
+        imageUrl: brandBadgeUrl("#E61A27", "#A01018", "#FFFFFF", "Coca-Cola"),
       },
       {
         id: "coca-cola-light",
         label: "Coca-Cola Light",
         priceDelta: 0,
-        emoji: "🥤",
-        gradient: "from-zinc-700 via-zinc-500 to-red-500",
+        imageUrl: brandBadgeUrl("#1A1A1A", "#404040", "#E61A27", "Coca-Cola Light"),
       },
       {
         id: "sprite",
         label: "Sprite",
         priceDelta: 0,
-        emoji: "🥤",
-        gradient: "from-green-700 via-lime-500 to-yellow-300",
+        imageUrl: brandBadgeUrl("#0A8537", "#066624", "#FFE600", "Sprite"),
       },
       {
         id: "fanta",
         label: "Fanta",
         priceDelta: 0,
-        emoji: "🥤",
-        gradient: "from-orange-700 via-orange-500 to-yellow-300",
+        imageUrl: brandBadgeUrl("#FF7A00", "#E55E00", "#FFFFFF", "Fanta"),
       },
       {
         id: "fiora",
         label: "Fiora",
         priceDelta: 0,
-        emoji: "🥤",
-        gradient: "from-pink-700 via-pink-500 to-rose-300",
+        imageUrl: brandBadgeUrl("#E91E63", "#AD1457", "#FFFFFF", "Fiora"),
       },
     ],
   },
@@ -433,36 +444,31 @@ export const MENU_ITEMS: MenuItem[] = [
         id: "coca-cola",
         label: "Coca-Cola",
         priceDelta: 0,
-        emoji: "🥤",
-        gradient: "from-red-700 via-red-600 to-red-500",
+        imageUrl: brandBadgeUrl("#E61A27", "#A01018", "#FFFFFF", "Coca-Cola"),
       },
       {
         id: "coca-cola-light",
         label: "Coca-Cola Light",
         priceDelta: 0,
-        emoji: "🥤",
-        gradient: "from-zinc-700 via-zinc-500 to-red-500",
+        imageUrl: brandBadgeUrl("#1A1A1A", "#404040", "#E61A27", "Coca-Cola Light"),
       },
       {
         id: "sprite",
         label: "Sprite",
         priceDelta: 0,
-        emoji: "🥤",
-        gradient: "from-green-700 via-lime-500 to-yellow-300",
+        imageUrl: brandBadgeUrl("#0A8537", "#066624", "#FFE600", "Sprite"),
       },
       {
         id: "fanta",
         label: "Fanta",
         priceDelta: 0,
-        emoji: "🥤",
-        gradient: "from-orange-700 via-orange-500 to-yellow-300",
+        imageUrl: brandBadgeUrl("#FF7A00", "#E55E00", "#FFFFFF", "Fanta"),
       },
       {
         id: "fiora",
         label: "Fiora",
         priceDelta: 0,
-        emoji: "🥤",
-        gradient: "from-pink-700 via-pink-500 to-rose-300",
+        imageUrl: brandBadgeUrl("#E91E63", "#AD1457", "#FFFFFF", "Fiora"),
       },
     ],
   },
