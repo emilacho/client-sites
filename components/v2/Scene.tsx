@@ -1053,11 +1053,10 @@ function PergaminoPropModel({
 
       groupRef.current.visible = true
 
-      // R96.83 · spawn/return desde BOTELLA · botella en (1, 0, -2).
-      // Phase B · de "arriba botella" (1.2, -2) → "dentro botella"
-      // (0.0, -2) durante returnEase.
+      // R96.85 · spawn/return desde BOTELLA · sube por encima de las
+      // palmeras (target Y=2.4) · returnEase desciende de Y=2.4 a 0.
       const x = 1
-      const y = 1.2 - returnEase * (1.2 - 0.0)
+      const y = 2.4 - returnEase * 2.4
       const z = -2
       groupRef.current.position.set(x, y, z)
 
@@ -1102,11 +1101,10 @@ function PergaminoPropModel({
 
     groupRef.current.visible = t > 0.005
 
-    // R96.83 · spawn desde BOTELLA · botella center (1, 0, -2) →
-    // emerge above botella (1, 1.2, -2). Mismo arc · solo cambia el
-    // anchor de origen del cofre a la botella.
+    // R96.85 · spawn desde BOTELLA (1, 0, -2) → emerge muy alto
+    // (Y=2.4) por encima de las copas de las palmeras.
     const x = 1
-    const y = 0.0 + t * (1.2 - 0.0)
+    const y = 0.0 + t * 2.4
     const z = -2
     groupRef.current.position.set(x, y, z)
     // Round 87 · stronger overshoot · peak 1.30 (settle to 1.0).
