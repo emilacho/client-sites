@@ -18,10 +18,11 @@ export function CanoeIcon(props: SVGProps<SVGSVGElement>) {
       strokeLinejoin="round"
       {...props}
     >
-      {/* Vela triangular · top-right · base en el mástil */}
-      <path d="M13 3 L13 12 L19 12 Z" fill="currentColor" fillOpacity="0.2" />
-      {/* Mástil vertical · desde el tope de la vela hasta el casco */}
-      <line x1="13" y1="3" x2="13" y2="15" />
+      {/* Vela triangular · top-right · base en el mástil. Top y bottom
+          subidos respecto R96.32 para dejar más mástil visible. */}
+      <path d="M13 2 L13 11 L19 11 Z" fill="currentColor" fillOpacity="0.2" />
+      {/* Mástil vertical · más largo · asoma claramente abajo de la vela. */}
+      <line x1="13" y1="2" x2="13" y2="15.5" />
       {/* Hull / casco prominente · arco wide bottom · base de la canoa */}
       <path d="M2 14 L22 14 L19.5 20 C 17 21.5 7 21.5 4.5 20 Z" fill="currentColor" fillOpacity="0.15" />
     </svg>
