@@ -275,9 +275,10 @@ export function Scene({
               [-2.14..-1.81]). */}
           <SurfboardModel position={[-1.307, 0.4, -1.7]} rotation={[0.3, Math.PI / 2, Math.PI / 2]} scale={0.7} />
 
-          {/* R96.66 · CofreEnergyFX desmontado · Emilio quitó halo amber.
-              Sin halo no queda nada visible (shake no tiene mesh que mover ·
-              cofre vive baked en el GLB de la isla). */}
+          {/* R96.67 · sound/vibration distortion FX · pattern speaker
+              emitting visual soundwaves · 4 rings concentricos expand
+              + shake fuerte del grupo + halo central resonance blur. */}
+          <CofreSoundwaveFX center={[-0.76, 0.4, 0.18]} />
 
           {/* Round 96.5 · props secundarios decorativos · cangrejo
               en la arena front-right (orilla del agua) · botella
@@ -748,6 +749,86 @@ function SignModel(props: React.ComponentProps<"group">) {
 function SurfboardModel(props: React.ComponentProps<"group">) {
   const { scene } = useGLTF(naufragoAssets.surfboard, true)
   return <primitive object={scene} {...props} />
+}
+
+/**
+ * CofreSoundwaveFX · R96.67 · efecto altavoz/distorsión sonora.
+ *
+ *  - 4 rings concéntricos cyan en plano horizontal · expanden de
+ *    radius 0.3 a 2.1 y desvanecen · loop 1.5s · phase staggered
+ *    per-ring para que siempre haya 4 ondas en cascada.
+ *  - Shake fuerte del grupo entero · sin de alta frecuencia (50/47/53
+ *    Hz) con amplitud 0.02u (mayor que R96.64).
+ *  - Halo central resonance blur · sphere amber pulsante baja
+ *    frecuencia 2.2Hz · da "fuente del sonido".
+ */
+function CofreSoundwaveFX({ center }: { center: [number, number, number] }) {
+  const groupRef = useRef<THREE.Group>(null)
+  const ring1Ref = useRef<THREE.Mesh>(null)
+  const ring2Ref = useRef<THREE.Mesh>(null)
+  const ring3Ref = useRef<THREE.Mesh>(null)
+  const ring4Ref = useRef<THREE.Mesh>(null)
+  const haloRef = useRef<THREE.Mesh>(null)
+  const ringRefs = [ring1Ref, ring2Ref, ring3Ref, ring4Ref]
+
+  useFrame(() => {
+    const t = performance.now() * 0.001
+    // Shake fuerte
+    if (groupRef.current) {
+      groupRef.current.position.x = center[0] + Math.sin(t * 50) * 0.02
+      groupRef.current.position.y = center[1] + Math.cos(t * 47) * 0.015
+      groupRef.current.position.z = center[2] + Math.sin(t * 53) * 0.02
+    }
+    // Soundwave rings · cycle 1.5s · staggered phase
+    const period = 1.5
+    ringRefs.forEach((ref, i) => {
+      if (!ref.current) return
+      const phaseOffset = (i / 4) * period
+      const cycle = ((t + phaseOffset) % period) / period // 0-1
+      const scale = 0.3 + cycle * 1.8 // expand 0.3 → 2.1
+      const opacity = (1 - cycle) * 0.55 // fade out as expands
+      ref.current.scale.setScalar(scale)
+      const mat = ref.current.material as THREE.MeshBasicMaterial
+      mat.opacity = opacity
+    })
+    // Resonance blur halo central
+    if (haloRef.current) {
+      const breathe = 0.85 + Math.sin(t * 2.2) * 0.15
+      haloRef.current.scale.setScalar(breathe)
+      const mat = haloRef.current.material as THREE.MeshBasicMaterial
+      mat.opacity = 0.28 + Math.sin(t * 2.2) * 0.08
+    }
+  })
+
+  return (
+    <group ref={groupRef} position={center}>
+      {/* Resonance blur halo · fuente del sonido */}
+      <mesh ref={haloRef}>
+        <sphereGeometry args={[0.4, 24, 24]} />
+        <meshBasicMaterial
+          color="#FFC93C"
+          transparent
+          opacity={0.3}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+      {/* 4 rings concentricos expandiendo · plano horizontal */}
+      {ringRefs.map((ref, i) => (
+        <mesh key={i} ref={ref} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.5, 0.58, 48]} />
+          <meshBasicMaterial
+            color="#4DD4D8"
+            transparent
+            opacity={0.5}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      ))}
+    </group>
+  )
 }
 
 
