@@ -11,7 +11,7 @@
  * stays pinned · it's the brand anchor regardless of user location.
  */
 import { AnimatePresence, motion } from "framer-motion"
-import { Loader2, MapPin, ShoppingCart } from "lucide-react"
+import { Loader2, MapPin, Sailboat } from "lucide-react"
 import { useCart } from "@/lib/v2/cart-context"
 import { useUserLocation } from "@/lib/v2/use-user-location"
 import { useBusinessHours } from "@/lib/v2/use-business-hours"
@@ -128,9 +128,9 @@ export function TopBar() {
           type="button"
           onClick={cart.open}
           className="relative inline-flex shrink-0 items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-sm text-violet-100 transition-colors hover:bg-violet-500/20"
-          aria-label="Abrir carrito"
+          aria-label="Abrir canoa de compras"
         >
-          <ShoppingCart className="h-4 w-4" />
+          <Sailboat className="h-4 w-4" />
           {cart.itemCount > 0 ? (
             <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-cyan-500 px-1.5 text-[10.5px] font-bold text-slate-950 tabular-nums shadow-md">
               {cart.itemCount}
