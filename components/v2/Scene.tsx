@@ -752,74 +752,68 @@ function SurfboardModel(props: React.ComponentProps<"group">) {
 }
 
 /**
- * CofreSoundwaveFX · R96.69 · ondas tipo "gota de agua" sincronizadas
- * con vibración. Cada drop · spawn 1 onda + burst shake breve.
+ * CofreSoundwaveFX · R96.70 · gota = MÚLTIPLES ondas en cascada
+ * decreciente. Cada drop spawnea 4 ondas con delay staggered · cada
+ * onda subsecuente más débil (opacity menor · vida menor).
  *
- *  - 3 rings reciclables · vida 1.4s cada uno · expand + fade out
- *  - Drop tick cada 2s · spawn nueva onda en ring expirado
- *  - Shake burst al drop · amplitude 0.025u durante 300ms · decae a
- *    baseline 0.005u (sutil) entre drops
+ *  Mental model · gota cae en agua · onda primaria fuerte · onda
+ *  secundaria menor · terciaria aún menor · etc. · luego pausa · otra
+ *  gota cae · ciclo se repite.
  *
- *  Imagen mental · gota cae · onda expansiva nace · cofre tiembla
- *  por el impacto · onda se desvanece · pausa · otra gota cae.
+ *  4 ondas por drop · delay 0/0.18/0.36/0.54s · vidas 1.4/1.2/1.0/0.8s
+ *  · opacities pico 0.75/0.5/0.32/0.18. Drop interval 3.2s.
  */
 function CofreSoundwaveFX({ center }: { center: [number, number, number] }) {
   const groupRef = useRef<THREE.Group>(null)
   const ring1Ref = useRef<THREE.Mesh>(null)
   const ring2Ref = useRef<THREE.Mesh>(null)
   const ring3Ref = useRef<THREE.Mesh>(null)
-  const ringRefs = [ring1Ref, ring2Ref, ring3Ref]
-  // Start times · 0 = inactive · positive = spawn epoch
-  const startTimesRef = useRef<number[]>([0, 0, 0])
-  const lastDropRef = useRef(0)
-  const RING_LIFE = 1.4
-  const DROP_INTERVAL = 2.0
+  const ring4Ref = useRef<THREE.Mesh>(null)
+  const ringRefs = [ring1Ref, ring2Ref, ring3Ref, ring4Ref]
+  const RING_DELAYS = [0, 0.18, 0.36, 0.54]
+  const RING_LIVES = [1.4, 1.2, 1.0, 0.8]
+  const RING_PEAK_OPACITY = [0.75, 0.5, 0.32, 0.18]
+  const DROP_INTERVAL = 3.2
+
+  const startTimesRef = useRef<number[]>([0, 0, 0, 0])
+  const lastDropRef = useRef(-DROP_INTERVAL) // arranca con drop al t=0
 
   useFrame(() => {
     const t = performance.now() * 0.001
 
-    // Drop tick · spawn nueva onda en ring expirado
+    // Drop tick · spawn las 4 ondas con delay staggered
     if (t - lastDropRef.current >= DROP_INTERVAL) {
-      const times = startTimesRef.current
-      let target = times.findIndex((s) => s === 0 || t - s > RING_LIFE)
-      if (target === -1) {
-        // No hay ring expirado · reciclar el más viejo
-        let oldest = 0
-        for (let i = 1; i < times.length; i++) {
-          if (times[i] < times[oldest]) oldest = i
-        }
-        target = oldest
+      for (let i = 0; i < 4; i++) {
+        startTimesRef.current[i] = t + RING_DELAYS[i]
       }
-      times[target] = t
       lastDropRef.current = t
     }
 
-    // Shake burst · fuerte 300ms post-drop · baseline subtle entre
+    // Shake burst sincronizado con el impacto · pico 300ms post-drop
     const timeSinceDrop = t - lastDropRef.current
     const burstAmp =
       timeSinceDrop < 0.3 ? 0.025 * (1 - timeSinceDrop / 0.3) : 0.0
-    const baselineAmp = 0.005
-    const shakeAmp = Math.max(burstAmp, baselineAmp)
-
+    const shakeAmp = Math.max(burstAmp, 0.004)
     if (groupRef.current) {
       groupRef.current.position.x = center[0] + Math.sin(t * 50) * shakeAmp
       groupRef.current.position.y = center[1] + Math.cos(t * 47) * shakeAmp * 0.7
       groupRef.current.position.z = center[2] + Math.sin(t * 53) * shakeAmp
     }
 
-    // Animate rings por ciclo de vida individual
+    // Animate cada ring por su vida individual
     ringRefs.forEach((ref, i) => {
       if (!ref.current) return
       const start = startTimesRef.current[i]
-      const elapsed = start === 0 ? Infinity : t - start
-      if (elapsed > RING_LIFE) {
+      const elapsed = t - start
+      const life = RING_LIVES[i]
+      if (start <= 0 || elapsed < 0 || elapsed > life) {
         ref.current.visible = false
         return
       }
       ref.current.visible = true
-      const cycle = elapsed / RING_LIFE // 0 → 1
-      const scale = 0.2 + cycle * 1.8 // expand 0.2 → 2.0
-      const opacity = (1 - cycle) * 0.7 // fade 0.7 → 0
+      const cycle = elapsed / life
+      const scale = 0.2 + cycle * 1.9
+      const opacity = (1 - cycle) * RING_PEAK_OPACITY[i]
       ref.current.scale.setScalar(scale)
       const mat = ref.current.material as THREE.MeshBasicMaterial
       mat.opacity = opacity
