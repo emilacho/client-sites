@@ -284,8 +284,14 @@ export function Scene({
               Z=-1.0) · botella elevación Y corregida (0.02→0) acostada
               en arena · alejada del barco · gap visible respecto a otros
               props ≥0.3 units world. */}
-          <CrabModel position={[2, 0.08, -1]} rotation={[0, 0.6, 0]} scale={0.161} />
-          <BottleModel position={[-1.7, 0.0, 1.6]} rotation={[Math.PI / 2, 0, 0.4]} scale={0.184} />
+          {/* R96.40 · Cowork dispatch V2 · coords exactas + scale ×1.15
+              incremental sobre actual (R96.37 0.161/0.184 → 0.185/0.212).
+              Per island-3d-tweaks-2026-05-23.md sec 3.2 · botella reposa
+              acostada Y=0.13 lateral · gap visible respecto barco +40%.
+              Sec 3.3 · crab adentro cluster palmas anchor (X=-1.6 Z=-1.8)
+              · ligeramente delante · semi-oculto entre troncos. */}
+          <CrabModel position={[-1.8, 0.08, -1.6]} rotation={[0, 0.6, 0]} scale={0.185} />
+          <BottleModel position={[-1.5, 0.13, 1.85]} rotation={[Math.PI / 2, 0, 0.4]} scale={0.212} />
 
           {/* Round 85 · pergamino emerges FROM the cofre on click.
               Round 96 · click sobre el pergamino · dispara vanish
