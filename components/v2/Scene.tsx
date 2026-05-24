@@ -752,31 +752,74 @@ function SurfboardModel(props: React.ComponentProps<"group">) {
 }
 
 /**
- * CofreSoundwaveFX · R96.68 · solo 4 ondas concéntricas + shake.
- * Halo amber removido per Emilio · queda speaker-style waves only.
+ * CofreSoundwaveFX · R96.69 · ondas tipo "gota de agua" sincronizadas
+ * con vibración. Cada drop · spawn 1 onda + burst shake breve.
+ *
+ *  - 3 rings reciclables · vida 1.4s cada uno · expand + fade out
+ *  - Drop tick cada 2s · spawn nueva onda en ring expirado
+ *  - Shake burst al drop · amplitude 0.025u durante 300ms · decae a
+ *    baseline 0.005u (sutil) entre drops
+ *
+ *  Imagen mental · gota cae · onda expansiva nace · cofre tiembla
+ *  por el impacto · onda se desvanece · pausa · otra gota cae.
  */
 function CofreSoundwaveFX({ center }: { center: [number, number, number] }) {
   const groupRef = useRef<THREE.Group>(null)
   const ring1Ref = useRef<THREE.Mesh>(null)
   const ring2Ref = useRef<THREE.Mesh>(null)
   const ring3Ref = useRef<THREE.Mesh>(null)
-  const ring4Ref = useRef<THREE.Mesh>(null)
-  const ringRefs = [ring1Ref, ring2Ref, ring3Ref, ring4Ref]
+  const ringRefs = [ring1Ref, ring2Ref, ring3Ref]
+  // Start times · 0 = inactive · positive = spawn epoch
+  const startTimesRef = useRef<number[]>([0, 0, 0])
+  const lastDropRef = useRef(0)
+  const RING_LIFE = 1.4
+  const DROP_INTERVAL = 2.0
 
   useFrame(() => {
     const t = performance.now() * 0.001
-    if (groupRef.current) {
-      groupRef.current.position.x = center[0] + Math.sin(t * 50) * 0.02
-      groupRef.current.position.y = center[1] + Math.cos(t * 47) * 0.015
-      groupRef.current.position.z = center[2] + Math.sin(t * 53) * 0.02
+
+    // Drop tick · spawn nueva onda en ring expirado
+    if (t - lastDropRef.current >= DROP_INTERVAL) {
+      const times = startTimesRef.current
+      let target = times.findIndex((s) => s === 0 || t - s > RING_LIFE)
+      if (target === -1) {
+        // No hay ring expirado · reciclar el más viejo
+        let oldest = 0
+        for (let i = 1; i < times.length; i++) {
+          if (times[i] < times[oldest]) oldest = i
+        }
+        target = oldest
+      }
+      times[target] = t
+      lastDropRef.current = t
     }
-    const period = 1.5
+
+    // Shake burst · fuerte 300ms post-drop · baseline subtle entre
+    const timeSinceDrop = t - lastDropRef.current
+    const burstAmp =
+      timeSinceDrop < 0.3 ? 0.025 * (1 - timeSinceDrop / 0.3) : 0.0
+    const baselineAmp = 0.005
+    const shakeAmp = Math.max(burstAmp, baselineAmp)
+
+    if (groupRef.current) {
+      groupRef.current.position.x = center[0] + Math.sin(t * 50) * shakeAmp
+      groupRef.current.position.y = center[1] + Math.cos(t * 47) * shakeAmp * 0.7
+      groupRef.current.position.z = center[2] + Math.sin(t * 53) * shakeAmp
+    }
+
+    // Animate rings por ciclo de vida individual
     ringRefs.forEach((ref, i) => {
       if (!ref.current) return
-      const phaseOffset = (i / 4) * period
-      const cycle = ((t + phaseOffset) % period) / period
-      const scale = 0.3 + cycle * 1.8
-      const opacity = (1 - cycle) * 0.55
+      const start = startTimesRef.current[i]
+      const elapsed = start === 0 ? Infinity : t - start
+      if (elapsed > RING_LIFE) {
+        ref.current.visible = false
+        return
+      }
+      ref.current.visible = true
+      const cycle = elapsed / RING_LIFE // 0 → 1
+      const scale = 0.2 + cycle * 1.8 // expand 0.2 → 2.0
+      const opacity = (1 - cycle) * 0.7 // fade 0.7 → 0
       ref.current.scale.setScalar(scale)
       const mat = ref.current.material as THREE.MeshBasicMaterial
       mat.opacity = opacity
@@ -786,12 +829,12 @@ function CofreSoundwaveFX({ center }: { center: [number, number, number] }) {
   return (
     <group ref={groupRef} position={center}>
       {ringRefs.map((ref, i) => (
-        <mesh key={i} ref={ref} rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh key={i} ref={ref} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
           <ringGeometry args={[0.5, 0.58, 48]} />
           <meshBasicMaterial
             color="#4DD4D8"
             transparent
-            opacity={0.5}
+            opacity={0}
             blending={THREE.AdditiveBlending}
             depthWrite={false}
             side={THREE.DoubleSide}
