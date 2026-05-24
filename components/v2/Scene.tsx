@@ -277,10 +277,18 @@ export function Scene({
 
           {/* R96.67 · sound/vibration distortion FX · cofre full intensity. */}
           <CofreSoundwaveFX center={[-0.76, 0.18, 0.18]} />
-          {/* R96.79 · mismo FX para botella · intensity 0.35 proporcional
-              al tamaño del prop (botella scale 0.212 · mucho menor que el
-              cofre baked del GLB). Posicion match botella exacta. */}
-          <CofreSoundwaveFX center={[1, 0.05, -2]} intensity={0.35} />
+          {/* R96.81 · FX en botella · intensity 0.35 ondas chicas · GLB
+              de la botella va como children · vibra con el group del
+              FX · botella GLB se mueve sincronizado con sus ondas.
+              Position relativa · BottleModel position [0,-0.05,0] respecto
+              al center del FX que está en [1, 0.05, -2]. */}
+          <CofreSoundwaveFX center={[1, 0.05, -2]} intensity={0.35}>
+            <BottleModel
+              position={[0, -0.05, 0]}
+              rotation={[Math.PI / 2, 0, 0.4]}
+              scale={0.212}
+            />
+          </CofreSoundwaveFX>
 
           {/* Round 96.5 · props secundarios decorativos · cangrejo
               en la arena front-right (orilla del agua) · botella
@@ -371,7 +379,10 @@ export function Scene({
             </>
           ) : null}
           <CrabModel position={[-1.8, 0.05, -1.6]} rotation={[0, 0.6, 0]} scale={0.185} />
-          <BottleModel position={[1, 0, -2]} rotation={[Math.PI / 2, 0, 0.4]} scale={0.212} />
+          {/* BottleModel ahora vive como children del CofreSoundwaveFX
+              del bloque R96.81 abajo · para vibrar sincronizada con
+              sus ondas expansivas · esta linea sola queda comentada
+              como referencia historica. */}
 
           {/* Round 85 · pergamino emerges FROM the cofre on click.
               Round 96 · click sobre el pergamino · dispara vanish
@@ -762,9 +773,11 @@ function SurfboardModel(props: React.ComponentProps<"group">) {
 function CofreSoundwaveFX({
   center,
   intensity = 1,
+  children,
 }: {
   center: [number, number, number]
   intensity?: number
+  children?: React.ReactNode
 }) {
   const groupRef = useRef<THREE.Group>(null)
   const ring1Ref = useRef<THREE.Mesh>(null)
@@ -830,10 +843,11 @@ function CofreSoundwaveFX({
       timeSinceDrop < 0.5 ? 0.032 * Math.exp(-timeSinceDrop * 5) : 0
     const energyNorm = Math.min(totalEnergy / 1.0, 1)
     const energyAmp = 0.025 * energyNorm
-    // R96.80 · shake amplitude FULL · NO escalada por intensity ·
-    // botella vibra igual de fuerte que cofre · intensity solo
-    // afecta scale de ondas (proporcional al tamaño del prop).
-    const shakeAmp = Math.max(dropPulse, energyAmp)
+    // R96.81 · shake amp escalada por intensity · ondas movimiento
+    // proporcional a su tamaño · no erráticas. Botella vibra via
+    // children slot que comparte el group ref · GLB se mueve con
+    // ondas chicas sincronizadas.
+    const shakeAmp = Math.max(dropPulse, energyAmp) * intensity
     if (groupRef.current) {
       groupRef.current.position.x = center[0] + Math.sin(t * 50) * shakeAmp
       groupRef.current.position.y = center[1] + Math.cos(t * 47) * shakeAmp * 0.7
@@ -856,6 +870,7 @@ function CofreSoundwaveFX({
           />
         </mesh>
       ))}
+      {children}
     </group>
   )
 }
