@@ -1270,15 +1270,15 @@ function createPromoTexture(): THREE.CanvasTexture | null {
     CYAN_NF,
   )
 
-  // "5% DSCT" · 380 · purple
-  lineAt("5% DSCT", 512, 380, `bold 150px ${handwrittenLegible}`, -0.028, PURPLE_NF)
+  // "5% DSCT" · 380 · purple · R96.90 · -40% (150→90)
+  lineAt("5% DSCT", 512, 380, `bold 90px ${handwrittenLegible}`, -0.028, PURPLE_NF)
 
-  // Signature "El Náufrago" · 470
+  // Signature "El Náufrago" · 470 · R96.90 · +20% (44→53)
   lineAt(
     "— El Náufrago",
     760,
     470,
-    `44px ${handwrittenLegible}`,
+    `53px ${handwrittenLegible}`,
     -0.05,
     PURPLE_NF,
   )
