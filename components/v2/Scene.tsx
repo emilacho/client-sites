@@ -363,7 +363,7 @@ export function Scene({
               ))}
             </>
           ) : null}
-          <CrabModel position={[-1.8, 0.08, -1.6]} rotation={[0, 0.6, 0]} scale={0.185} />
+          <CrabModel position={[-1.8, -0.05, -1.6]} rotation={[0, 0.6, 0]} scale={0.185} />
           <BottleModel position={[1, -0.1, -2]} rotation={[Math.PI / 2, 0, 0.4]} scale={0.212} />
 
           {/* Round 85 · pergamino emerges FROM the cofre on click.
