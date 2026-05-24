@@ -285,7 +285,7 @@ export function Scene({
               en arena · alejada del barco · gap visible respecto a otros
               props ≥0.3 units world. */}
           <CrabModel position={[-1.3, 0.08, -1.0]} rotation={[0, 0.6, 0]} scale={0.161} />
-          <BottleModel position={[1.0, 0.0, 1.85]} rotation={[Math.PI / 2, 0, 0.4]} scale={0.184} />
+          <BottleModel position={[-1.7, 0.0, 1.6]} rotation={[Math.PI / 2, 0, 0.4]} scale={0.184} />
 
           {/* Round 85 · pergamino emerges FROM the cofre on click.
               Round 96 · click sobre el pergamino · dispara vanish
