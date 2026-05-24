@@ -232,13 +232,13 @@ function HelmWheelSVG({ rotation, phase }: { rotation: number; phase: Phase }) {
         )
       })}
 
-      {/* Labels · uno por gajo · texto recto centrado en el gajo,
-          rotado al ángulo medio. Stroke + fill para contraste sobre
-          cualquier color de fondo. */}
+      {/* Labels · R96.101 · font 17→12 + letter-spacing 0.06→0.01 +
+          radio 78→88 para acomodar el texto dentro del arco del gajo.
+          Sin overflow visible sobre las separaciones radiales. */}
       {GAJOS.map((g, i) => {
         const midDeg = -90 + i * SEG_DEG + SEG_DEG / 2
         const rad = midDeg * (Math.PI / 180)
-        const labelRadius = 78
+        const labelRadius = 88
         const cx = labelRadius * Math.cos(rad)
         const cy = labelRadius * Math.sin(rad)
         const lines = g.label.split("\n")
@@ -249,7 +249,7 @@ function HelmWheelSVG({ rotation, phase }: { rotation: number; phase: Phase }) {
             transform={`translate(${cx.toFixed(2)} ${cy.toFixed(2)}) rotate(${midDeg + 90})`}
           >
             {lines.map((line, j) => {
-              const dy = lines.length === 1 ? 5 : j === 0 ? -6 : 14
+              const dy = lines.length === 1 ? 4 : j === 0 ? -4 : 10
               return (
                 <text
                   key={j}
@@ -259,13 +259,13 @@ function HelmWheelSVG({ rotation, phase }: { rotation: number; phase: Phase }) {
                   style={{
                     fontFamily:
                       'var(--font-bebas), "Bebas Neue", sans-serif',
-                    fontSize: 17,
+                    fontSize: 12,
                     fontWeight: 700,
-                    letterSpacing: "0.06em",
+                    letterSpacing: "0.01em",
                     paintOrder: "stroke fill",
                   }}
-                  stroke={isDark ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.85)"}
-                  strokeWidth={3}
+                  stroke={isDark ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.8)"}
+                  strokeWidth={2.2}
                   strokeLinejoin="round"
                   fill={g.ink}
                 >
