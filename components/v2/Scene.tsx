@@ -24,6 +24,7 @@ import {
   Environment,
   Html,
   PerformanceMonitor,
+  Text,
   useAnimations,
   useGLTF,
 } from "@react-three/drei"
@@ -290,14 +291,61 @@ export function Scene({
               acostada Y=0.13 lateral · gap visible respecto barco +40%.
               Sec 3.3 · crab adentro cluster palmas anchor (X=-1.6 Z=-1.8)
               · ligeramente delante · semi-oculto entre troncos. */}
-          {/* R96.53 · debug helpers en qaMode · GridHelper 6×6 step
-              0.5 (12 divs) + AxesHelper 3u · revela ejes reales de la
-              isla para mapear coords correctamente. Color rojo = +X
-              · verde = +Y · azul = +Z (estándar Three.js). */}
+          {/* R96.54 · debug helpers en qaMode · GridHelper 6×6 step
+              0.5 (12 divs) + AxesHelper 3u + LABELS de coord en cada
+              unidad entera (X=-3..+3 · Z=-3..+3). Permite al user
+              leer coords directamente del grid visible. */}
           {qaMode ? (
             <>
               <gridHelper args={[6, 12, "#ff00ff", "#666666"]} position={[0, 0.05, 0]} />
               <axesHelper args={[3]} position={[0, 0.06, 0]} />
+              {/* X labels along Z=0 axis */}
+              {[-3, -2, -1, 1, 2, 3].map((x) => (
+                <Text
+                  key={`x-${x}`}
+                  position={[x, 0.5, 0]}
+                  fontSize={0.25}
+                  color="#ff2266"
+                  anchorX="center"
+                  anchorY="middle"
+                  rotation={[-Math.PI / 2, 0, 0]}
+                >
+                  {`X=${x > 0 ? "+" : ""}${x}`}
+                </Text>
+              ))}
+              {/* Z labels along X=0 axis */}
+              {[-3, -2, -1, 1, 2, 3].map((z) => (
+                <Text
+                  key={`z-${z}`}
+                  position={[0, 0.5, z]}
+                  fontSize={0.25}
+                  color="#22aaff"
+                  anchorX="center"
+                  anchorY="middle"
+                  rotation={[-Math.PI / 2, 0, 0]}
+                >
+                  {`Z=${z > 0 ? "+" : ""}${z}`}
+                </Text>
+              ))}
+              {/* Corner labels · 4 corner spots */}
+              {[
+                [-2, -2],
+                [2, -2],
+                [-2, 2],
+                [2, 2],
+              ].map(([x, z], i) => (
+                <Text
+                  key={`corner-${i}`}
+                  position={[x, 0.8, z]}
+                  fontSize={0.3}
+                  color="#ffff00"
+                  anchorX="center"
+                  anchorY="middle"
+                  rotation={[-Math.PI / 2, 0, 0]}
+                >
+                  {`(${x > 0 ? "+" : ""}${x},${z > 0 ? "+" : ""}${z})`}
+                </Text>
+              ))}
             </>
           ) : null}
           <CrabModel position={[-1.8, 0.08, -1.6]} rotation={[0, 0.6, 0]} scale={0.185} />
