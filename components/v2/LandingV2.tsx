@@ -25,6 +25,7 @@ import { OverlayPanels, type OverlayKind } from "./OverlayPanels"
 import { MenuModal } from "./MenuModal"
 import { TrackOrderModal } from "./TrackOrderModal"
 import { SubscribeModal } from "./SubscribeModal"
+import RuletaModal from "./RuletaModal"
 // Round 85 · TreasureRewardModal (R82 castaway SVG modal) retired ·
 // the 3D pergamino in-scene that emerges from the cofre on click
 // replaces it · same discount flow, more immersive reveal.
@@ -72,6 +73,8 @@ function LandingInner() {
   const [trackOpen, setTrackOpen] = useState(false)
   // R96.10 · "Registrate" CTA · subscriber lite opt-in.
   const [subscribeOpen, setSubscribeOpen] = useState(false)
+  // R96.98 · ruleta del cofre · click cofre abre la rueda giratoria.
+  const [ruletaOpen, setRuletaOpen] = useState(false)
   // Round 95 · OrderTracker state eliminado · pendiente nuevo
   // approach del usuario.
 
@@ -99,9 +102,11 @@ function LandingInner() {
   }
 
   const handleAnchor = (kind: AnchorKind) => {
-    // R96.83 · cofre ya NO dispara el pergamino · ahora sale de la
-    // botella. Cofre click sin acción · TBD futuro (puede abrir cart).
+    // R96.98 · cofre click abre la ruleta de premios (1 spin por
+    // IP/fingerprint cada 24h). Pergamino sigue saliendo de la
+    // botella · son dos features independientes.
     if (kind === "cofre") {
+      setRuletaOpen(true)
       return
     }
     setOverlay(kind)
@@ -296,6 +301,7 @@ function LandingInner() {
       <MenuModal open={menuOpen} onClose={() => setMenuOpen(false)} />
       <TrackOrderModal open={trackOpen} onClose={() => setTrackOpen(false)} />
       <SubscribeModal open={subscribeOpen} onClose={() => setSubscribeOpen(false)} />
+      <RuletaModal open={ruletaOpen} onClose={() => setRuletaOpen(false)} />
       <OverlayPanels active={overlay} onClose={() => setOverlay(null)} />
 
     </main>
