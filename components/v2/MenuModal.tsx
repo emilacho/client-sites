@@ -30,8 +30,10 @@ import {
   MENU_CATEGORIES,
   type MenuCategoryId,
   type MenuItem,
+  type MenuItemVariant,
 } from "@/lib/v2/naufrago-content"
 import { usePopularItems, type PopularItem } from "@/lib/v2/use-popular-items"
+import { useDynamicOptions } from "@/lib/v2/use-dynamic-options"
 
 export interface MenuModalProps {
   open: boolean
@@ -273,33 +275,51 @@ function MenuCard({ item }: { item: MenuItem }) {
   // R96.20 · panel modifiers · toggle open + selected ids set.
   const [modOpen, setModOpen] = useState(false)
   const [selectedMods, setSelectedMods] = useState<Set<string>>(new Set())
+  // R96.25 · variant picker modal · si item tiene variants/dynamicVariantsKey
+  const [variantPickerOpen, setVariantPickerOpen] = useState(false)
 
   const modifiers = item.modifiers ?? []
+  const hasVariants = !!item.variants?.length || !!item.dynamicVariantsKey
   const modPriceDelta = modifiers.reduce((sum, m) => {
     return selectedMods.has(m.id) ? sum + m.priceDelta : sum
   }, 0)
   const totalPrice = item.priceUsd + modPriceDelta
 
-  const handleAdd = () => {
+  const addToCart = (variant?: MenuItemVariant | { id: string; label: string }) => {
     const customizations = modifiers
       .filter((m) => selectedMods.has(m.id))
       .map((m) => ({ id: m.id, label: m.label, priceDelta: m.priceDelta }))
-    // Cart context · agregar línea con precio resuelto + customizations.
-    // ID es item.id + hash de customizations para que ítems con diferentes
-    // modifiers no se mergeen (mismo plato customizado distinto = 2 líneas).
+    if (variant) {
+      customizations.unshift({
+        id: variant.id,
+        label: variant.label,
+        priceDelta: "priceDelta" in variant ? variant.priceDelta : 0,
+      })
+    }
+    const variantDelta =
+      variant && "priceDelta" in variant ? variant.priceDelta : 0
     const lineId = customizations.length
       ? `${item.id}::${customizations.map((c) => c.id).sort().join("+")}`
       : item.id
     cart.add({
       id: lineId,
-      name: item.name,
-      priceUsd: totalPrice,
+      name: variant ? `${item.name} · ${variant.label}` : item.name,
+      priceUsd: totalPrice + variantDelta,
       ...(customizations.length ? { customizations } : {}),
     })
     setFlash(true)
     setSelectedMods(new Set())
     setModOpen(false)
+    setVariantPickerOpen(false)
     window.setTimeout(() => setFlash(false), 1200)
+  }
+
+  const handleAdd = () => {
+    if (hasVariants) {
+      setVariantPickerOpen(true)
+      return
+    }
+    addToCart()
   }
 
   const toggleMod = (id: string) =>
@@ -416,6 +436,136 @@ function MenuCard({ item }: { item: MenuItem }) {
           })}
         </div>
       ) : null}
+      {variantPickerOpen ? (
+        <VariantPicker
+          item={item}
+          onPick={(v) => addToCart(v)}
+          onClose={() => setVariantPickerOpen(false)}
+        />
+      ) : null}
     </article>
+  )
+}
+
+/* R96.25 · VariantPicker · modal full-screen mobile · grid 2-col
+   con foto/emoji + label · click variant → cart.add + close. Detecta
+   si el item tiene variants static o dynamicVariantsKey · fetcha
+   dinámicas desde /api/dynamic-options. */
+function VariantPicker({
+  item,
+  onPick,
+  onClose,
+}: {
+  item: MenuItem
+  onPick: (v: MenuItemVariant | { id: string; label: string; priceDelta: number }) => void
+  onClose: () => void
+}) {
+  const { label: dynLabel, options: dynOpts, loading: dynLoading } =
+    useDynamicOptions(item.dynamicVariantsKey ?? null)
+
+  const variants: Array<MenuItemVariant | { id: string; label: string; priceDelta: number }> =
+    item.variants && item.variants.length > 0
+      ? item.variants
+      : dynOpts.map((o) => ({ id: o.id, label: o.label, priceDelta: 0 }))
+
+  const pickerTitle = item.variants
+    ? "Elegí tu sabor"
+    : dynLabel ?? "Elegí tu sabor"
+
+  return (
+    <motion.div
+      key="variant-picker"
+      className="fixed inset-0 z-[60] flex items-end justify-center md:items-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={pickerTitle}
+    >
+      <button
+        type="button"
+        aria-label="Cerrar"
+        onClick={onClose}
+        className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
+      />
+      <motion.div
+        initial={{ y: "8%", opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: "8%", opacity: 0 }}
+        transition={{ duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }}
+        className="relative z-10 max-h-[80svh] w-full max-w-md overflow-y-auto rounded-t-3xl border border-slate-800 bg-slate-950 px-5 py-5 text-slate-100 shadow-2xl md:rounded-3xl"
+      >
+        <header className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-300">
+              {item.name}
+            </span>
+            <h3 className="mt-0.5 font-display text-xl font-semibold">
+              {pickerTitle}
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar"
+            className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-800"
+          >
+            ×
+          </button>
+        </header>
+
+        {dynLoading ? (
+          <p className="py-6 text-center text-sm text-slate-400">
+            Cargando sabores disponibles…
+          </p>
+        ) : variants.length === 0 ? (
+          <p className="py-6 text-center text-sm text-slate-400">
+            Sin opciones disponibles ahora · escribinos por WhatsApp.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            {variants.map((v) => {
+              const mvariant = v as MenuItemVariant
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => onPick(v)}
+                  className="flex flex-col items-start gap-2 rounded-xl border border-slate-700 bg-slate-900/60 p-2.5 text-left transition-colors hover:border-cyan-500 hover:bg-slate-800"
+                >
+                  {mvariant.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={mvariant.imageUrl}
+                      alt={v.label}
+                      className="h-16 w-full rounded-md object-cover"
+                    />
+                  ) : (
+                    <div
+                      aria-hidden
+                      className={`flex h-16 w-full items-center justify-center rounded-md bg-gradient-to-br text-3xl shadow-inner ${
+                        mvariant.gradient ?? "from-slate-700 to-slate-900"
+                      }`}
+                    >
+                      <span>{mvariant.emoji ?? "🍹"}</span>
+                    </div>
+                  )}
+                  <span className="text-xs font-semibold text-white">
+                    {v.label}
+                  </span>
+                  {v.priceDelta > 0 ? (
+                    <span className="font-mono text-[10px] text-cyan-200">
+                      +${v.priceDelta.toFixed(2)}
+                    </span>
+                  ) : null}
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </motion.div>
+    </motion.div>
   )
 }

@@ -32,6 +32,21 @@ export interface MenuItemModifier {
   defaultOn?: boolean
 }
 
+/** R96.25 · variants single-select · cliente elige UNO de N obligatorio
+ *  antes de agregar al cart. Usado para bebidas brand-multi · jugos por
+ *  sabor · etc. priceDelta normalmente 0 (el variant es el "subtipo"
+ *  del ítem · no un add-on). imageUrl opcional · si presente se renderiza
+ *  la foto · si null cae a emoji + color. */
+export interface MenuItemVariant {
+  id: string
+  label: string
+  priceDelta: number
+  imageUrl?: string
+  emoji?: string
+  /** Tailwind gradient classes · fallback visual cuando no hay imageUrl. */
+  gradient?: string
+}
+
 /** R96.12 · allergen taxonomy estándar EC food delivery. */
 export type AllergenId =
   | "pescado"
@@ -83,6 +98,13 @@ export interface MenuItem {
   /** R96.20 · modifiers opcionales · cliente toggle en el menu modal ·
    *  affect precio + persisten en CartLine.customizations. */
   modifiers?: MenuItemModifier[]
+  /** R96.25 · variants static (data-driven) · obligatorio elegir 1 al
+   *  agregar al cart. Mutuamente exclusivo con `dynamicVariantsKey`. */
+  variants?: MenuItemVariant[]
+  /** R96.25 · variants dinámicos · catálogo viene de Supabase tabla
+   *  `naufrago_dynamic_options` por key. El local puede actualizar el
+   *  catálogo día a día sin redeploy (jugos por sabor del día, etc.). */
+  dynamicVariantsKey?: string
 }
 
 export const MENU_CATEGORIES: Array<{ id: MenuCategoryId; label: string; emoji: string }> = [
@@ -129,6 +151,13 @@ export const MENU_ITEMS: MenuItem[] = [
     emoji: "🍲",
     gradient: "from-amber-700 via-orange-500 to-rose-400",
     allergens: ["pescado", "mariscos"],
+    modifiers: [
+      { id: "extra-yuca", label: "+ porción extra yuca", priceDelta: 1.0 },
+      { id: "extra-pan", label: "+ pan adicional", priceDelta: 0.5 },
+      { id: "extra-camaron", label: "+ camarón adicional", priceDelta: 2.0 },
+      { id: "no-cebolla", label: "Sin cebolla cruda", priceDelta: 0 },
+      { id: "extra-limon", label: "Limón extra", priceDelta: 0 },
+    ],
   },
   {
     id: "encebollado-junior",
@@ -142,6 +171,13 @@ export const MENU_ITEMS: MenuItem[] = [
     emoji: "🥣",
     gradient: "from-amber-600 via-yellow-500 to-amber-300",
     allergens: ["pescado"],
+    modifiers: [
+      { id: "extra-pescado", label: "+ 50g pescado adicional", priceDelta: 1.5 },
+      { id: "extra-yuca", label: "+ porción extra yuca", priceDelta: 1.0 },
+      { id: "extra-pan", label: "+ pan adicional", priceDelta: 0.5 },
+      { id: "no-cebolla", label: "Sin cebolla cruda", priceDelta: 0 },
+      { id: "extra-limon", label: "Limón extra", priceDelta: 0 },
+    ],
   },
 
   // ── Ceviches (2) ──────────────────────────────────────────────────
@@ -210,21 +246,63 @@ export const MENU_ITEMS: MenuItem[] = [
     id: "jugo-natural",
     category: "bebidas",
     name: "Jugo natural del día",
-    description: "Sabor del día.",
+    description: "Sabor del día · elegí cuando agregues.",
     tags: [],
     priceUsd: 2.0,
     emoji: "🍹",
     gradient: "from-orange-700 via-amber-500 to-yellow-300",
+    // R96.25 · sabor del día varía · catálogo dinámico Supabase
+    // tabla naufrago_dynamic_options key=juice_flavors. Local
+    // actualiza diariamente sin redeploy.
+    dynamicVariantsKey: "juice_flavors",
   },
   {
     id: "cola-grande",
     category: "bebidas",
     name: "Cola grande",
-    description: "",
+    description: "Elegí tu sabor preferido · 500ml.",
     tags: [],
     priceUsd: 2.0,
     emoji: "🥤",
     gradient: "from-rose-700 via-red-500 to-amber-400",
+    // R96.25 · variants Coca-Cola brand · catálogo estable · NO dinámico.
+    variants: [
+      {
+        id: "coca-cola",
+        label: "Coca-Cola",
+        priceDelta: 0,
+        emoji: "🥤",
+        gradient: "from-red-700 via-red-600 to-red-500",
+      },
+      {
+        id: "coca-cola-light",
+        label: "Coca-Cola Light",
+        priceDelta: 0,
+        emoji: "🥤",
+        gradient: "from-zinc-700 via-zinc-500 to-red-500",
+      },
+      {
+        id: "sprite",
+        label: "Sprite",
+        priceDelta: 0,
+        emoji: "🥤",
+        gradient: "from-green-700 via-lime-500 to-yellow-300",
+      },
+      {
+        id: "fanta",
+        label: "Fanta",
+        priceDelta: 0,
+        emoji: "🥤",
+        gradient: "from-orange-700 via-orange-500 to-yellow-300",
+      },
+      {
+        id: "fiora",
+        label: "Fiora",
+        priceDelta: 0,
+        emoji: "🥤",
+        gradient: "from-pink-700 via-pink-500 to-rose-300",
+      },
+    ],
   },
   {
     id: "cerveza-grande",
@@ -261,11 +339,48 @@ export const MENU_ITEMS: MenuItem[] = [
     id: "cola-pequena",
     category: "bebidas",
     name: "Cola pequeña",
-    description: "",
+    description: "Elegí tu sabor preferido · 350ml.",
     tags: [],
     priceUsd: 1.25,
     emoji: "🥤",
     gradient: "from-rose-600 via-red-500 to-amber-300",
+    variants: [
+      {
+        id: "coca-cola",
+        label: "Coca-Cola",
+        priceDelta: 0,
+        emoji: "🥤",
+        gradient: "from-red-700 via-red-600 to-red-500",
+      },
+      {
+        id: "coca-cola-light",
+        label: "Coca-Cola Light",
+        priceDelta: 0,
+        emoji: "🥤",
+        gradient: "from-zinc-700 via-zinc-500 to-red-500",
+      },
+      {
+        id: "sprite",
+        label: "Sprite",
+        priceDelta: 0,
+        emoji: "🥤",
+        gradient: "from-green-700 via-lime-500 to-yellow-300",
+      },
+      {
+        id: "fanta",
+        label: "Fanta",
+        priceDelta: 0,
+        emoji: "🥤",
+        gradient: "from-orange-700 via-orange-500 to-yellow-300",
+      },
+      {
+        id: "fiora",
+        label: "Fiora",
+        priceDelta: 0,
+        emoji: "🥤",
+        gradient: "from-pink-700 via-pink-500 to-rose-300",
+      },
+    ],
   },
 
   // ── Extras (5) ────────────────────────────────────────────────────
