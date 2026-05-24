@@ -106,7 +106,7 @@ export const ALLERGEN_LABELS: Record<AllergenId, { emoji: string; label: string 
 export interface MenuItem {
   id: string
   /** Round 9 · category drives the MenuModal tabs (Encebollados 3 ·
-   *  Ceviches 2 · Otros 1 · Bebidas 6 · Extras 5 · spec-pinned 17). */
+   *  Ceviches 2 · Otros 1 · Bebidas 6 · Extras 4 · 16 total). */
   category: MenuCategoryId
   name: string
   /** Round 9.5 · optional secondary label from spec (e.g. "Pequeño"
@@ -515,17 +515,6 @@ export const MENU_ITEMS: MenuItem[] = [
     priceUsd: 1.0,
     emoji: "🥑",
     gradient: "from-emerald-700 via-lime-500 to-lime-300",
-  },
-  {
-    id: "para-llevar",
-    category: "extras",
-    name: "Para llevar",
-    description: "Cargo por empaque.",
-    tags: [],
-    priceUsd: 1.0,
-    type: "service_fee",
-    emoji: "🥡",
-    gradient: "from-slate-700 via-stone-600 to-stone-400",
   },
 ]
 
