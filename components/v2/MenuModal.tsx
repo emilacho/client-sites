@@ -23,6 +23,7 @@
  */
 import { useCallback, useEffect, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
+import { Minus, Plus } from "lucide-react"
 import { useCart } from "@/lib/v2/cart-context"
 import {
   ALLERGEN_LABELS,
@@ -273,26 +274,21 @@ function PopularStrip() {
 function MenuCard({ item }: { item: MenuItem }) {
   const cart = useCart()
   const [flash, setFlash] = useState(false)
-  // R96.20 · panel modifiers · toggle open + selected ids set.
+  // R96.27 · panel unificado · solo ingredient toggles (no más
+  // distinción modifiers vs toggles · todo se renderiza igual).
   const [modOpen, setModOpen] = useState(false)
-  const [selectedMods, setSelectedMods] = useState<Set<string>>(new Set())
-  // R96.26 · ingredient toggles · tri-state map por id · -1 sin · 0 normal · +1 extra
   const [toggleStates, setToggleStates] = useState<Record<string, -1 | 0 | 1>>({})
   // R96.25 · variant picker modal · si item tiene variants/dynamicVariantsKey
   const [variantPickerOpen, setVariantPickerOpen] = useState(false)
 
-  const modifiers = item.modifiers ?? []
   const ingredientToggles = item.ingredientToggles ?? []
   const hasVariants = !!item.variants?.length || !!item.dynamicVariantsKey
-  const hasCustomization = modifiers.length > 0 || ingredientToggles.length > 0
-  const modPriceDelta = modifiers.reduce((sum, m) => {
-    return selectedMods.has(m.id) ? sum + m.priceDelta : sum
-  }, 0)
+  const hasCustomization = ingredientToggles.length > 0
   const togglePriceDelta = ingredientToggles.reduce((sum, t) => {
     const state = toggleStates[t.id] ?? 0
     return state === 1 ? sum + (t.extraPriceDelta ?? 0) : sum
   }, 0)
-  const totalPrice = item.priceUsd + modPriceDelta + togglePriceDelta
+  const totalPrice = item.priceUsd + togglePriceDelta
 
   const togglesAsCustomizations = ingredientToggles
     .filter((t) => (toggleStates[t.id] ?? 0) !== 0)
@@ -306,7 +302,7 @@ function MenuCard({ item }: { item: MenuItem }) {
           }
         : {
             id: `tg-sin-${t.id}`,
-            label: t.removeLabel,
+            label: t.removeLabel ?? `Sin ${t.label.toLowerCase()}`,
             priceDelta: 0,
           }
     })
@@ -315,12 +311,7 @@ function MenuCard({ item }: { item: MenuItem }) {
     setToggleStates((prev) => ({ ...prev, [id]: next }))
 
   const addToCart = (variant?: MenuItemVariant | { id: string; label: string }) => {
-    const customizations = [
-      ...togglesAsCustomizations,
-      ...modifiers
-        .filter((m) => selectedMods.has(m.id))
-        .map((m) => ({ id: m.id, label: m.label, priceDelta: m.priceDelta })),
-    ]
+    const customizations = [...togglesAsCustomizations]
     if (variant) {
       customizations.unshift({
         id: variant.id,
@@ -340,7 +331,6 @@ function MenuCard({ item }: { item: MenuItem }) {
       ...(customizations.length ? { customizations } : {}),
     })
     setFlash(true)
-    setSelectedMods(new Set())
     setToggleStates({})
     setModOpen(false)
     setVariantPickerOpen(false)
@@ -355,13 +345,6 @@ function MenuCard({ item }: { item: MenuItem }) {
     addToCart()
   }
 
-  const toggleMod = (id: string) =>
-    setSelectedMods((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
 
   return (
     <article className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3 transition-colors hover:bg-slate-900">
@@ -410,11 +393,9 @@ function MenuCard({ item }: { item: MenuItem }) {
                   className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium text-violet-200 ring-1 ring-violet-500/20 hover:bg-violet-500/20"
                 >
                   {modOpen ? "− Cerrar" : "+ Customizar"}
-                  {(selectedMods.size > 0 ||
-                    togglesAsCustomizations.length > 0) &&
-                  !modOpen ? (
+                  {togglesAsCustomizations.length > 0 && !modOpen ? (
                     <span className="ml-0.5 rounded-full bg-violet-500/40 px-1.5 text-[9px] font-bold">
-                      {selectedMods.size + togglesAsCustomizations.length}
+                      {togglesAsCustomizations.length}
                     </span>
                   ) : null}
                 </button>
@@ -445,58 +426,18 @@ function MenuCard({ item }: { item: MenuItem }) {
         </div>
       </div>
       {modOpen && hasCustomization ? (
-        <div className="mt-3 space-y-3 border-t border-slate-800 pt-3">
-          {ingredientToggles.length > 0 ? (
-            <div className="space-y-1.5">
-              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-slate-500">
-                Ingredientes
-              </p>
-              <div className="space-y-1.5">
-                {ingredientToggles.map((tg) => (
-                  <IngredientStepper
-                    key={tg.id}
-                    toggle={tg}
-                    state={toggleStates[tg.id] ?? 0}
-                    onChange={(next) => setToggleState(tg.id, next)}
-                  />
-                ))}
-              </div>
-            </div>
-          ) : null}
-          {modifiers.length > 0 ? (
-            <div className="space-y-1.5">
-              {ingredientToggles.length > 0 ? (
-                <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-slate-500">
-                  Extras
-                </p>
-              ) : null}
-              <div className="grid grid-cols-2 gap-1.5">
-                {modifiers.map((m) => {
-                  const active = selectedMods.has(m.id)
-                  return (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => toggleMod(m.id)}
-                      className={[
-                        "flex items-center justify-between gap-1 rounded-md border px-2 py-1.5 text-left text-[11px] transition-colors",
-                        active
-                          ? "border-cyan-500 bg-cyan-500/15 text-cyan-100"
-                          : "border-slate-700 bg-slate-950 text-slate-300 hover:bg-slate-800",
-                      ].join(" ")}
-                    >
-                      <span className="truncate">{m.label}</span>
-                      {m.priceDelta > 0 ? (
-                        <span className="shrink-0 font-mono text-[10px] text-cyan-200">
-                          +${m.priceDelta.toFixed(2)}
-                        </span>
-                      ) : null}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          ) : null}
+        <div className="mt-3 space-y-1.5 border-t border-slate-800 pt-3">
+          <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-slate-500">
+            Ingredientes · ajustá lo que quieras
+          </p>
+          {ingredientToggles.map((tg) => (
+            <IngredientStepper
+              key={tg.id}
+              toggle={tg}
+              state={toggleStates[tg.id] ?? 0}
+              onChange={(next) => setToggleState(tg.id, next)}
+            />
+          ))}
         </div>
       ) : null}
       {variantPickerOpen ? (
@@ -510,10 +451,11 @@ function MenuCard({ item }: { item: MenuItem }) {
   )
 }
 
-/* R96.26 · IngredientStepper · row con [- label +] tri-state.
-   −1 sin (rose) · 0 normal default (slate) · +1 extra (cyan).
-   Click + desde 0 → +1. Click + desde -1 → 0. Click − desde 0 → -1.
-   Click − desde +1 → 0. Bouncy clamp 0,±1. */
+/* R96.27 · IngredientStepper rediseñado · botones +/− prominentes
+   con lucide icons + colores activos · 32×32 px tap target · −1 rose
+   filled · +1 cyan filled · 0 neutral outline · whole row tinted con
+   estado. Si el toggle no tiene removeLabel · botón − disabled (es
+   un add-on que no viene por default · solo permite 0→+1). */
 function IngredientStepper({
   toggle,
   state,
@@ -523,68 +465,80 @@ function IngredientStepper({
   state: -1 | 0 | 1
   onChange: (next: -1 | 0 | 1) => void
 }) {
+  const canRemove = !!toggle.removeLabel
   const onMinus = () => {
     if (state === 1) onChange(0)
-    else if (state === 0) onChange(-1)
+    else if (state === 0 && canRemove) onChange(-1)
   }
   const onPlus = () => {
     if (state === -1) onChange(0)
     else if (state === 0) onChange(1)
   }
   const stateText =
-    state === -1 ? toggle.removeLabel : state === 1 ? toggle.extraLabel : null
+    state === -1
+      ? (toggle.removeLabel ?? toggle.label)
+      : state === 1
+        ? toggle.extraLabel
+        : toggle.label
   const containerStyle =
     state === -1
-      ? "border-rose-500 bg-rose-500/10 text-rose-100"
+      ? "border-rose-500/70 bg-rose-500/12 text-rose-50"
       : state === 1
-        ? "border-cyan-500 bg-cyan-500/15 text-cyan-100"
-        : "border-slate-700 bg-slate-950 text-slate-300"
+        ? "border-cyan-500/70 bg-cyan-500/15 text-cyan-50"
+        : "border-slate-700 bg-slate-900/60 text-slate-300"
 
   return (
     <div
       className={[
-        "flex items-center justify-between gap-2 rounded-md border px-2 py-1 transition-colors",
+        "flex items-center justify-between gap-3 rounded-lg border-2 px-3 py-2 transition-all",
         containerStyle,
       ].join(" ")}
     >
-      <div className="flex min-w-0 items-center gap-2">
+      <div className="flex min-w-0 items-center gap-2.5">
         {toggle.emoji ? (
-          <span aria-hidden className="text-base">
+          <span aria-hidden className="text-xl leading-none">
             {toggle.emoji}
           </span>
         ) : null}
         <div className="flex min-w-0 flex-col">
-          <span className="truncate text-[11px] font-medium">
-            {stateText ?? toggle.label}
+          <span className="truncate text-xs font-semibold leading-snug">
+            {stateText}
           </span>
           {state === 1 && toggle.extraPriceDelta ? (
-            <span className="font-mono text-[9px] text-cyan-200">
+            <span className="font-mono text-[10px] text-cyan-200">
               +${toggle.extraPriceDelta.toFixed(2)}
             </span>
           ) : null}
         </div>
       </div>
-      <div className="flex shrink-0 items-center rounded-full border border-slate-600 bg-slate-950/60">
+      <div className="flex shrink-0 items-center gap-1.5">
         <button
           type="button"
           onClick={onMinus}
-          disabled={state === -1}
+          disabled={state === -1 || (state === 0 && !canRemove)}
           aria-label={`Quitar ${toggle.label}`}
-          className="rounded-full p-1 text-slate-300 transition-colors hover:bg-slate-800 hover:text-rose-200 disabled:cursor-not-allowed disabled:opacity-30"
+          className={[
+            "flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all active:scale-90 disabled:cursor-not-allowed disabled:border-slate-700 disabled:bg-slate-900/40 disabled:text-slate-600",
+            state === -1
+              ? "border-rose-400 bg-rose-500 text-white shadow-lg shadow-rose-500/40"
+              : "border-rose-400/50 bg-rose-500/10 text-rose-200 hover:bg-rose-500/25 hover:text-rose-100",
+          ].join(" ")}
         >
-          <span className="font-mono text-xs">−</span>
+          <Minus className="h-4 w-4" strokeWidth={3} />
         </button>
-        <span className="min-w-[16px] text-center font-mono text-[10px] tabular-nums">
-          {state === 0 ? "" : state > 0 ? "+" : "−"}
-        </span>
         <button
           type="button"
           onClick={onPlus}
           disabled={state === 1}
           aria-label={`Agregar ${toggle.label}`}
-          className="rounded-full p-1 text-slate-300 transition-colors hover:bg-slate-800 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-30"
+          className={[
+            "flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all active:scale-90 disabled:cursor-not-allowed",
+            state === 1
+              ? "border-cyan-300 bg-cyan-500 text-white shadow-lg shadow-cyan-500/40"
+              : "border-cyan-400/50 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/25 hover:text-cyan-100",
+          ].join(" ")}
         >
-          <span className="font-mono text-xs">+</span>
+          <Plus className="h-4 w-4" strokeWidth={3} />
         </button>
       </div>
     </div>

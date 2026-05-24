@@ -32,20 +32,23 @@ export interface MenuItemModifier {
   defaultOn?: boolean
 }
 
-/** R96.26 · ingredient toggle tri-state · cliente ajusta cantidad de
- *  un ingrediente que viene por default · puede pedir sin, normal o
- *  extra · misma UX que un stepper +/− centrado en 0. Para ingredientes
- *  que típicamente quitan o piden duplicar (cebolla · chifle · yerbita).
+/** R96.27 · ingredient toggle unificado · cliente ajusta cantidad o
+ *  agrega add-ons con la misma UX tri-state (-/0/+). Reemplaza la
+ *  separación previa modifiers vs ingredientToggles · todo va a un
+ *  solo array `ingredientToggles` que el panel renderiza uniforme.
  *
- *  removeLabel · texto cuando estado = -1 ("Sin cebolla").
- *  extraLabel · texto cuando estado = +1 ("Extra cebolla").
- *  extraPriceDelta · cargo extra cuando estado = +1 (0 default).
+ *  - Si removeLabel === null/undefined · el "-" está disabled (es un
+ *    add-on que no viene por default · solo permite 0 → +1). Ejemplo ·
+ *    aguacate · doble camarón · pescado adicional.
+ *  - Si removeLabel está · el ingrediente viene por default y cliente
+ *    puede ir a -1 (sin X). Ejemplo · cebolla · chifle · yerbita.
+ *  - extraPriceDelta · cargo cuando state=+1 (default 0).
  */
 export interface MenuItemIngredientToggle {
   id: string
   label: string
   emoji?: string
-  removeLabel: string
+  removeLabel?: string
   extraLabel: string
   extraPriceDelta?: number
 }
@@ -209,14 +212,14 @@ export const MENU_ITEMS: MenuItem[] = [
     emoji: "🍲",
     gradient: "from-amber-700 via-amber-500 to-orange-400",
     allergens: ["pescado"],
-    modifiers: [
-      { id: "extra-pescado", label: "+ 50g pescado adicional", priceDelta: 1.5 },
-      { id: "extra-aguacate", label: "+ aguacate", priceDelta: 1.0 },
-      { id: "extra-yuca", label: "+ porción extra yuca", priceDelta: 1.0 },
-      { id: "extra-pan", label: "+ pan adicional", priceDelta: 0.5 },
-      { id: "extra-limon", label: "Limón extra", priceDelta: 0 },
+    ingredientToggles: [
+      ...ENCEBOLLADO_TOGGLES,
+      { id: "pescado", label: "Pescado adicional 50g", emoji: "🐟", extraLabel: "+ 50g pescado adicional", extraPriceDelta: 1.5 },
+      { id: "aguacate", label: "Aguacate", emoji: "🥑", extraLabel: "+ aguacate", extraPriceDelta: 1.0 },
+      { id: "yuca", label: "Yuca", emoji: "🥔", extraLabel: "+ porción extra yuca", extraPriceDelta: 1.0 },
+      { id: "pan", label: "Pan", emoji: "🍞", extraLabel: "+ pan adicional", extraPriceDelta: 0.5 },
+      { id: "limon", label: "Limón", emoji: "🍋", extraLabel: "+ limón extra" },
     ],
-    ingredientToggles: ENCEBOLLADO_TOGGLES,
   },
   {
     id: "encebollado-mixto",
@@ -229,15 +232,15 @@ export const MENU_ITEMS: MenuItem[] = [
     emoji: "🍲",
     gradient: "from-amber-700 via-orange-500 to-rose-400",
     allergens: ["pescado", "mariscos"],
-    modifiers: [
-      { id: "extra-pescado", label: "+ 50g pescado adicional", priceDelta: 1.5 },
-      { id: "extra-camaron", label: "+ camarón adicional", priceDelta: 2.0 },
-      { id: "extra-aguacate", label: "+ aguacate", priceDelta: 1.0 },
-      { id: "extra-yuca", label: "+ porción extra yuca", priceDelta: 1.0 },
-      { id: "extra-pan", label: "+ pan adicional", priceDelta: 0.5 },
-      { id: "extra-limon", label: "Limón extra", priceDelta: 0 },
+    ingredientToggles: [
+      ...ENCEBOLLADO_TOGGLES,
+      { id: "pescado", label: "Pescado adicional 50g", emoji: "🐟", extraLabel: "+ 50g pescado adicional", extraPriceDelta: 1.5 },
+      { id: "camaron", label: "Camarón adicional", emoji: "🦐", extraLabel: "+ camarón adicional", extraPriceDelta: 2.0 },
+      { id: "aguacate", label: "Aguacate", emoji: "🥑", extraLabel: "+ aguacate", extraPriceDelta: 1.0 },
+      { id: "yuca", label: "Yuca", emoji: "🥔", extraLabel: "+ porción extra yuca", extraPriceDelta: 1.0 },
+      { id: "pan", label: "Pan", emoji: "🍞", extraLabel: "+ pan adicional", extraPriceDelta: 0.5 },
+      { id: "limon", label: "Limón", emoji: "🍋", extraLabel: "+ limón extra" },
     ],
-    ingredientToggles: ENCEBOLLADO_TOGGLES,
   },
   {
     id: "encebollado-junior",
@@ -251,14 +254,14 @@ export const MENU_ITEMS: MenuItem[] = [
     emoji: "🥣",
     gradient: "from-amber-600 via-yellow-500 to-amber-300",
     allergens: ["pescado"],
-    modifiers: [
-      { id: "extra-pescado", label: "+ 50g pescado adicional", priceDelta: 1.5 },
-      { id: "extra-aguacate", label: "+ aguacate", priceDelta: 1.0 },
-      { id: "extra-yuca", label: "+ porción extra yuca", priceDelta: 1.0 },
-      { id: "extra-pan", label: "+ pan adicional", priceDelta: 0.5 },
-      { id: "extra-limon", label: "Limón extra", priceDelta: 0 },
+    ingredientToggles: [
+      ...ENCEBOLLADO_TOGGLES,
+      { id: "pescado", label: "Pescado adicional 50g", emoji: "🐟", extraLabel: "+ 50g pescado adicional", extraPriceDelta: 1.5 },
+      { id: "aguacate", label: "Aguacate", emoji: "🥑", extraLabel: "+ aguacate", extraPriceDelta: 1.0 },
+      { id: "yuca", label: "Yuca", emoji: "🥔", extraLabel: "+ porción extra yuca", extraPriceDelta: 1.0 },
+      { id: "pan", label: "Pan", emoji: "🍞", extraLabel: "+ pan adicional", extraPriceDelta: 0.5 },
+      { id: "limon", label: "Limón", emoji: "🍋", extraLabel: "+ limón extra" },
     ],
-    ingredientToggles: ENCEBOLLADO_TOGGLES,
   },
 
   // ── Ceviches (2) ──────────────────────────────────────────────────
@@ -274,13 +277,13 @@ export const MENU_ITEMS: MenuItem[] = [
     emoji: "🐟",
     gradient: "from-cyan-600 via-emerald-500 to-lime-400",
     allergens: ["pescado", "mani"],
-    modifiers: [
-      { id: "extra-pescado", label: "+ 50g pescado adicional", priceDelta: 1.5 },
-      { id: "extra-camaron", label: "+ doble camarón", priceDelta: 2.0 },
-      { id: "extra-aguacate", label: "+ aguacate", priceDelta: 1.0 },
-      { id: "extra-limon", label: "Limón extra", priceDelta: 0 },
+    ingredientToggles: [
+      ...CEVICHE_TOGGLES,
+      { id: "pescado", label: "Pescado adicional 50g", emoji: "🐟", extraLabel: "+ 50g pescado adicional", extraPriceDelta: 1.5 },
+      { id: "camaron", label: "Camarón", emoji: "🦐", extraLabel: "+ doble camarón", extraPriceDelta: 2.0 },
+      { id: "aguacate", label: "Aguacate", emoji: "🥑", extraLabel: "+ aguacate", extraPriceDelta: 1.0 },
+      { id: "limon", label: "Limón", emoji: "🍋", extraLabel: "+ limón extra" },
     ],
-    ingredientToggles: CEVICHE_TOGGLES,
   },
   {
     id: "ceviche-mixto",
@@ -294,13 +297,13 @@ export const MENU_ITEMS: MenuItem[] = [
     emoji: "🦐",
     gradient: "from-emerald-600 via-cyan-500 to-sky-400",
     allergens: ["pescado", "mariscos", "mani"],
-    modifiers: [
-      { id: "extra-pescado", label: "+ 50g pescado adicional", priceDelta: 1.5 },
-      { id: "extra-camaron", label: "+ doble camarón", priceDelta: 2.0 },
-      { id: "extra-aguacate", label: "+ aguacate", priceDelta: 1.0 },
-      { id: "extra-limon", label: "Limón extra", priceDelta: 0 },
+    ingredientToggles: [
+      ...CEVICHE_TOGGLES,
+      { id: "pescado", label: "Pescado adicional 50g", emoji: "🐟", extraLabel: "+ 50g pescado adicional", extraPriceDelta: 1.5 },
+      { id: "camaron", label: "Camarón", emoji: "🦐", extraLabel: "+ doble camarón", extraPriceDelta: 2.0 },
+      { id: "aguacate", label: "Aguacate", emoji: "🥑", extraLabel: "+ aguacate", extraPriceDelta: 1.0 },
+      { id: "limon", label: "Limón", emoji: "🍋", extraLabel: "+ limón extra" },
     ],
-    ingredientToggles: CEVICHE_TOGGLES,
   },
 
   // ── Otros (1) ─────────────────────────────────────────────────────
@@ -315,27 +318,10 @@ export const MENU_ITEMS: MenuItem[] = [
     emoji: "🍌",
     gradient: "from-amber-700 via-yellow-500 to-lime-400",
     allergens: ["lacteo", "huevo"],
-    modifiers: [
-      { id: "extra-queso", label: "+ queso extra", priceDelta: 0.5 },
-      { id: "extra-aguacate", label: "+ aguacate", priceDelta: 1.0 },
-    ],
     ingredientToggles: [
-      {
-        id: "huevo",
-        label: "Huevo",
-        emoji: "🥚",
-        removeLabel: "Sin huevo",
-        extraLabel: "+ Extra huevo",
-        extraPriceDelta: 0.5,
-      },
-      {
-        id: "queso",
-        label: "Queso",
-        emoji: "🧀",
-        removeLabel: "Sin queso",
-        extraLabel: "+ Extra queso",
-        extraPriceDelta: 0.5,
-      },
+      { id: "huevo", label: "Huevo", emoji: "🥚", removeLabel: "Sin huevo", extraLabel: "+ Extra huevo", extraPriceDelta: 0.5 },
+      { id: "queso", label: "Queso", emoji: "🧀", removeLabel: "Sin queso", extraLabel: "+ Extra queso", extraPriceDelta: 0.5 },
+      { id: "aguacate", label: "Aguacate", emoji: "🥑", extraLabel: "+ aguacate", extraPriceDelta: 1.0 },
     ],
   },
 
