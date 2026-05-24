@@ -275,11 +275,9 @@ export function Scene({
               [-2.14..-1.81]). */}
           <SurfboardModel position={[-1.307, 0.4, -1.7]} rotation={[0.3, Math.PI / 2, Math.PI / 2]} scale={0.7} />
 
-          {/* R96.64 · effects encima del cofre · 4 efectos combinados ·
-              kinetic energy lines + shaking + double exposure judder +
-              resonance blur halo. Position match ANCHOR_POSITIONS.cofre
-              (-0.76, 0.16, 0.18). NO modifica el GLB · solo overlay. */}
-          <CofreEnergyFX center={[-0.76, 0.4, 0.18]} />
+          {/* R96.66 · CofreEnergyFX desmontado · Emilio quitó halo amber.
+              Sin halo no queda nada visible (shake no tiene mesh que mover ·
+              cofre vive baked en el GLB de la isla). */}
 
           {/* Round 96.5 · props secundarios decorativos · cangrejo
               en la arena front-right (orilla del agua) · botella
@@ -752,46 +750,6 @@ function SurfboardModel(props: React.ComponentProps<"group">) {
   return <primitive object={scene} {...props} />
 }
 
-/**
- * CofreEnergyFX · R96.65 · 2 efectos visuales restantes sobre el cofre
- * post Emilio remove 1+3. Mantiene · shaking + resonance blur halo.
- */
-function CofreEnergyFX({ center }: { center: [number, number, number] }) {
-  const groupRef = useRef<THREE.Group>(null)
-  const haloPrimaryRef = useRef<THREE.Mesh>(null)
-
-  useFrame(() => {
-    const t = performance.now() * 0.001
-    // Effect 2 · shaking · high frequency low amplitude
-    if (groupRef.current) {
-      groupRef.current.position.x = center[0] + Math.sin(t * 38) * 0.012
-      groupRef.current.position.z = center[2] + Math.cos(t * 33) * 0.012
-      groupRef.current.position.y = center[1] + Math.sin(t * 5) * 0.02
-    }
-    // Effect 4 · resonance blur halo pulsing
-    if (haloPrimaryRef.current) {
-      const breathe = 0.85 + Math.sin(t * 2.2) * 0.15
-      haloPrimaryRef.current.scale.setScalar(breathe)
-      const mat = haloPrimaryRef.current.material as THREE.MeshBasicMaterial
-      mat.opacity = 0.22 + Math.sin(t * 2.2) * 0.08
-    }
-  })
-
-  return (
-    <group ref={groupRef} position={center}>
-      <mesh ref={haloPrimaryRef}>
-        <sphereGeometry args={[0.55, 24, 24]} />
-        <meshBasicMaterial
-          color="#FFC93C"
-          transparent
-          opacity={0.25}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </mesh>
-    </group>
-  )
-}
 
 /** R96.41 · auto-center GLB pivot · Meshy AI models suelen exportar
  *  el origen del archivo en una esquina arbitraria del bounding box ·
