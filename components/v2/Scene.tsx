@@ -290,6 +290,16 @@ export function Scene({
               acostada Y=0.13 lateral · gap visible respecto barco +40%.
               Sec 3.3 · crab adentro cluster palmas anchor (X=-1.6 Z=-1.8)
               · ligeramente delante · semi-oculto entre troncos. */}
+          {/* R96.53 · debug helpers en qaMode · GridHelper 6×6 step
+              0.5 (12 divs) + AxesHelper 3u · revela ejes reales de la
+              isla para mapear coords correctamente. Color rojo = +X
+              · verde = +Y · azul = +Z (estándar Three.js). */}
+          {qaMode ? (
+            <>
+              <gridHelper args={[6, 12, "#ff00ff", "#666666"]} position={[0, 0.05, 0]} />
+              <axesHelper args={[3]} position={[0, 0.06, 0]} />
+            </>
+          ) : null}
           <CrabModel position={[-1.8, 0.08, -1.6]} rotation={[0, 0.6, 0]} scale={0.185} />
           <BottleModel position={[1.75, 0.13, -0.95]} rotation={[Math.PI / 2, 0, 0.4]} scale={0.212} />
 
