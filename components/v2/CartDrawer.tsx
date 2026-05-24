@@ -19,7 +19,7 @@
  *          ready · sustituye los botones temporalmente cuando activo
  */
 import { useEffect, useState } from "react"
-import { Loader2, MessageSquare, Minus, Plus, ShoppingCart, Trash2, X } from "lucide-react"
+import { ArrowLeft, Loader2, MessageSquare, Minus, Plus, ShoppingCart, Trash2, Utensils, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useCart } from "@/lib/v2/cart-context"
 import { buildWhatsAppLink, naufragoV2 } from "@/lib/v2/naufrago-content"
@@ -153,9 +153,9 @@ export function CartDrawer() {
               </div>
             ) : null}
 
-            <header className="flex items-center justify-between border-b border-slate-800 px-5 py-3">
-              <div className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5 text-cyan-300" />
+            <header className="flex items-center justify-between gap-2 border-b border-slate-800 px-5 py-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <ShoppingCart className="h-5 w-5 shrink-0 text-cyan-300" />
                 <h2 className="text-base font-semibold tracking-tight">Tu pedido</h2>
                 {cart.itemCount > 0 ? (
                   <span className="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-violet-500/20 px-1.5 text-[11px] font-mono text-violet-200 tabular-nums">
@@ -163,14 +163,31 @@ export function CartDrawer() {
                   </span>
                 ) : null}
               </div>
-              <button
-                type="button"
-                onClick={cart.close}
-                aria-label="Cerrar carrito"
-                className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-100"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex shrink-0 items-center gap-1.5">
+                {/* R96.29 · "Seguir comprando" · dispatch CustomEvent ·
+                    LandingV2 escucha y abre MenuModal · cierra cart drawer. */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    cart.close()
+                    if (typeof window !== "undefined") {
+                      window.dispatchEvent(new CustomEvent("naufrago:open-menu"))
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-medium text-cyan-200 transition-colors hover:bg-cyan-500/20"
+                >
+                  <Utensils className="h-3 w-3" />
+                  Seguir comprando
+                </button>
+                <button
+                  type="button"
+                  onClick={cart.close}
+                  aria-label="Cerrar carrito"
+                  className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-100"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </header>
 
             <div className="flex-1 overflow-y-auto px-4 py-3">
@@ -606,18 +623,9 @@ function CartFooter() {
         </div>
       ) : shipping.kind === "address" ? (
         <form onSubmit={requestQuote} className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-300">
-              Datos de entrega
-            </span>
-            <button
-              type="button"
-              onClick={resetShipping}
-              className="text-[11px] text-slate-400 hover:text-slate-200"
-            >
-              Cancelar
-            </button>
-          </div>
+          <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-300">
+            Datos de entrega
+          </span>
           <input
             required
             placeholder="Dirección · calle y número"
@@ -725,18 +733,31 @@ function CartFooter() {
               </div>
             </div>
           ) : null}
-          <button
-            type="submit"
-            style={{
-              background:
-                "linear-gradient(180deg, #F52F41 0%, #D92235 100%)",
-              boxShadow: "0 10px 24px -10px rgba(245,47,65,0.55)",
-            }}
-            className="flex w-full items-center justify-center gap-2 rounded-full px-3 py-2.5 text-sm font-semibold text-white"
-          >
-            <PedidosYaGlyph />
-            <span>Cotizar envío</span>
-          </button>
+          {/* R96.29 · flecha back + submit "Cotizar envío" lado a lado ·
+              back resetea shipping.kind='none' permitiendo elegir otro
+              servicio (WhatsApp en lugar de PedidosYa). */}
+          <div className="flex items-stretch gap-2">
+            <button
+              type="button"
+              onClick={resetShipping}
+              aria-label="Volver · elegir otro servicio de entrega"
+              className="flex shrink-0 items-center justify-center rounded-full border border-slate-700 bg-slate-950 px-3 text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="submit"
+              style={{
+                background:
+                  "linear-gradient(180deg, #F52F41 0%, #D92235 100%)",
+                boxShadow: "0 10px 24px -10px rgba(245,47,65,0.55)",
+              }}
+              className="flex flex-1 items-center justify-center gap-2 rounded-full px-3 py-2.5 text-sm font-semibold text-white"
+            >
+              <PedidosYaGlyph />
+              <span>Cotizar envío</span>
+            </button>
+          </div>
         </form>
       ) : shipping.kind === "quoting" ? (
         <div className="flex items-center justify-center gap-2 py-3 text-sm text-cyan-200">

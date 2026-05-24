@@ -11,7 +11,7 @@
  *    scrolls (subtle reveal of the 3D world)
  */
 import dynamic from "next/dynamic"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { ChevronDown } from "lucide-react"
 import { CartProvider, useCart } from "@/lib/v2/cart-context"
@@ -76,6 +76,14 @@ function LandingInner() {
   // approach del usuario.
 
   const openMenu = () => setMenuOpen(true)
+
+  // R96.29 · CustomEvent listener · "Seguir comprando" del CartDrawer
+  // dispatcha naufrago:open-menu · abrimos el modal del menú.
+  useEffect(() => {
+    const handler = () => setMenuOpen(true)
+    window.addEventListener("naufrago:open-menu", handler)
+    return () => window.removeEventListener("naufrago:open-menu", handler)
+  }, [])
 
   const reorderLast = () => {
     if (!lastOrder) return
