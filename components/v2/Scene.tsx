@@ -275,10 +275,12 @@ export function Scene({
               [-2.14..-1.81]). */}
           <SurfboardModel position={[-1.307, 0.4, -1.7]} rotation={[0.3, Math.PI / 2, Math.PI / 2]} scale={0.7} />
 
-          {/* R96.67 · sound/vibration distortion FX · pattern speaker
-              emitting visual soundwaves · 4 rings concentricos expand
-              + shake fuerte del grupo + halo central resonance blur. */}
+          {/* R96.67 · sound/vibration distortion FX · cofre full intensity. */}
           <CofreSoundwaveFX center={[-0.76, 0.18, 0.18]} />
+          {/* R96.79 · mismo FX para botella · intensity 0.35 proporcional
+              al tamaño del prop (botella scale 0.212 · mucho menor que el
+              cofre baked del GLB). Posicion match botella exacta. */}
+          <CofreSoundwaveFX center={[1, 0.05, -2]} intensity={0.35} />
 
           {/* Round 96.5 · props secundarios decorativos · cangrejo
               en la arena front-right (orilla del agua) · botella
@@ -752,18 +754,18 @@ function SurfboardModel(props: React.ComponentProps<"group">) {
 }
 
 /**
- * CofreSoundwaveFX · R96.70 · gota = MÚLTIPLES ondas en cascada
- * decreciente. Cada drop spawnea 4 ondas con delay staggered · cada
- * onda subsecuente más débil (opacity menor · vida menor).
- *
- *  Mental model · gota cae en agua · onda primaria fuerte · onda
- *  secundaria menor · terciaria aún menor · etc. · luego pausa · otra
- *  gota cae · ciclo se repite.
- *
- *  4 ondas por drop · delay 0/0.18/0.36/0.54s · vidas 1.4/1.2/1.0/0.8s
- *  · opacities pico 0.75/0.5/0.32/0.18. Drop interval 3.2s.
+ * SoundwaveFX · R96.79 · genérico · 4 ondas en cascada decreciente +
+ * shake sincronizado. Reusable per cofre + botella · intensity prop
+ * escala scale + shake amplitude proporcional al tamaño del prop
+ * sobre el que aplica.
  */
-function CofreSoundwaveFX({ center }: { center: [number, number, number] }) {
+function CofreSoundwaveFX({
+  center,
+  intensity = 1,
+}: {
+  center: [number, number, number]
+  intensity?: number
+}) {
   const groupRef = useRef<THREE.Group>(null)
   const ring1Ref = useRef<THREE.Mesh>(null)
   const ring2Ref = useRef<THREE.Mesh>(null)
@@ -806,7 +808,8 @@ function CofreSoundwaveFX({ center }: { center: [number, number, number] }) {
       ref.current.visible = true
       const cycle = elapsed / life
       // R96.77 · scale reducido 40% · 0.55 -> 0.33 start · 2.15 -> 1.29 peak
-      const scale = 0.33 + cycle * 0.96
+      // R96.79 · intensity factor escala scale para diferentes props
+      const scale = (0.33 + cycle * 0.96) * intensity
       const opacity = (1 - cycle) * RING_PEAK_OPACITY[i]
       ref.current.scale.setScalar(scale)
       const mat = ref.current.material as THREE.MeshBasicMaterial
@@ -827,7 +830,8 @@ function CofreSoundwaveFX({ center }: { center: [number, number, number] }) {
       timeSinceDrop < 0.5 ? 0.032 * Math.exp(-timeSinceDrop * 5) : 0
     const energyNorm = Math.min(totalEnergy / 1.0, 1)
     const energyAmp = 0.025 * energyNorm
-    const shakeAmp = Math.max(dropPulse, energyAmp)
+    // R96.79 · shake amplitude también escala por intensity
+    const shakeAmp = Math.max(dropPulse, energyAmp) * intensity
     if (groupRef.current) {
       groupRef.current.position.x = center[0] + Math.sin(t * 50) * shakeAmp
       groupRef.current.position.y = center[1] + Math.cos(t * 47) * shakeAmp * 0.7
