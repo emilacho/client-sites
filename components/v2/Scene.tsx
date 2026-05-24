@@ -1283,7 +1283,7 @@ function createPromoTexture(): THREE.CanvasTexture | null {
     "— El Náufrago",
     512,
     505,
-    `69px ${handwrittenSignature}`,
+    `59px ${handwrittenSignature}`,
     -0.05,
     PURPLE_NF,
   )
