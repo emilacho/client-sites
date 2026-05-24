@@ -125,12 +125,64 @@ function LandingInner() {
         </SceneErrorBoundary>
       </div>
 
-      {/* R96.30 · CTAs secundarios alineados al marco izquierdo top.
-          'Sigue tu pedido' · 'Hablar por WhatsApp' · 'Registrate' van
-          en vertical stack debajo del TopBar · hero principal queda
-          bottom-left con solo el 'Ver menú'. Espacio entre los 2
-          grupos garantizado vía justify-end + spacer mínimo. */}
-      <div className="pointer-events-none absolute left-3 top-20 z-10 flex flex-col items-start gap-2">
+      {/* R96.31 · TODOS los CTAs + "Pedí lo mismo" alineados al marco
+          izquierdo top vertical stack. Solo el hero banner (chip +
+          headline) queda abajo. Orden top→bottom · primary 'Ver menú'
+          (más prominent) · 'Pedí lo mismo' (condicional) · 'Sigue tu
+          pedido' · 'Hablar por WhatsApp' · 'Registrate'. */}
+      <div className="pointer-events-none absolute left-3 top-20 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-start gap-2">
+        <button
+          type="button"
+          onClick={openMenu}
+          className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-5 py-3 font-semibold text-white shadow-lg shadow-violet-500/30 transition-transform hover:translate-y-[-1px]"
+        >
+          {naufragoV2.hero.ctaSecondary}
+          <ChevronDown className="h-4 w-4" />
+        </button>
+        {lastOrder ? (
+          <div
+            className="pointer-events-auto flex max-w-full items-center gap-2 rounded-2xl border-2 px-3 py-2 shadow-lg backdrop-blur-sm"
+            style={{
+              borderColor: "#3D2466",
+              background: "rgba(245,233,210,0.85)",
+            }}
+          >
+            <div className="min-w-0 flex-1">
+              <span
+                className="block font-mono text-[10px] uppercase tracking-[0.2em]"
+                style={{ color: "#3D2466" }}
+              >
+                La última vez pediste
+              </span>
+              <span
+                className="block truncate text-xs font-semibold"
+                style={{ color: "#3D2466" }}
+              >
+                {lastOrder.lines.length}{" "}
+                {lastOrder.lines.length === 1 ? "plato" : "platos"} · $
+                {lastOrder.totalUsd.toFixed(2)}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={reorderLast}
+              className="inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-white shadow-md transition-transform hover:translate-y-[-1px]"
+              style={{ background: "#3D2466" }}
+            >
+              <RotateCw className="h-3 w-3" />
+              Pedí lo mismo
+            </button>
+            <button
+              type="button"
+              onClick={clearLastOrder}
+              aria-label="Quitar"
+              className="rounded-full p-1 text-[11px] opacity-60 hover:opacity-100"
+              style={{ color: "#3D2466" }}
+            >
+              ✕
+            </button>
+          </div>
+        ) : null}
         <button
           type="button"
           onClick={() => setTrackOpen(true)}
@@ -221,80 +273,10 @@ function LandingInner() {
             <span style={{ color: "#4DD4D8" }}>NÁUFRAGO</span>{" "}
             te espera!
           </h1>
-          {/* R96.7 · subheadline removida (Emilio · "borralo") +
-              botones movidos al bottom edge (parent pb-3 + flex
-              justify-end · removida la subheadline + el mt-5
-              spacing). Round 96.7 agrega 2do CTA "Sigue tu pedido"
-              · pattern Domino's "Track Order" para clientes que
-              ya pidieron y vuelven a buscar el tracker. */}
-          {/* R96.9 · "Pedí lo mismo" hero strip · pattern Domino's
-              "Your usual" · render condicional · solo aparece cuando
-              hay last-order válido en localStorage. Estilo card
-              prominente (sand background + indigo border) por encima
-              de los 3 CTAs default. Click pre-popula cart + abre
-              drawer · botón × discreto borra el last-order. */}
-          {lastOrder ? (
-            <div
-              className="mb-3 flex items-center justify-between gap-3 rounded-2xl border-2 px-3 py-2 shadow-lg backdrop-blur-sm"
-              style={{
-                borderColor: "#3D2466",
-                background: "rgba(245,233,210,0.85)",
-              }}
-            >
-              <div className="min-w-0 flex-1">
-                <span
-                  className="block font-mono text-[10px] uppercase tracking-[0.2em]"
-                  style={{ color: "#3D2466" }}
-                >
-                  La última vez pediste
-                </span>
-                <span
-                  className="block truncate text-sm font-semibold"
-                  style={{ color: "#3D2466" }}
-                >
-                  {lastOrder.lines.length}{" "}
-                  {lastOrder.lines.length === 1 ? "plato" : "platos"} · $
-                  {lastOrder.totalUsd.toFixed(2)}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={reorderLast}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform hover:translate-y-[-1px]"
-                style={{ background: "#3D2466" }}
-              >
-                <RotateCw className="h-3.5 w-3.5" />
-                Pedí lo mismo
-              </button>
-              <button
-                type="button"
-                onClick={clearLastOrder}
-                aria-label="Quitar"
-                className="rounded-full p-1 text-[11px] opacity-60 hover:opacity-100"
-                style={{ color: "#3D2466" }}
-              >
-                ✕
-              </button>
-            </div>
-          ) : null}
-
-          <div className={`${lastOrder ? "" : "mt-5"} flex items-center gap-3`}>
-            <button
-              type="button"
-              onClick={openMenu}
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-5 py-3 font-semibold text-white shadow-lg shadow-violet-500/30 transition-transform hover:translate-y-[-1px]"
-            >
-              {naufragoV2.hero.ctaSecondary}
-              <ChevronDown className="h-4 w-4" />
-            </button>
-          </div>
-          {/* Round 5 single-issue fix · the hint paragraph
-              ("Toca los objetos en la isla · cofre = pedido, barco =
-              historia, cocos = reseñas, palmeras = contacto.") was
-              removed here · per forensic findings it was the source of
-              the residual "historia / reseñas / contacto" text Emilio
-              spotted post-revert · the 3D-anchored pill labels were
-              already gone in b2b8cdd. No other change in this commit. */}
+          {/* R96.31 · hero abajo solo · chip + headline. Todos los
+              CTAs ('Ver menú' · 'Pedí lo mismo' · 'Sigue tu pedido' ·
+              'Hablar WhatsApp' · 'Registrate') viven en el stack
+              superior izquierdo · ver bloque absolute top-20 arriba. */}
         </motion.div>
       </div>
 
