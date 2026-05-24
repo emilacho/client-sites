@@ -1404,6 +1404,30 @@ function CharacterModel(props: React.ComponentProps<"group">) {
           c.r = Math.min(1, c.r * 1.025)
           c.b = Math.max(0, c.b * 0.975)
         }
+        // R96.97 · chroma-selective saturation boost via shader inject.
+        // El character usa un solo material + textura única (skin +
+        // gorra + boardshort + top en la misma PNG). Para boostear el
+        // color de gorra y boardshort sin enrojecer la piel · inyecto
+        // un saturate() en el fragment que SOLO se activa cuando el
+        // píxel ya tiene chroma alta (skin chroma < 0.15 · prendas
+        // chroma > 0.2). Aplica solo sobre la textura post-sample.
+        mat.onBeforeCompile = (shader) => {
+          shader.fragmentShader = shader.fragmentShader.replace(
+            "#include <map_fragment>",
+            `
+            #include <map_fragment>
+            {
+              float lum = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
+              vec3 gray = vec3(lum);
+              float chroma = length(diffuseColor.rgb - gray);
+              float boost = smoothstep(0.06, 0.22, chroma);
+              // Saturación target +60% para zonas colorful · piel intacta.
+              vec3 saturated = mix(gray, diffuseColor.rgb, 1.6);
+              diffuseColor.rgb = mix(diffuseColor.rgb, saturated, boost);
+            }
+            `,
+          )
+        }
         mat.needsUpdate = true
       })
     })
