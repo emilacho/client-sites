@@ -1203,11 +1203,9 @@ function createPromoTexture(): THREE.CanvasTexture | null {
     ctx!.restore()
   }
 
-  // Round 90 · red ink for the code and discount headline ·
-  // wine-red close to PromoTicker's #CC0000 but slightly deeper
-  // (#B91C1C · red-700) so it reads like an inked seal stamp
-  // against the kraft parchment.
-  const RED = "#B91C1C"
+  // R96.88 · RED removido · paleta migra a Náufrago canon (purple + cyan)
+  // dentro del bloque de layout más abajo. Mantenido aquí solo como hint
+  // histórico Round 90 wine-red.
 
   // Round 89 · true connected-cursive handwritten stack.
   // Homemade Apple is the primary · realistic one-stroke
