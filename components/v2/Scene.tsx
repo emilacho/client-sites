@@ -789,18 +789,8 @@ function CofreSoundwaveFX({ center }: { center: [number, number, number] }) {
       lastDropRef.current = t
     }
 
-    // Shake burst sincronizado con el impacto · pico 300ms post-drop
-    const timeSinceDrop = t - lastDropRef.current
-    const burstAmp =
-      timeSinceDrop < 0.3 ? 0.025 * (1 - timeSinceDrop / 0.3) : 0.0
-    const shakeAmp = Math.max(burstAmp, 0.004)
-    if (groupRef.current) {
-      groupRef.current.position.x = center[0] + Math.sin(t * 50) * shakeAmp
-      groupRef.current.position.y = center[1] + Math.cos(t * 47) * shakeAmp * 0.7
-      groupRef.current.position.z = center[2] + Math.sin(t * 53) * shakeAmp
-    }
-
-    // Animate cada ring por su vida individual
+    // R96.71 · animate rings + compute energy total para shake sync
+    let totalEnergy = 0
     ringRefs.forEach((ref, i) => {
       if (!ref.current) return
       const start = startTimesRef.current[i]
@@ -817,7 +807,20 @@ function CofreSoundwaveFX({ center }: { center: [number, number, number] }) {
       ref.current.scale.setScalar(scale)
       const mat = ref.current.material as THREE.MeshBasicMaterial
       mat.opacity = opacity
+      totalEnergy += opacity
     })
+
+    // Shake amplitude proporcional a energía cumulativa de las ondas.
+    // Max teórico ≈ 1.25 (primary 0.75 + secondary 0.5 en pico). Cuando
+    // todas las ondas terminan · totalEnergy=0 · cofre queda quieto
+    // perfectamente sincronizado.
+    const energyNorm = Math.min(totalEnergy / 1.0, 1)
+    const shakeAmp = 0.028 * energyNorm
+    if (groupRef.current) {
+      groupRef.current.position.x = center[0] + Math.sin(t * 50) * shakeAmp
+      groupRef.current.position.y = center[1] + Math.cos(t * 47) * shakeAmp * 0.7
+      groupRef.current.position.z = center[2] + Math.sin(t * 53) * shakeAmp
+    }
   })
 
   return (
