@@ -278,7 +278,7 @@ export function Scene({
           {/* R96.67 · sound/vibration distortion FX · pattern speaker
               emitting visual soundwaves · 4 rings concentricos expand
               + shake fuerte del grupo + halo central resonance blur. */}
-          <CofreSoundwaveFX center={[-0.76, 0.4, 0.18]} />
+          <CofreSoundwaveFX center={[-0.76, 0.18, 0.18]} />
 
           {/* Round 96.5 · props secundarios decorativos · cangrejo
               en la arena front-right (orilla del agua) · botella
