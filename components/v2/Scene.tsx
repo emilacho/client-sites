@@ -792,22 +792,29 @@ function CofreSoundwaveFX({ center }: { center: [number, number, number] }) {
       lastDropRef.current = t
     }
 
-    // R96.71 · animate rings + compute energy total para shake sync
+    // R96.75 · recorte 500ms al inicio de la animación · onda spawnea
+    // YA en el estado que tenía al t=0.5 del ciclo original · skip el
+    // tramo "invisible" inicial que reportó Emilio.
+    const SKIP_INITIAL = 0.5
     let totalEnergy = 0
     ringRefs.forEach((ref, i) => {
       if (!ref.current) return
       const start = startTimesRef.current[i]
       const elapsed = t - start
       const life = RING_LIVES[i]
-      if (start <= 0 || elapsed < 0 || elapsed > life) {
+      if (start <= 0 || elapsed < 0) {
+        ref.current.visible = false
+        return
+      }
+      // Shift adelante 0.5s · onda arranca donde estaba a la mitad
+      // del ciclo previo · termina cuando alcanza el final del life
+      const adjusted = elapsed + SKIP_INITIAL
+      if (adjusted > life) {
         ref.current.visible = false
         return
       }
       ref.current.visible = true
-      const cycle = elapsed / life
-      // R96.74 · scale arranca en 0.55 (claramente visible al impacto)
-      // · NO 0.2 que era muy chica · la onda aparece "popped" al
-      // mismo frame que el cofre arranca a vibrar.
+      const cycle = adjusted / life
       const scale = 0.55 + cycle * 1.6
       const opacity = (1 - cycle) * RING_PEAK_OPACITY[i]
       ref.current.scale.setScalar(scale)
