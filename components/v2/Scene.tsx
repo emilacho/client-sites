@@ -805,7 +805,10 @@ function CofreSoundwaveFX({ center }: { center: [number, number, number] }) {
       }
       ref.current.visible = true
       const cycle = elapsed / life
-      const scale = 0.2 + cycle * 1.9
+      // R96.74 · scale arranca en 0.55 (claramente visible al impacto)
+      // · NO 0.2 que era muy chica · la onda aparece "popped" al
+      // mismo frame que el cofre arranca a vibrar.
+      const scale = 0.55 + cycle * 1.6
       const opacity = (1 - cycle) * RING_PEAK_OPACITY[i]
       ref.current.scale.setScalar(scale)
       const mat = ref.current.material as THREE.MeshBasicMaterial
