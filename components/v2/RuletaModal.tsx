@@ -19,6 +19,7 @@
 import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X } from "lucide-react"
+import { useCart } from "@/lib/v2/cart-context"
 
 type Phase = "idle" | "spinning" | "result" | "cooldown" | "error"
 
@@ -62,6 +63,19 @@ const PARCH_DARK = "#C9A95E"
 const INK = "#3D2466"
 
 const SEG_DEG = 360 / GAJOS.length
+
+// R96.103 · mapeo premio → línea de carrito · precio 0 (gratis).
+// Cuando el usuario gana · se agrega automáticamente al carrito como
+// regalo (qty incrementa si el cliente vuelve a ganar el mismo · 24h
+// cooldown server-side limita en práctica a 1 spin/día).
+const PRIZE_TO_CART_ITEM: Record<
+  "chifle" | "pan" | "cola",
+  { id: string; name: string }
+> = {
+  chifle: { id: "prize-chifle", name: "Chifle (🎁 Regalo)" },
+  pan: { id: "prize-pan", name: "Pan (🎁 Regalo)" },
+  cola: { id: "prize-cola", name: "Cola (🎁 Regalo)" },
+}
 
 function getFingerprint(): string {
   if (typeof window === "undefined") return "ssr"
@@ -327,6 +341,7 @@ export default function RuletaModal({ open, onClose }: RuletaModalProps) {
   const [cooldownHours, setCooldownHours] = useState<number | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const cumulativeRotRef = useRef(0)
+  const cart = useCart()
 
   useEffect(() => {
     if (open) {
@@ -373,6 +388,17 @@ export default function RuletaModal({ open, onClose }: RuletaModalProps) {
       window.setTimeout(() => {
         setPrize(data.prize ?? null)
         setPhase("result")
+        // R96.103 · adjuntar el premio al carrito como regalo gratis ·
+        // solo cuando el premio es un ítem real (chifle · pan · cola) ·
+        // "siga" no agrega nada.
+        if (
+          data.prizeKey === "chifle" ||
+          data.prizeKey === "pan" ||
+          data.prizeKey === "cola"
+        ) {
+          const item = PRIZE_TO_CART_ITEM[data.prizeKey]
+          cart.add({ id: item.id, name: item.name, priceUsd: 0 }, 1)
+        }
       }, 3500)
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Error desconocido")
@@ -564,13 +590,13 @@ export default function RuletaModal({ open, onClose }: RuletaModalProps) {
                       style={{
                         fontFamily: '"Caveat", cursive',
                         color: INK,
-                        opacity: 0.8,
+                        opacity: 0.85,
                       }}
                     >
                       {prize === "Sigue intentando" ||
                       prize === "Siga participando"
                         ? "vuelve mañana, marinero"
-                        : "reclama tu premio en el próximo pedido"}
+                        : "ya añadimos tu regalo al carrito · gratis"}
                     </p>
                   </div>
                 )}
