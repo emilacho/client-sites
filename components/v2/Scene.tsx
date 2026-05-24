@@ -753,73 +753,32 @@ function SurfboardModel(props: React.ComponentProps<"group">) {
 }
 
 /**
- * CofreEnergyFX · R96.64 · 4 efectos visuales combinados sobre el cofre.
- *
- *  1. Kinetic energy lines · 8 trazos radiales pulsando saliendo del centro.
- *  2. Shaking effect · jitter sub-pixel del grupo entero · high frequency
- *     low amplitude sine waves en X y Z.
- *  3. Double exposure judder · 2 halos clonados ghost offset · uno cyan
- *     uno violet · semi-transparente · trepidación visual.
- *  4. Resonance blur · sphere additive grande pulsante alrededor del cofre.
+ * CofreEnergyFX · R96.65 · 2 efectos visuales restantes sobre el cofre
+ * post Emilio remove 1+3. Mantiene · shaking + resonance blur halo.
  */
 function CofreEnergyFX({ center }: { center: [number, number, number] }) {
   const groupRef = useRef<THREE.Group>(null)
-  const linesRef = useRef<THREE.Group>(null)
   const haloPrimaryRef = useRef<THREE.Mesh>(null)
-  const haloGhost1Ref = useRef<THREE.Mesh>(null)
-  const haloGhost2Ref = useRef<THREE.Mesh>(null)
 
-  // 8 lines radiales · angles equally spaced
-  const lineAngles = useMemo(
-    () => Array.from({ length: 8 }, (_, i) => (i / 8) * Math.PI * 2),
-    [],
-  )
-
-  useFrame((_, delta) => {
+  useFrame(() => {
     const t = performance.now() * 0.001
-    // Effect 2 · shaking · high frequency low amplitude sine
+    // Effect 2 · shaking · high frequency low amplitude
     if (groupRef.current) {
       groupRef.current.position.x = center[0] + Math.sin(t * 38) * 0.012
       groupRef.current.position.z = center[2] + Math.cos(t * 33) * 0.012
       groupRef.current.position.y = center[1] + Math.sin(t * 5) * 0.02
     }
-    // Effect 1 · kinetic lines · pulse scale + opacity
-    if (linesRef.current) {
-      linesRef.current.children.forEach((child, i) => {
-        const mesh = child as THREE.Mesh
-        // Stagger per-line phase
-        const phase = (i / 8) * Math.PI * 2
-        const localPulse = 0.5 + Math.sin(t * 4 + phase) * 0.5
-        mesh.scale.setScalar(0.5 + localPulse * 0.7)
-        const mat = mesh.material as THREE.MeshBasicMaterial
-        mat.opacity = 0.3 + localPulse * 0.5
-      })
-      linesRef.current.rotation.y += delta * 0.5
-    }
-    // Effect 4 · resonance blur halo principal pulsing
+    // Effect 4 · resonance blur halo pulsing
     if (haloPrimaryRef.current) {
       const breathe = 0.85 + Math.sin(t * 2.2) * 0.15
       haloPrimaryRef.current.scale.setScalar(breathe)
       const mat = haloPrimaryRef.current.material as THREE.MeshBasicMaterial
       mat.opacity = 0.22 + Math.sin(t * 2.2) * 0.08
     }
-    // Effect 3 · double exposure judder · 2 ghost halos offset alternantes
-    if (haloGhost1Ref.current && haloGhost2Ref.current) {
-      const judder = Math.sin(t * 25) > 0 ? 0.06 : -0.06
-      haloGhost1Ref.current.position.x = judder
-      haloGhost1Ref.current.position.z = -judder
-      haloGhost2Ref.current.position.x = -judder * 0.7
-      haloGhost2Ref.current.position.z = judder * 0.7
-      const matA = haloGhost1Ref.current.material as THREE.MeshBasicMaterial
-      const matB = haloGhost2Ref.current.material as THREE.MeshBasicMaterial
-      matA.opacity = 0.18 + Math.abs(Math.sin(t * 25)) * 0.12
-      matB.opacity = 0.18 + Math.abs(Math.cos(t * 25)) * 0.12
-    }
   })
 
   return (
     <group ref={groupRef} position={center}>
-      {/* Effect 4 · resonance blur · sphere additive halo principal */}
       <mesh ref={haloPrimaryRef}>
         <sphereGeometry args={[0.55, 24, 24]} />
         <meshBasicMaterial
@@ -830,45 +789,6 @@ function CofreEnergyFX({ center }: { center: [number, number, number] }) {
           depthWrite={false}
         />
       </mesh>
-      {/* Effect 3 · 2 ghost halos para double exposure judder */}
-      <mesh ref={haloGhost1Ref}>
-        <sphereGeometry args={[0.45, 20, 20]} />
-        <meshBasicMaterial
-          color="#4DD4D8"
-          transparent
-          opacity={0.2}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </mesh>
-      <mesh ref={haloGhost2Ref}>
-        <sphereGeometry args={[0.45, 20, 20]} />
-        <meshBasicMaterial
-          color="#A78BFA"
-          transparent
-          opacity={0.2}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </mesh>
-      {/* Effect 1 · kinetic energy lines · 8 trazos radiales */}
-      <group ref={linesRef}>
-        {lineAngles.map((angle, i) => (
-          <mesh
-            key={i}
-            position={[Math.cos(angle) * 0.6, 0, Math.sin(angle) * 0.6]}
-            rotation={[0, -angle + Math.PI / 2, 0]}
-          >
-            <boxGeometry args={[0.18, 0.02, 0.02]} />
-            <meshBasicMaterial
-              color="#FFC93C"
-              transparent
-              opacity={0.6}
-              depthWrite={false}
-            />
-          </mesh>
-        ))}
-      </group>
     </group>
   )
 }
