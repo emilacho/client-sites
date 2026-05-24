@@ -17,6 +17,7 @@ import { ChevronDown } from "lucide-react"
 import { CartProvider, useCart } from "@/lib/v2/cart-context"
 import { naufragoV2 } from "@/lib/v2/naufrago-content"
 import { useLastOrder } from "@/lib/v2/use-last-order"
+import { useEasyOrder } from "@/lib/v2/use-easy-order"
 import { cliente } from "@/cliente.config"
 import { Bell, RotateCw } from "lucide-react"
 import { TopBar } from "./TopBar"
@@ -64,6 +65,9 @@ function LandingInner() {
   // R96.9 · pattern Domino's "Pedí lo mismo" · CTA conditional
   // basado en localStorage del último pedido (TTL 30 días).
   const { order: lastOrder, clear: clearLastOrder } = useLastOrder()
+  // R96.106 · Easy Order ("Hambre de Náufrago") · cross-device · server-side.
+  // Si hay easyOrder fetched · prioriza este sobre el lastOrder local.
+  const { easyOrder } = useEasyOrder()
   const [overlay, setOverlay] = useState<OverlayKind>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   // Round 77 · cofre click opens the treasure reward modal.
@@ -93,6 +97,18 @@ function LandingInner() {
     // Re-popular cart con los items del último pedido + abrir
     // cart drawer. NO auto-confirma · solo pre-carga.
     for (const line of lastOrder.lines) {
+      cart.add(
+        { id: line.id, name: line.name, priceUsd: line.priceUsd },
+        line.qty,
+      )
+    }
+    cart.open()
+  }
+
+  // R96.106 · reorder desde Easy Order server-side (cross-device).
+  const reorderEasyOrder = () => {
+    if (!easyOrder) return
+    for (const line of easyOrder.cart_lines) {
       cart.add(
         { id: line.id, name: line.name, priceUsd: line.priceUsd },
         line.qty,
@@ -153,7 +169,43 @@ function LandingInner() {
           {naufragoV2.hero.ctaSecondary}
           <ChevronDown className="h-4 w-4" />
         </button>
-        {lastOrder ? (
+        {easyOrder ? (
+          <div
+            className="pointer-events-auto flex max-w-full items-center gap-2 rounded-2xl border-2 px-3 py-2 shadow-lg backdrop-blur-sm"
+            style={{
+              borderColor: "#3D2466",
+              background: "rgba(245,233,210,0.85)",
+            }}
+          >
+            <div className="min-w-0 flex-1">
+              <span
+                className="block font-mono text-[10px] uppercase tracking-[0.2em]"
+                style={{ color: "#3D2466" }}
+              >
+                Tu orden favorita
+              </span>
+              <span
+                className="block truncate text-xs font-semibold"
+                style={{ color: "#3D2466" }}
+              >
+                {easyOrder.cart_lines.length}{" "}
+                {easyOrder.cart_lines.length === 1 ? "plato" : "platos"}
+                {easyOrder.total_usd
+                  ? ` · $${Number(easyOrder.total_usd).toFixed(2)}`
+                  : ""}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={reorderEasyOrder}
+              className="inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-white shadow-md transition-transform hover:translate-y-[-1px]"
+              style={{ background: "#3D2466" }}
+            >
+              <RotateCw className="h-3 w-3" />
+              Hambre de Náufrago
+            </button>
+          </div>
+        ) : lastOrder ? (
           <div
             className="pointer-events-auto flex max-w-full items-center gap-2 rounded-2xl border-2 px-3 py-2 shadow-lg backdrop-blur-sm"
             style={{

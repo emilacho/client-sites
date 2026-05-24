@@ -123,6 +123,11 @@ export async function POST(request: Request) {
   // Non-fatal · surfaced in the response for the operator to notice.
   const audit_warning = eventErr ? eventErr.message : null
 
+  // R96.106 · perfil silencioso del cliente (Domino's pattern) + Easy
+  // Order. Lógica encapsulada en /api/easy-order/save para reusarse
+  // desde courier/order también · ver helper en app/api/easy-order/save/route.ts.
+  // Acá best-effort fire-and-forget · no bloquea la creación de la orden.
+
   // R96.105 · tracking re-uso de códigos promo · regla 24h + $25.
   //   - Si discount aplicado · UPSERT row con last_used_at=now, spend=0, use_count++
   //   - Si NO discount · si existe row del cliente para CUALQUIER code,

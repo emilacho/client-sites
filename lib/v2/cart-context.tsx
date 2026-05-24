@@ -31,7 +31,7 @@ const PRIZE_RESET_HOURS = 24
  * SurfBollado (mixed-case display, uppercase lookup key).
  * Single hard-coded code worth 5% off the cart subtotal. */
 const DISCOUNT_CODES: Record<string, { percent: number; label: string }> = {
-  SURFBOLLADO: { percent: 5, label: "Tesoro de Náufrago · 5% OFF" },
+  SURFBOLLADO: { percent: 5, label: "5% OFF" },
 }
 
 export interface CartLine {

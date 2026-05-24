@@ -437,6 +437,35 @@ function CartFooter() {
         lines: cart.lines,
         totalUsd: total,
       })
+      // R96.106 · save Easy Order ("Hambre de Náufrago") · cross-device.
+      // Best-effort · si falla solo no persiste el perfil server-side.
+      try {
+        window.localStorage.setItem("naufrago_customer_whatsapp", form.phone)
+      } catch {
+        // ignore quota
+      }
+      void fetch("/api/easy-order/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          whatsapp: form.phone,
+          name: form.name,
+          email: form.email || null,
+          cart_lines: cart.lines,
+          dropoff: {
+            street: form.street,
+            detail: form.detail || null,
+            latitude: null,
+            longitude: null,
+            countryCode: "EC",
+          },
+          payment_method: "whatsapp",
+          delivery_provider: "courier",
+          total_usd: total,
+          source_order_code: json.orderId ?? null,
+        }),
+        keepalive: true,
+      }).catch(() => {})
       // R96.14 · WhatsApp confirmation fire-and-forget · si Twilio
       // no está configurado el endpoint degrada graceful · UI no
       // se entera del status del send.
