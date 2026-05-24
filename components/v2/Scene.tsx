@@ -284,7 +284,7 @@ export function Scene({
               Z=-1.0) · botella elevación Y corregida (0.02→0) acostada
               en arena · alejada del barco · gap visible respecto a otros
               props ≥0.3 units world. */}
-          <CrabModel position={[-1.3, 0.08, -1.0]} rotation={[0, 0.6, 0]} scale={0.161} />
+          <CrabModel position={[2, 0.08, -1]} rotation={[0, 0.6, 0]} scale={0.161} />
           <BottleModel position={[-1.7, 0.0, 1.6]} rotation={[Math.PI / 2, 0, 0.4]} scale={0.184} />
 
           {/* Round 85 · pergamino emerges FROM the cofre on click.
