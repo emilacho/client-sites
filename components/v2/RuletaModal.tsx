@@ -46,12 +46,12 @@ interface Gajo {
 const GAJOS: Gajo[] = [
   { key: "chifle", label: "Chifle\ngratis", bg: "#4DD4D8", ink: "#0d0a06" },
   { key: "siga", label: "Sigue\nintentando", bg: "#D6C9A8", ink: "#3D2466" },
-  { key: "pan", label: "Pan\ngratis", bg: "#F5E9D2", ink: "#3D2466" },
+  { key: "pan", label: "Pan\ngratis", bg: "#FAF6EA", ink: "#3D2466" },
   { key: "siga", label: "Sigue\nintentando", bg: "#D6C9A8", ink: "#3D2466" },
   { key: "cola", label: "Cola\ngratis", bg: "#3D2466", ink: "#F5E9D2" },
   { key: "siga", label: "Sigue\nintentando", bg: "#D6C9A8", ink: "#3D2466" },
   { key: "chifle", label: "Chifle\ngratis", bg: "#4DD4D8", ink: "#0d0a06" },
-  { key: "pan", label: "Pan\ngratis", bg: "#F5E9D2", ink: "#3D2466" },
+  { key: "pan", label: "Pan\ngratis", bg: "#FAF6EA", ink: "#3D2466" },
 ]
 
 const WOOD = "#8B5A2B"
