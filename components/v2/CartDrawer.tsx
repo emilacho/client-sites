@@ -320,6 +320,13 @@ function CartFooter() {
   const [useLoyalty, setUseLoyalty] = useState(false)
   // R96.24 · multi-tier redemption · mutually exclusive con spend directo.
   const [selectedReward, setSelectedReward] = useState<LoyaltyReward | null>(null)
+  // R96.111 · OTP step-up para canje · pending=esperando código · verifying=POSTing
+  const [otpReward, setOtpReward] = useState<LoyaltyReward | null>(null)
+  const [otpCode, setOtpCode] = useState("")
+  const [otpState, setOtpState] = useState<
+    "idle" | "requesting" | "pending" | "verifying" | "error"
+  >("idle")
+  const [otpError, setOtpError] = useState<string | null>(null)
   // Spend directo · solo activo si useLoyalty=true Y selectedReward=null
   const directSpendActive = useLoyalty && !selectedReward
   const loyaltySpendCap = Math.floor((cart.subtotal * 0.5) / 0.01)
@@ -568,6 +575,27 @@ function CartFooter() {
               ${total.toFixed(2)}
             </span>
           </div>
+          {/* R96.107 · loyalty earn preview · 10% del total final en
+              perlas (1 perla = $0.01). Solo visible si vas a ganar
+              al menos 1 perla · DELIVERED triggera el earn server-side. */}
+          {(() => {
+            const perlasEarn = Math.round(total * 0.1 / 0.01)
+            if (perlasEarn <= 0) return null
+            return (
+              <div
+                className="mt-1 flex items-baseline justify-between rounded-md border border-cyan-500/20 bg-cyan-500/5 px-2 py-1 text-[11px]"
+                style={{ color: "#67E8F9" }}
+              >
+                <span className="flex items-center gap-1">
+                  <span aria-hidden>✦</span>
+                  Vas a ganar
+                </span>
+                <span className="tabular-nums font-semibold">
+                  {perlasEarn} perlas (≈${(perlasEarn * 0.01).toFixed(2)})
+                </span>
+              </div>
+            )
+          })()}
         </div>
       ) : (
         <div className="mb-3 flex items-baseline justify-between">
@@ -656,6 +684,18 @@ function CartFooter() {
           <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-300">
             Datos de entrega
           </span>
+          {/* R96.108 · address book picker · chips clickeables si el
+              cliente tiene direcciones guardadas (cross-device). */}
+          <AddressBookPicker
+            phone={form.phone}
+            onPick={(addr) =>
+              setForm((f) => ({
+                ...f,
+                street: addr.street,
+                detail: typeof addr.detail === "string" ? addr.detail : f.detail,
+              }))
+            }
+          />
           <input
             required
             placeholder="Dirección · calle y número"
@@ -728,10 +768,48 @@ function CartFooter() {
                         key={r.id}
                         type="button"
                         disabled={!affordable && !selected}
-                        onClick={() => {
+                        onClick={async () => {
                           if (selected) {
                             setSelectedReward(null)
+                            return
+                          }
+                          // R96.111 · si hay phone disponible · OTP step-up.
+                          // Si Twilio no configurado · bypass directo.
+                          if (form.phone) {
+                            setOtpReward(r)
+                            setOtpState("requesting")
+                            setOtpError(null)
+                            try {
+                              const res = await fetch(
+                                "/api/loyalty/redeem-request",
+                                {
+                                  method: "POST",
+                                  headers: { "content-type": "application/json" },
+                                  body: JSON.stringify({ whatsapp: form.phone }),
+                                },
+                              )
+                              const data = await res.json()
+                              if (data.ok && data.sent) {
+                                setOtpState("pending")
+                              } else if (
+                                data.ok &&
+                                data.reason === "twilio_not_configured"
+                              ) {
+                                // bypass · no OTP infra
+                                setOtpReward(null)
+                                setOtpState("idle")
+                                setSelectedReward(r)
+                                setUseLoyalty(false)
+                              } else {
+                                setOtpState("error")
+                                setOtpError("No se pudo enviar el código")
+                              }
+                            } catch {
+                              setOtpState("error")
+                              setOtpError("Error de red")
+                            }
                           } else {
+                            // Sin phone · solo aplica reward (legacy path)
                             setSelectedReward(r)
                             setUseLoyalty(false)
                           }
@@ -867,6 +945,109 @@ function CartFooter() {
           WhatsApp · te confirmamos en chat · pagás al recibir. PedidosYa · envío motorizado · cotización al instante.
         </p>
       ) : null}
+
+      {/* R96.111 · OTP modal step-up para canje de perlas */}
+      {otpReward ? (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4"
+          onClick={() => {
+            setOtpReward(null)
+            setOtpCode("")
+            setOtpState("idle")
+            setOtpError(null)
+          }}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-cyan-500/30 bg-slate-900 p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-cyan-200">
+              Confirmá el canje
+            </h3>
+            <p className="mt-1 text-xs text-slate-400">
+              Te enviamos un código de 4 dígitos a tu WhatsApp · ingresalo
+              para canjear <strong>{otpReward.label}</strong> por{" "}
+              {otpReward.cost} perlas.
+            </p>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={4}
+              autoFocus
+              value={otpCode}
+              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+              placeholder="• • • •"
+              disabled={otpState === "requesting" || otpState === "verifying"}
+              className="mt-3 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-center font-mono text-2xl tracking-[0.5em] text-cyan-200 placeholder:text-slate-600 focus:border-cyan-500 focus:outline-none disabled:opacity-50"
+            />
+            {otpState === "requesting" && (
+              <p className="mt-2 text-xs text-slate-400">Enviando código…</p>
+            )}
+            {otpError && (
+              <p className="mt-2 text-xs text-rose-400">{otpError}</p>
+            )}
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setOtpReward(null)
+                  setOtpCode("")
+                  setOtpState("idle")
+                  setOtpError(null)
+                }}
+                className="flex-1 rounded-md border border-slate-700 px-3 py-2 text-xs text-slate-300 hover:bg-slate-800"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={otpCode.length !== 4 || otpState === "verifying"}
+                onClick={async () => {
+                  setOtpState("verifying")
+                  setOtpError(null)
+                  try {
+                    const res = await fetch("/api/loyalty/redeem-confirm", {
+                      method: "POST",
+                      headers: { "content-type": "application/json" },
+                      body: JSON.stringify({
+                        whatsapp: form.phone,
+                        code: otpCode,
+                      }),
+                    })
+                    const data = await res.json()
+                    if (data.ok) {
+                      setSelectedReward(otpReward)
+                      setUseLoyalty(false)
+                      setOtpReward(null)
+                      setOtpCode("")
+                      setOtpState("idle")
+                    } else {
+                      setOtpState("pending")
+                      if (data.reason === "wrong_code") {
+                        setOtpError(
+                          `Código incorrecto · ${data.attemptsLeft ?? 0} intentos restantes`,
+                        )
+                      } else if (data.reason === "expired") {
+                        setOtpError("Código expirado · pedí uno nuevo")
+                      } else if (data.reason === "too_many_attempts") {
+                        setOtpError("Demasiados intentos · pedí otro código")
+                      } else {
+                        setOtpError("No se pudo verificar")
+                      }
+                    }
+                  } catch {
+                    setOtpState("pending")
+                    setOtpError("Error de red")
+                  }
+                }}
+                className="flex-1 rounded-md bg-gradient-to-r from-violet-500 to-cyan-500 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40"
+              >
+                {otpState === "verifying" ? "Verificando…" : "Confirmar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </footer>
   )
 }
@@ -969,6 +1150,65 @@ function TipChips({
           />
         </div>
       ) : null}
+    </div>
+  )
+}
+
+/** R96.108 · address book picker · GET /api/customer/addresses por
+ *  phone con debounce 600ms · si hay >=1 dirección guardada · muestra
+ *  chips clickeables que populan calle + detalle. */
+function AddressBookPicker({
+  phone,
+  onPick,
+}: {
+  phone: string
+  onPick: (addr: {
+    street: string
+    detail?: string | null
+  }) => void
+}) {
+  const [addresses, setAddresses] = useState<
+    Array<{ street: string; detail?: string | null }>
+  >([])
+
+  useEffect(() => {
+    if (!phone || phone.replace(/\D/g, "").length < 9) {
+      setAddresses([])
+      return
+    }
+    const handle = window.setTimeout(() => {
+      fetch(`/api/customer/addresses?whatsapp=${encodeURIComponent(phone)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.ok && Array.isArray(data.addresses)) {
+            setAddresses(data.addresses)
+          } else {
+            setAddresses([])
+          }
+        })
+        .catch(() => setAddresses([]))
+    }, 600)
+    return () => window.clearTimeout(handle)
+  }, [phone])
+
+  if (addresses.length === 0) return null
+  return (
+    <div className="flex flex-wrap gap-1.5 pb-1">
+      <span className="text-[10px] uppercase tracking-[0.15em] text-cyan-300/70">
+        Tus direcciones ·
+      </span>
+      {addresses.slice(0, 4).map((addr, i) => (
+        <button
+          key={i}
+          type="button"
+          onClick={() => onPick(addr)}
+          className="rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-1 text-[11px] text-cyan-200 transition hover:bg-cyan-500/20"
+        >
+          {addr.street.length > 28
+            ? addr.street.slice(0, 26) + "…"
+            : addr.street}
+        </button>
+      ))}
     </div>
   )
 }

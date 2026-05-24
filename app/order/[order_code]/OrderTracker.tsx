@@ -137,6 +137,7 @@ export function OrderTracker({ initial, orderCode }: Props) {
         {stage === "delivered" ? (
           <>
             <ReviewCard orderCode={orderCode} />
+            <PreferencesPrompt phone={snap.customer_phone} />
             <ReorderCta />
           </>
         ) : (
@@ -905,6 +906,100 @@ function ReviewCard({ orderCode }: { orderCode: string }) {
       >
         {state === "submitting" ? "Enviando…" : "Enviar review"}
       </button>
+    </div>
+  )
+}
+
+/* R96.109 · PreferencesPrompt · post-DELIVERED · 1 input opcional
+   "Algo que siempre llevemos en cuenta?" · stored en
+   naufrago_customers.preferences (text 500). Pre-fill notas en
+   futuros pedidos. */
+function PreferencesPrompt({ phone }: { phone: string }) {
+  const [pref, setPref] = useState("")
+  const [initial, setInitial] = useState<string | null>(null)
+  const [state, setState] = useState<"idle" | "saving" | "saved">("idle")
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    if (!phone) return
+    fetch(`/api/customer/preferences?whatsapp=${encodeURIComponent(phone)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.ok) {
+          const v = (data.preferences as string | null) ?? ""
+          setPref(v)
+          setInitial(v)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoaded(true))
+  }, [phone])
+
+  if (!loaded) return null
+
+  async function save() {
+    setState("saving")
+    try {
+      const res = await fetch("/api/customer/preferences", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ whatsapp: phone, preferences: pref }),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setInitial(pref)
+        setState("saved")
+        setTimeout(() => setState("idle"), 1800)
+      } else {
+        setState("idle")
+      }
+    } catch {
+      setState("idle")
+    }
+  }
+
+  const changed = pref !== (initial ?? "")
+
+  return (
+    <div
+      className="mt-4 rounded-2xl border p-4"
+      style={{ borderColor: `${PURPLE}55`, background: `${PURPLE}08` }}
+    >
+      <p
+        className="text-base"
+        style={{
+          color: PURPLE,
+          fontFamily: "var(--font-caveat), cursive",
+        }}
+      >
+        ¿Algo que siempre llevemos en cuenta?
+      </p>
+      <p className="mt-0.5 text-xs text-slate-500">
+        sin cilantro · poco picante · alergia al maní · etc. Lo guardamos para
+        próximos pedidos.
+      </p>
+      <textarea
+        rows={2}
+        maxLength={500}
+        value={pref}
+        onChange={(e) => setPref(e.target.value)}
+        placeholder="Tu nota persistente"
+        className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none"
+      />
+      <div className="mt-2 flex items-center justify-between">
+        <span className="text-[10px] uppercase tracking-widest text-slate-400">
+          {state === "saved" ? "✓ Guardado" : ""}
+        </span>
+        <button
+          type="button"
+          onClick={save}
+          disabled={!changed || state === "saving"}
+          className="rounded-full px-4 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
+          style={{ background: PURPLE }}
+        >
+          {state === "saving" ? "Guardando…" : "Guardar"}
+        </button>
+      </div>
     </div>
   )
 }

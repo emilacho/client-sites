@@ -231,6 +231,20 @@ export async function POST(request: Request) {
           console.warn("[courier-webhook] loyalty earn failed", err)
         })
       }
+
+      // R96.110 · WhatsApp status message · estilo Domino's Pizza Tracker.
+      // Fire-and-forget · endpoint maneja Twilio not configured graceful.
+      const origin =
+        process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+      void fetch(`${origin}/api/notifications/order-status`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          orderCode: nfOrder.order_code,
+          newStatus: event.status,
+        }),
+        keepalive: true,
+      }).catch(() => {})
     }
   } catch (err) {
     console.warn("[courier-webhook] supabase update failed", err)
