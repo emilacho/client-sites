@@ -77,8 +77,23 @@ interface CartCtx {
   toggle: () => void
   /** Currently applied discount · null when none. */
   discount: AppliedDiscount | null
-  /** Try to apply a code. Returns true on success. */
-  applyCode: (code: string) => boolean
+  /** R96.105 · async validation server-side · regla 24h + $25 spend.
+   *  Devuelve OK o un reason con detalles para UI ("cooldown" → horas
+   *  restantes · "need_spend" → USD por acumular · "needsWhatsapp" →
+   *  pedir input al cliente · "unknown_code" → código inválido). */
+  applyCode: (
+    code: string,
+    whatsapp?: string,
+  ) => Promise<
+    | { ok: true }
+    | {
+        ok: false
+        reason: "cooldown" | "need_spend" | "unknown_code" | "invalid_whatsapp" | "server"
+        hoursLeft?: number
+        spendNeededUsd?: number
+        needsWhatsapp?: boolean
+      }
+  >
   removeDiscount: () => void
   /** R96.15 · setter para tipUsd · maps a discrete chip or custom value. */
   setTip: (usd: number) => void
@@ -221,17 +236,74 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setTipUsdState(0)
   }, [])
 
-  const applyCode = useCallback((code: string) => {
-    // Round 87 · preserve the user-typed casing for display
-    // (e.g. "SurfBollado" stays mixed-case in the chip) while
-    // looking up the dictionary entry case-insensitively.
-    const trimmed = code.trim()
-    const key = trimmed.toUpperCase()
-    const entry = DISCOUNT_CODES[key]
-    if (!entry) return false
-    setDiscount({ code: trimmed, percent: entry.percent, label: entry.label })
-    return true
-  }, [])
+  const applyCode = useCallback(
+    async (
+      code: string,
+      whatsapp?: string,
+    ): Promise<
+      | { ok: true }
+      | {
+          ok: false
+          reason:
+            | "cooldown"
+            | "need_spend"
+            | "unknown_code"
+            | "invalid_whatsapp"
+            | "server"
+          hoursLeft?: number
+          spendNeededUsd?: number
+          needsWhatsapp?: boolean
+        }
+    > => {
+      const trimmed = code.trim()
+      const key = trimmed.toUpperCase()
+      const entry = DISCOUNT_CODES[key]
+      if (!entry) return { ok: false, reason: "unknown_code" }
+
+      // R96.105 · validate server-side · regla 24h + $25.
+      try {
+        const res = await fetch("/api/promo/validate", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ code: key, whatsapp }),
+        })
+        const data = await res.json()
+        if (!data.ok) {
+          if (data.needsWhatsapp) {
+            return { ok: false, reason: "server", needsWhatsapp: true }
+          }
+          if (data.reason === "cooldown") {
+            return {
+              ok: false,
+              reason: "cooldown",
+              hoursLeft: data.hoursLeft,
+              spendNeededUsd: data.spendNeededUsd,
+            }
+          }
+          if (data.reason === "need_spend") {
+            return {
+              ok: false,
+              reason: "need_spend",
+              spendNeededUsd: data.spendNeededUsd,
+            }
+          }
+          if (data.reason === "unknown_code") {
+            return { ok: false, reason: "unknown_code" }
+          }
+          if (data.reason === "invalid_whatsapp") {
+            return { ok: false, reason: "invalid_whatsapp" }
+          }
+          return { ok: false, reason: "server" }
+        }
+      } catch {
+        return { ok: false, reason: "server" }
+      }
+
+      setDiscount({ code: trimmed, percent: entry.percent, label: entry.label })
+      return { ok: true }
+    },
+    [],
+  )
 
   const removeDiscount = useCallback(() => setDiscount(null), [])
 

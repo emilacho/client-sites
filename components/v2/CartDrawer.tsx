@@ -947,7 +947,22 @@ function TipChips({
 function DiscountCodeRow() {
   const cart = useCart()
   const [code, setCode] = useState("")
+  const [whatsapp, setWhatsapp] = useState("")
+  const [whatsappRequired, setWhatsappRequired] = useState(false)
   const [error, setError] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+
+  // R96.105 · cache del whatsapp en localStorage para no pedirlo cada
+  // vez al mismo cliente · se rehidrata al montar.
+  useEffect(() => {
+    try {
+      const cached = window.localStorage.getItem("naufrago_customer_whatsapp")
+      if (cached) setWhatsapp(cached)
+    } catch {
+      // ignore
+    }
+  }, [])
 
   if (cart.discount) {
     return (
@@ -984,40 +999,104 @@ function DiscountCodeRow() {
     )
   }
 
+  async function handleSubmit() {
+    if (!code.trim() || submitting) return
+    setSubmitting(true)
+    setError(false)
+    setErrorMsg(null)
+
+    const result = await cart.applyCode(code, whatsapp || undefined)
+    setSubmitting(false)
+
+    if (result.ok) {
+      setCode("")
+      setWhatsappRequired(false)
+      try {
+        if (whatsapp) {
+          window.localStorage.setItem("naufrago_customer_whatsapp", whatsapp)
+        }
+      } catch {
+        // ignore
+      }
+      return
+    }
+
+    setError(true)
+    setTimeout(() => setError(false), 1400)
+
+    if (result.needsWhatsapp) {
+      setWhatsappRequired(true)
+      setErrorMsg("Ingresá tu WhatsApp para validar el código")
+      return
+    }
+    if (result.reason === "cooldown") {
+      setErrorMsg(
+        `Espera ${result.hoursLeft}h más para volver a usarlo`,
+      )
+      return
+    }
+    if (result.reason === "need_spend") {
+      setErrorMsg(
+        `Necesitas $${result.spendNeededUsd?.toFixed(2)} más en consumo para volverlo a usar`,
+      )
+      return
+    }
+    if (result.reason === "invalid_whatsapp") {
+      setErrorMsg("WhatsApp inválido · revisá el número")
+      return
+    }
+    if (result.reason === "unknown_code") {
+      setErrorMsg("Código no encontrado")
+      return
+    }
+    setErrorMsg("No se pudo validar · intenta de nuevo")
+  }
+
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault()
-        const ok = cart.applyCode(code)
-        if (!ok) {
-          setError(true)
-          setTimeout(() => setError(false), 1400)
-        } else {
-          setCode("")
-        }
+        void handleSubmit()
       }}
-      className="mb-2 flex gap-2"
+      className="mb-2 space-y-1.5"
     >
-      <input
-        type="text"
-        value={code}
-        onChange={(e) => setCode(e.target.value.toUpperCase())}
-        placeholder="¿Tenés un código?"
-        className={[
-          "flex-1 rounded-md border bg-slate-950 px-3 py-2 text-sm uppercase tracking-[0.1em] text-slate-100 placeholder:text-slate-500 transition-all",
-          error
-            ? "border-rose-500 ring-1 ring-rose-500/40"
-            : "border-slate-700 focus:border-cyan-500",
-        ].join(" ")}
-        maxLength={20}
-      />
-      <button
-        type="submit"
-        disabled={!code.trim()}
-        className="rounded-md bg-gradient-to-r from-violet-500 to-cyan-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-40"
-      >
-        Aplicar
-      </button>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          placeholder="¿Tenés un código?"
+          className={[
+            "flex-1 rounded-md border bg-slate-950 px-3 py-2 text-sm uppercase tracking-[0.1em] text-slate-100 placeholder:text-slate-500 transition-all",
+            error
+              ? "border-rose-500 ring-1 ring-rose-500/40"
+              : "border-slate-700 focus:border-cyan-500",
+          ].join(" ")}
+          maxLength={20}
+          disabled={submitting}
+        />
+        <button
+          type="submit"
+          disabled={!code.trim() || submitting}
+          className="rounded-md bg-gradient-to-r from-violet-500 to-cyan-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-40"
+        >
+          {submitting ? "..." : "Aplicar"}
+        </button>
+      </div>
+      {whatsappRequired && (
+        <input
+          type="tel"
+          inputMode="tel"
+          value={whatsapp}
+          onChange={(e) => setWhatsapp(e.target.value)}
+          placeholder="Tu WhatsApp · ej. 0997123456"
+          className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-cyan-500"
+          maxLength={20}
+        />
+      )}
+      {errorMsg && (
+        <p className="text-xs text-rose-400">{errorMsg}</p>
+      )}
     </form>
   )
 }

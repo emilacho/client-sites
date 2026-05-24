@@ -123,6 +123,64 @@ export async function POST(request: Request) {
   // Non-fatal · surfaced in the response for the operator to notice.
   const audit_warning = eventErr ? eventErr.message : null
 
+  // R96.105 · tracking re-uso de códigos promo · regla 24h + $25.
+  //   - Si discount aplicado · UPSERT row con last_used_at=now, spend=0, use_count++
+  //   - Si NO discount · si existe row del cliente para CUALQUIER code,
+  //     incrementar qualifying_spend_since_last_use += subtotalUsd
+  // Errores acá NO bloquean la creación de la orden · best-effort.
+  try {
+    const phone = data.customer.phone
+    if (phone) {
+      if (discount.code) {
+        const codeUpper = discount.code.toUpperCase()
+        // Check existing use_count para bump correcto.
+        const { data: existing } = await supabase
+          .from("naufrago_promo_usage")
+          .select("use_count")
+          .eq("client_slug", cliente.slug)
+          .eq("whatsapp_e164", phone)
+          .eq("code", codeUpper)
+          .limit(1)
+          .maybeSingle()
+        const nextUseCount = (existing?.use_count ?? 0) + 1
+        await supabase
+          .from("naufrago_promo_usage")
+          .upsert(
+            {
+              client_slug: cliente.slug,
+              whatsapp_e164: phone,
+              code: codeUpper,
+              last_used_at: new Date().toISOString(),
+              qualifying_spend_since_last_use: 0,
+              use_count: nextUseCount,
+            },
+            { onConflict: "client_slug,whatsapp_e164,code" },
+          )
+      } else {
+        // Sumar el subtotal al qualifying spend de TODAS las rows
+        // del cliente · qualquier código que tenga acumulando.
+        const { data: rows } = await supabase
+          .from("naufrago_promo_usage")
+          .select("id, qualifying_spend_since_last_use")
+          .eq("client_slug", cliente.slug)
+          .eq("whatsapp_e164", phone)
+        if (rows && rows.length > 0) {
+          for (const row of rows) {
+            await supabase
+              .from("naufrago_promo_usage")
+              .update({
+                qualifying_spend_since_last_use:
+                  Number(row.qualifying_spend_since_last_use ?? 0) + subtotalUsd,
+              })
+              .eq("id", row.id)
+          }
+        }
+      }
+    }
+  } catch {
+    // best-effort · no bloquear la creación de la orden
+  }
+
   return NextResponse.json({
     ok: true,
     order_id: inserted.id,
