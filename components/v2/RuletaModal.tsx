@@ -16,7 +16,7 @@
  *  - botón "Girar" · letrero de madera estilo sign NÁUFRAGO
  */
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X } from "lucide-react"
 
@@ -77,54 +77,242 @@ function getFingerprint(): string {
   return fp
 }
 
-function conicGradient(): string {
-  const stops: string[] = []
-  GAJOS.forEach((g, i) => {
-    const start = i * SEG_DEG
-    const end = (i + 1) * SEG_DEG
-    stops.push(`${g.bg} ${start}deg ${end}deg`)
-  })
-  return `conic-gradient(from -90deg, ${stops.join(", ")})`
-}
+// SVG del timón completo · todo dentro de un SVG que rota como un
+// solo cuerpo · gajos pie-slices + spokes (rayos) + labels grandes
+// con stroke + 8 mangos (pegs) sobresaliendo del aro exterior + hub
+// central con rosa de los vientos. ViewBox -180 a 180 · 360 unidades.
+function HelmWheelSVG({ rotation, phase }: { rotation: number; phase: Phase }) {
+  const R_OUTER = 132 // exterior gajos
+  const R_INNER = 35 // hub
+  const R_PEG_BASE = 150 // donde nace el peg desde el aro
+  const R_PEG_KNOB = 168 // posición del knob exterior
 
-// 8 mangos del timón · render absolute alrededor del disco.
-function HelmPegs() {
-  const pegs = []
-  for (let i = 0; i < 8; i++) {
-    const angle = (i / 8) * 360 + 22.5 // offset 22.5 para alinear con bordes gajos
-    pegs.push(
-      <div
-        key={i}
-        className="absolute left-1/2 top-1/2"
-        style={{
-          transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-180px)`,
-        }}
-      >
-        <div
-          className="rounded-full"
-          style={{
-            width: 18,
-            height: 60,
-            background: `linear-gradient(180deg, ${WOOD_HI} 0%, ${WOOD} 40%, ${WOOD_DARK} 100%)`,
-            border: `1.5px solid ${WOOD_DARK}`,
-            boxShadow: `inset -2px 0 0 ${WOOD_DARK}40, 0 2px 4px rgba(0,0,0,0.4)`,
-          }}
-        />
-        {/* knob extremo · bola tallada */}
-        <div
-          className="absolute -top-1 left-1/2 -translate-x-1/2 rounded-full"
-          style={{
-            width: 22,
-            height: 22,
-            background: `radial-gradient(circle at 35% 30%, ${WOOD_HI} 0%, ${WOOD} 55%, ${WOOD_DARK} 100%)`,
-            border: `1.5px solid ${WOOD_DARK}`,
-            boxShadow: "0 2px 3px rgba(0,0,0,0.4)",
-          }}
-        />
-      </div>,
-    )
+  // Helper para path de pie-slice
+  const slicePath = (i: number) => {
+    const a1 = (-90 + i * SEG_DEG) * (Math.PI / 180)
+    const a2 = (-90 + (i + 1) * SEG_DEG) * (Math.PI / 180)
+    const x1 = R_OUTER * Math.cos(a1)
+    const y1 = R_OUTER * Math.sin(a1)
+    const x2 = R_OUTER * Math.cos(a2)
+    const y2 = R_OUTER * Math.sin(a2)
+    return `M 0 0 L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${R_OUTER} ${R_OUTER} 0 0 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`
   }
-  return <>{pegs}</>
+
+  return (
+    <motion.svg
+      width={360}
+      height={360}
+      viewBox="-180 -180 360 360"
+      style={{ filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.45))" }}
+      animate={{ rotate: rotation }}
+      transition={{
+        duration: phase === "spinning" ? 3.4 : 0,
+        ease: [0.22, 0.61, 0.36, 1],
+      }}
+    >
+      <defs>
+        {/* Wood radial · usado en hub + knobs */}
+        <radialGradient id="woodKnob" cx="35%" cy="32%" r="65%">
+          <stop offset="0%" stopColor={WOOD_HI} />
+          <stop offset="55%" stopColor={WOOD} />
+          <stop offset="100%" stopColor={WOOD_DARK} />
+        </radialGradient>
+        {/* Wood linear · usado en peg shafts */}
+        <linearGradient id="woodPeg" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={WOOD_DARK} />
+          <stop offset="40%" stopColor={WOOD_HI} />
+          <stop offset="100%" stopColor={WOOD_DARK} />
+        </linearGradient>
+        {/* Outer rim wood */}
+        <radialGradient id="rimWood" cx="50%" cy="50%" r="50%">
+          <stop offset="92%" stopColor={WOOD} />
+          <stop offset="100%" stopColor={WOOD_DARK} />
+        </radialGradient>
+        {/* Subtle inner shadow via radial in gajos */}
+        <radialGradient id="innerShade" cx="50%" cy="50%" r="50%">
+          <stop offset="60%" stopColor="rgba(74,45,18,0)" />
+          <stop offset="100%" stopColor="rgba(74,45,18,0.35)" />
+        </radialGradient>
+      </defs>
+
+      {/* Aro exterior tallado · ring de madera */}
+      <circle
+        cx={0}
+        cy={0}
+        r={R_OUTER + 8}
+        fill="url(#rimWood)"
+        stroke={WOOD_DARK}
+        strokeWidth={2}
+      />
+      <circle
+        cx={0}
+        cy={0}
+        r={R_OUTER + 8}
+        fill="none"
+        stroke={WOOD_DARK}
+        strokeWidth={1}
+        opacity={0.4}
+      />
+
+      {/* 8 pegs (mangos) sobresaliendo del aro · radial */}
+      {Array.from({ length: 8 }).map((_, i) => {
+        const angleDeg = -90 + i * SEG_DEG // alineados con bordes gajos
+        return (
+          <g key={`peg-${i}`} transform={`rotate(${angleDeg})`}>
+            {/* Shaft */}
+            <rect
+              x={-7}
+              y={-R_PEG_KNOB}
+              width={14}
+              height={R_PEG_KNOB - R_PEG_BASE + 8}
+              rx={3}
+              fill="url(#woodPeg)"
+              stroke={WOOD_DARK}
+              strokeWidth={1.3}
+            />
+            {/* Knob · bola exterior */}
+            <circle
+              cx={0}
+              cy={-R_PEG_KNOB}
+              r={11}
+              fill="url(#woodKnob)"
+              stroke={WOOD_DARK}
+              strokeWidth={1.5}
+            />
+            {/* Highlight in knob */}
+            <circle
+              cx={-3}
+              cy={-R_PEG_KNOB - 3}
+              r={3}
+              fill={WOOD_HI}
+              opacity={0.55}
+            />
+          </g>
+        )
+      })}
+
+      {/* Pie slices (gajos) */}
+      {GAJOS.map((g, i) => (
+        <path
+          key={`slice-${i}`}
+          d={slicePath(i)}
+          fill={g.bg}
+          stroke={WOOD_DARK}
+          strokeWidth={2.5}
+          strokeLinejoin="round"
+        />
+      ))}
+
+      {/* Inner shade overlay · simula tallado / vejez */}
+      <circle
+        cx={0}
+        cy={0}
+        r={R_OUTER}
+        fill="url(#innerShade)"
+        pointerEvents="none"
+      />
+
+      {/* Spokes (rayos) · 8 lineas desde el hub al aro */}
+      {Array.from({ length: 8 }).map((_, i) => {
+        const a = (-90 + i * SEG_DEG) * (Math.PI / 180)
+        const x = R_OUTER * Math.cos(a)
+        const y = R_OUTER * Math.sin(a)
+        return (
+          <line
+            key={`spoke-${i}`}
+            x1={0}
+            y1={0}
+            x2={x}
+            y2={y}
+            stroke={WOOD_DARK}
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            opacity={0.85}
+          />
+        )
+      })}
+
+      {/* Labels · uno por gajo · texto recto centrado en el gajo,
+          rotado al ángulo medio. Stroke + fill para contraste sobre
+          cualquier color de fondo. */}
+      {GAJOS.map((g, i) => {
+        const midDeg = -90 + i * SEG_DEG + SEG_DEG / 2
+        const rad = midDeg * (Math.PI / 180)
+        const labelRadius = 78
+        const cx = labelRadius * Math.cos(rad)
+        const cy = labelRadius * Math.sin(rad)
+        const lines = g.label.split("\n")
+        const isDark = g.bg === "#3D2466"
+        return (
+          <g
+            key={`label-${i}`}
+            transform={`translate(${cx.toFixed(2)} ${cy.toFixed(2)}) rotate(${midDeg + 90})`}
+          >
+            {lines.map((line, j) => {
+              const dy = lines.length === 1 ? 5 : j === 0 ? -6 : 14
+              return (
+                <text
+                  key={j}
+                  x={0}
+                  y={dy}
+                  textAnchor="middle"
+                  style={{
+                    fontFamily:
+                      'var(--font-bebas), "Bebas Neue", sans-serif',
+                    fontSize: 17,
+                    fontWeight: 700,
+                    letterSpacing: "0.06em",
+                    paintOrder: "stroke fill",
+                  }}
+                  stroke={isDark ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.85)"}
+                  strokeWidth={3}
+                  strokeLinejoin="round"
+                  fill={g.ink}
+                >
+                  {line.toUpperCase()}
+                </text>
+              )
+            })}
+          </g>
+        )
+      })}
+
+      {/* Hub central · rosa de los vientos */}
+      <circle
+        cx={0}
+        cy={0}
+        r={R_INNER}
+        fill="url(#woodKnob)"
+        stroke={WOOD_DARK}
+        strokeWidth={3}
+      />
+      {/* Estrella 4-puntas */}
+      <g>
+        <polygon
+          points={`0,${-R_INNER + 4} 4,-3 0,0 -4,-3`}
+          fill={PARCH}
+          opacity={0.95}
+        />
+        <polygon
+          points={`0,${R_INNER - 4} 4,3 0,0 -4,3`}
+          fill={PARCH}
+          opacity={0.65}
+        />
+        <polygon
+          points={`${-R_INNER + 4},0 -3,4 0,0 -3,-4`}
+          fill={PARCH}
+          opacity={0.65}
+        />
+        <polygon
+          points={`${R_INNER - 4},0 3,4 0,0 3,-4`}
+          fill={PARCH}
+          opacity={0.65}
+        />
+      </g>
+      {/* Hub center bolt */}
+      <circle cx={0} cy={0} r={4} fill={WOOD_DARK} />
+    </motion.svg>
+  )
 }
 
 interface RuletaModalProps {
@@ -150,8 +338,6 @@ export default function RuletaModal({ open, onClose }: RuletaModalProps) {
       cumulativeRotRef.current = 0
     }
   }, [open])
-
-  const gradient = useMemo(() => conicGradient(), [])
 
   async function handleSpin() {
     if (phase !== "idle") return
@@ -284,181 +470,35 @@ export default function RuletaModal({ open, onClose }: RuletaModalProps) {
                 gira el timón · una vez por día
               </p>
 
-              {/* Timón + ruleta · 360x360 */}
+              {/* Timón completo en SVG · 360x360 · rota como un solo
+                  cuerpo (aro · pegs · gajos · spokes · labels · hub). */}
               <div className="relative mx-auto mt-4 flex h-[360px] w-[360px] items-center justify-center">
-                {/* Outer rope ring · cuerda alrededor */}
-                <div
-                  className="absolute"
-                  style={{
-                    width: 340,
-                    height: 340,
-                    borderRadius: "50%",
-                    background: "transparent",
-                    border: `6px dashed ${WOOD_DARK}`,
-                    opacity: 0.55,
-                  }}
-                />
+                <HelmWheelSVG rotation={rotation} phase={phase} />
 
-                {/* 8 helm pegs · NO rotan (parte del frame) */}
-                <HelmPegs />
-
-                {/* Outer wood rim · ancho · estilo timón */}
-                <div
-                  className="absolute"
-                  style={{
-                    width: 300,
-                    height: 300,
-                    borderRadius: "50%",
-                    background: `
-                      radial-gradient(circle at 50% 50%,
-                        transparent 0%,
-                        transparent 130px,
-                        ${WOOD} 132px,
-                        ${WOOD_DARK} 150px
-                      )
-                    `,
-                    boxShadow: `
-                      inset 0 0 0 2px ${WOOD_DARK},
-                      0 4px 12px rgba(0,0,0,0.4)
-                    `,
-                  }}
-                />
-
-                {/* Spinning disc · 260px */}
-                <motion.div
-                  className="relative"
-                  style={{
-                    width: 260,
-                    height: 260,
-                    borderRadius: "50%",
-                    background: gradient,
-                    boxShadow: `
-                      inset 0 0 0 3px ${WOOD_DARK},
-                      inset 0 0 30px rgba(74,45,18,0.25)
-                    `,
-                  }}
-                  animate={{ rotate: rotation }}
-                  transition={{
-                    duration: phase === "spinning" ? 3.4 : 0,
-                    ease: [0.22, 0.61, 0.36, 1],
-                  }}
-                >
-                  {/* Separadores radiales entre gajos · líneas talladas */}
-                  {GAJOS.map((_, i) => {
-                    const angle = i * SEG_DEG
-                    return (
-                      <div
-                        key={`sep-${i}`}
-                        className="absolute left-1/2 top-1/2 origin-top"
-                        style={{
-                          width: 2,
-                          height: 130,
-                          background: `linear-gradient(180deg, ${WOOD_DARK} 0%, ${WOOD_DARK}99 100%)`,
-                          transform: `translate(-50%, 0) rotate(${angle - 90 - SEG_DEG / 2}deg)`,
-                          transformOrigin: "50% 0%",
-                          left: "50%",
-                          top: "50%",
-                          marginLeft: -1,
-                          marginTop: -130,
-                        }}
-                      />
-                    )
-                  })}
-
-                  {/* Labels per gajo */}
-                  {GAJOS.map((g, i) => {
-                    const angle = i * SEG_DEG + SEG_DEG / 2
-                    return (
-                      <div
-                        key={i}
-                        className="absolute left-1/2 top-1/2 origin-left text-center font-bold leading-[1.05]"
-                        style={{
-                          transform: `translate(0, -50%) rotate(${angle - 90}deg) translateX(34px)`,
-                          color: g.ink,
-                          width: 86,
-                          fontSize: 13,
-                          whiteSpace: "pre-line",
-                          fontFamily:
-                            'var(--font-bebas), "Bebas Neue", sans-serif',
-                          letterSpacing: "0.03em",
-                          textShadow:
-                            g.bg === "#3D2466"
-                              ? "0 1px 0 rgba(0,0,0,0.3)"
-                              : "0 1px 0 rgba(255,255,255,0.4)",
-                        }}
-                      >
-                        <span
-                          style={{
-                            display: "inline-block",
-                            transform: "rotate(90deg)",
-                          }}
-                        >
-                          {g.label}
-                        </span>
-                      </div>
-                    )
-                  })}
-
-                  {/* Hub central · rosa de los vientos */}
-                  <div
-                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center rounded-full"
-                    style={{
-                      width: 64,
-                      height: 64,
-                      background: `radial-gradient(circle at 40% 32%, ${WOOD_HI} 0%, ${WOOD} 55%, ${WOOD_DARK} 100%)`,
-                      border: `3px solid ${WOOD_DARK}`,
-                      boxShadow: "0 2px 6px rgba(0,0,0,0.45)",
-                    }}
-                  >
-                    {/* Estrella N S E W */}
-                    <svg width="34" height="34" viewBox="0 0 34 34">
-                      <polygon
-                        points="17,4 19,15 17,17 15,15"
-                        fill={PARCH}
-                        opacity="0.95"
-                      />
-                      <polygon
-                        points="17,30 19,19 17,17 15,19"
-                        fill={PARCH}
-                        opacity="0.65"
-                      />
-                      <polygon
-                        points="4,17 15,15 17,17 15,19"
-                        fill={PARCH}
-                        opacity="0.65"
-                      />
-                      <polygon
-                        points="30,17 19,15 17,17 19,19"
-                        fill={PARCH}
-                        opacity="0.65"
-                      />
-                    </svg>
-                  </div>
-                </motion.div>
-
-                {/* Pointer · aguja arriba · estilo tallada */}
+                {/* Pointer · aguja arriba · estilo tallada · NO rota */}
                 <div
                   className="absolute z-20 left-1/2 -translate-x-1/2"
-                  style={{ top: -4 }}
+                  style={{ top: 2 }}
                 >
                   <div
                     style={{
                       width: 0,
                       height: 0,
-                      borderLeft: "12px solid transparent",
-                      borderRight: "12px solid transparent",
-                      borderTop: `30px solid ${WOOD_DARK}`,
-                      filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.5))",
+                      borderLeft: "14px solid transparent",
+                      borderRight: "14px solid transparent",
+                      borderTop: `32px solid ${WOOD_DARK}`,
+                      filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.55))",
                     }}
                   />
                   {/* Pivote bola */}
                   <div
-                    className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full"
+                    className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full"
                     style={{
-                      width: 14,
-                      height: 14,
+                      width: 16,
+                      height: 16,
                       background: `radial-gradient(circle at 35% 30%, ${WOOD_HI}, ${WOOD_DARK})`,
                       border: `1.5px solid ${WOOD_DARK}`,
+                      boxShadow: "0 1px 2px rgba(0,0,0,0.4)",
                     }}
                   />
                 </div>
