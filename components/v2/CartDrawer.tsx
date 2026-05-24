@@ -19,7 +19,8 @@
  *          ready · sustituye los botones temporalmente cuando activo
  */
 import { useEffect, useState } from "react"
-import { ArrowLeft, Loader2, MessageSquare, Minus, Plus, ShoppingCart, Trash2, Utensils, X } from "lucide-react"
+import { ArrowLeft, Loader2, MessageSquare, Minus, Plus, Trash2, Utensils, X } from "lucide-react"
+import { CanoeIcon } from "./CanoeIcon"
 import { motion, AnimatePresence } from "framer-motion"
 import { useCart } from "@/lib/v2/cart-context"
 import { buildWhatsAppLink, naufragoV2 } from "@/lib/v2/naufrago-content"
@@ -155,7 +156,7 @@ export function CartDrawer() {
 
             <header className="flex items-center justify-between gap-2 border-b border-slate-800 px-5 py-3">
               <div className="flex min-w-0 items-center gap-2">
-                <ShoppingCart className="h-5 w-5 shrink-0 text-cyan-300" />
+                <CanoeIcon className="h-6 w-6 shrink-0 text-cyan-300" />
                 <h2 className="text-base font-semibold tracking-tight">Tu pedido</h2>
                 {cart.itemCount > 0 ? (
                   <span className="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-violet-500/20 px-1.5 text-[11px] font-mono text-violet-200 tabular-nums">
@@ -845,9 +846,9 @@ function EmptyState() {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 px-6 py-10 text-center">
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-800 text-2xl">
-        🛒
+        🛶
       </div>
-      <p className="text-sm text-slate-300">Tu carrito está vacío.</p>
+      <p className="text-sm text-slate-300">Tu canoa está vacía.</p>
       <p className="text-[12px] text-slate-500">
         Toca el <strong className="text-cyan-300">cofre</strong> en la isla
         para reclamar tu descuento, luego explorá el menú.
