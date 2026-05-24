@@ -673,14 +673,38 @@ function SurfboardModel(props: React.ComponentProps<"group">) {
   return <primitive object={scene} {...props} />
 }
 
+/** R96.41 · auto-center GLB pivot · Meshy AI models suelen exportar
+ *  el origen del archivo en una esquina arbitraria del bounding box ·
+ *  no en el centroid del modelo. Eso hace que props.position apunte
+ *  al pivot interno · NO al centro visual. Clone + Box3 + sub centroid
+ *  garantiza que el position externo apunte al centro visual del prop. */
+function useCenteredScene(asset: string): THREE.Group {
+  const { scene } = useGLTF(asset, true)
+  return useMemo(() => {
+    const clone = scene.clone()
+    const box = new THREE.Box3().setFromObject(clone)
+    const center = box.getCenter(new THREE.Vector3())
+    clone.position.sub(center)
+    return clone
+  }, [scene])
+}
+
 function CrabModel(props: React.ComponentProps<"group">) {
-  const { scene } = useGLTF(naufragoAssets.cangrejo, true)
-  return <primitive object={scene} {...props} />
+  const centered = useCenteredScene(naufragoAssets.cangrejo)
+  return (
+    <group {...props}>
+      <primitive object={centered} />
+    </group>
+  )
 }
 
 function BottleModel(props: React.ComponentProps<"group">) {
-  const { scene } = useGLTF(naufragoAssets.botella, true)
-  return <primitive object={scene} {...props} />
+  const centered = useCenteredScene(naufragoAssets.botella)
+  return (
+    <group {...props}>
+      <primitive object={centered} />
+    </group>
+  )
 }
 
 
