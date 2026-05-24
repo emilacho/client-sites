@@ -1230,98 +1230,95 @@ function createPromoTexture(): THREE.CanvasTexture | null {
   // gracefully. Slight per-line rotation is what sells the
   // hand-written feel · the font does the rest.
   //
-  // Round 90 · "Has encontrado el Tesoro de Náufrago" -20% size
-  // per user · 64/68 → 51/54px.
-  lineAt(
-    "¡ Has encontrado",
-    512,
-    150,
-    `51px ${handwritten}`,
-    -0.025,
-  )
-  lineAt(
-    "el Tesoro de Náufrago !",
-    512,
-    220,
-    `54px ${handwritten}`,
-    0.018,
-  )
+  // R96.86 · header "Has encontrado el Tesoro de Náufrago" removido
+  // per Emilio · resto del contenido expandido para cubrir todo el
+  // pergamino. Plus botón "Aplicar promo" pintado en la parte inferior.
 
-  // Spacer · ink swash divider · Round 88 · stronger ink
-  ctx.strokeStyle = "rgba(13,10,6,0.75)"
-  ctx.lineWidth = 4
-  ctx.beginPath()
-  ctx.moveTo(260, 270)
-  for (let i = 0; i <= 10; i++) {
-    const x = 260 + i * 50
-    const y = 270 + (i % 2 === 0 ? -3 : 3)
-    ctx.lineTo(x, y)
-  }
-  ctx.stroke()
+  // Código Promo · top · más grande para fill the upper space
+  lineAt("Código Promo", 512, 130, `78px ${handwrittenLegible}`, -0.02)
 
-  // Round 90 · "Código Promo" +30% size per user · 46 → 60px
-  lineAt("Código Promo", 512, 332, `60px ${handwrittenLegible}`, -0.02)
-
-  // Hand-drawn box around the code · double-stroke "sketchy"
-  // Round 88 · stroke thicker (5 → 7) + faded pass darker
-  // (rgba 0.4 → 0.65) for stronger contrast against parchment.
+  // Hand-drawn box around the code · más ancho · ocupa mid section
   ctx.strokeStyle = INK
-  ctx.lineWidth = 7
+  ctx.lineWidth = 8
   ctx.beginPath()
-  ctx.moveTo(192, 380)
-  ctx.lineTo(836, 374)
-  ctx.lineTo(840, 480)
-  ctx.lineTo(190, 484)
+  ctx.moveTo(140, 200)
+  ctx.lineTo(884, 194)
+  ctx.lineTo(890, 340)
+  ctx.lineTo(138, 346)
   ctx.closePath()
   ctx.stroke()
   ctx.strokeStyle = "rgba(13,10,6,0.65)"
-  ctx.lineWidth = 3
+  ctx.lineWidth = 4
   ctx.beginPath()
-  ctx.moveTo(196, 384)
-  ctx.lineTo(832, 378)
-  ctx.lineTo(836, 476)
-  ctx.lineTo(194, 480)
+  ctx.moveTo(146, 206)
+  ctx.lineTo(878, 200)
+  ctx.lineTo(884, 334)
+  ctx.lineTo(144, 340)
   ctx.closePath()
   ctx.stroke()
 
-  // Round 90 · "SurfBollado" RED per user · Caveat bold for
-  // legibility of mixed-case code on a single word.
+  // "SurfBollado" · centrado dentro del box · BIG
   ctx.fillStyle = INK
   lineAt(
     "“SurfBollado”",
     518,
-    432,
-    `bold 100px ${handwrittenLegible}`,
+    280,
+    `bold 120px ${handwrittenLegible}`,
     -0.012,
     RED,
   )
 
-  // Round 90 · "5% Off" → "5% DSCT" + RED + Caveat bold (the
-  // 5 in Homemade Apple reads as a wild squiggle · the user
-  // explicitly flagged "no se entiende que es un número 5" ·
-  // Caveat's bold weight renders 5 as a clean numeral).
-  lineAt("5% DSCT", 512, 582, `bold 132px ${handwrittenLegible}`, -0.028, RED)
+  // "5% DSCT" · debajo del box · grande prominente
+  lineAt("5% DSCT", 512, 470, `bold 160px ${handwrittenLegible}`, -0.028, RED)
 
-  // Signature · Caveat italic so the rúbrica is legible
+  // Signature
   lineAt(
     "— El Náufrago",
     760,
-    700,
-    `42px ${handwrittenLegible}`,
+    580,
+    `48px ${handwrittenLegible}`,
     -0.05,
   )
 
-  // Sea-wave squiggle under the signature · Round 88 darker ink
+  // Sea-wave squiggle under signature
   ctx.strokeStyle = "rgba(13,10,6,0.85)"
   ctx.lineWidth = 3
   ctx.beginPath()
-  ctx.moveTo(630, 730)
-  for (let i = 0; i <= 6; i++) {
-    const x = 630 + i * 25
-    const y = 730 + ((i % 2 === 0 ? -1 : 1) * 4)
+  ctx.moveTo(625, 615)
+  for (let i = 0; i <= 7; i++) {
+    const x = 625 + i * 28
+    const y = 615 + ((i % 2 === 0 ? -1 : 1) * 4)
     ctx.lineTo(x, y)
   }
   ctx.stroke()
+
+  // R96.86 · Botón "Aplicar promo" · pill rojo grande abajo del
+  // pergamino · prompts the user to claim. Click en cualquier parte
+  // del pergamino dispara el roll-up via PergaminoPropModel onClick.
+  const BTN_Y = 720
+  const BTN_W = 460
+  const BTN_H = 110
+  const BTN_X = 512 - BTN_W / 2
+  // Sombra suave
+  ctx.fillStyle = "rgba(13,10,6,0.35)"
+  ctx.beginPath()
+  ctx.roundRect(BTN_X + 5, BTN_Y + 8, BTN_W, BTN_H, BTN_H / 2)
+  ctx.fill()
+  // Fondo botón rojo
+  ctx.fillStyle = RED
+  ctx.beginPath()
+  ctx.roundRect(BTN_X, BTN_Y, BTN_W, BTN_H, BTN_H / 2)
+  ctx.fill()
+  // Borde botón
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 4
+  ctx.stroke()
+  // Texto botón
+  ctx.fillStyle = "#FFFFFF"
+  ctx.font = `bold 56px ${handwrittenLegible}`
+  ctx.textAlign = "center"
+  ctx.textBaseline = "middle"
+  ctx.fillText("Aplicar promo", 512, BTN_Y + BTN_H / 2 + 4)
 
   // Small ink-blot stains for authenticity
   ctx.fillStyle = "rgba(13,10,6,0.22)"
