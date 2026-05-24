@@ -99,12 +99,21 @@ function LandingInner() {
   }
 
   const handleAnchor = (kind: AnchorKind) => {
+    // R96.83 · cofre ya NO dispara el pergamino · ahora sale de la
+    // botella. Cofre click sin acción · TBD futuro (puede abrir cart).
     if (kind === "cofre") {
-      setTreasureOpen(true)
       return
     }
     setOverlay(kind)
   }
+
+  // R96.83 · listener · botella click dispara CustomEvent que
+  // setTreasureOpen(true) · pergamino emerge desde la botella.
+  useEffect(() => {
+    const handler = () => setTreasureOpen(true)
+    window.addEventListener("naufrago:open-pergamino", handler)
+    return () => window.removeEventListener("naufrago:open-pergamino", handler)
+  }, [])
 
   return (
     <main className="relative min-h-[100svh] overflow-hidden bg-slate-950 text-slate-100">

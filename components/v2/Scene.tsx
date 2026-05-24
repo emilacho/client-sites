@@ -287,6 +287,12 @@ export function Scene({
               position={[0, -0.05, 0]}
               rotation={[Math.PI / 2, 0, 0.4]}
               scale={0.212}
+              onClick={(e) => {
+                e.stopPropagation()
+                if (typeof window !== "undefined") {
+                  window.dispatchEvent(new CustomEvent("naufrago:open-pergamino"))
+                }
+              }}
             />
           </CofreSoundwaveFX>
 
@@ -1033,11 +1039,12 @@ function PergaminoPropModel({
 
       groupRef.current.visible = true
 
-      // Position · de "arriba del cofre" (1.4, 0.5) → "dentro del
-      // cofre" (0.16, 0.18) durante phase B
-      const x = -0.76
-      const y = 1.4 - returnEase * (1.4 - 0.16)
-      const z = 0.5 - returnEase * (0.5 - 0.18)
+      // R96.83 · spawn/return desde BOTELLA · botella en (1, 0, -2).
+      // Phase B · de "arriba botella" (1.2, -2) → "dentro botella"
+      // (0.0, -2) durante returnEase.
+      const x = 1
+      const y = 1.2 - returnEase * (1.2 - 0.0)
+      const z = -2
       groupRef.current.position.set(x, y, z)
 
       // Scale · X colapsa (enroll) · luego todo encoge hacia 0
@@ -1081,10 +1088,12 @@ function PergaminoPropModel({
 
     groupRef.current.visible = t > 0.005
 
-    // Interpolate position · cofre center → above cofre
-    const x = -0.76
-    const y = 0.16 + t * (1.4 - 0.16)
-    const z = 0.18 + t * (0.5 - 0.18)
+    // R96.83 · spawn desde BOTELLA · botella center (1, 0, -2) →
+    // emerge above botella (1, 1.2, -2). Mismo arc · solo cambia el
+    // anchor de origen del cofre a la botella.
+    const x = 1
+    const y = 0.0 + t * (1.2 - 0.0)
+    const z = -2
     groupRef.current.position.set(x, y, z)
     // Round 87 · stronger overshoot · peak 1.30 (settle to 1.0).
     // Round 88 · second +60% bump per user "haslo 60 porciento
