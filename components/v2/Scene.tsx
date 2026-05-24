@@ -1392,24 +1392,17 @@ function CharacterModel(props: React.ComponentProps<"group">) {
         if (!(mat instanceof THREE.MeshStandardMaterial)) return
         if (mat.userData.__nfTuned) return
         mat.userData.__nfTuned = true
-        // Sunset env integration · subir envMapIntensity para que el
-        // character reciba los warm reflections del Environment.
-        mat.envMapIntensity = 0.95
-        // Sombra-lift · slight warm emissive para que las zonas en
-        // sombra no se vean negras y matcheen el calor del sunset.
+        // R96.96 · half-strength tuning · cada delta R96.95 ahora /2.
+        mat.envMapIntensity = 0.975
         if (mat.emissive) {
           mat.emissive = new THREE.Color("#3a1f0a")
-          mat.emissiveIntensity = 0.18
+          mat.emissiveIntensity = 0.09
         }
-        // Roughness · subir leve para diffuse warm light bouncing
-        // desde la arena (la isla refleja sand color).
-        mat.roughness = Math.min(1, (mat.roughness ?? 0.5) + 0.1)
-        // Tone-shift sutil en el albedo · -5% blue + 5% red para
-        // empujar el color hacia tonos cálidos coherentes con isla.
+        mat.roughness = Math.min(1, (mat.roughness ?? 0.5) + 0.05)
         if (mat.color) {
           const c = mat.color
-          c.r = Math.min(1, c.r * 1.05)
-          c.b = Math.max(0, c.b * 0.95)
+          c.r = Math.min(1, c.r * 1.025)
+          c.b = Math.max(0, c.b * 0.975)
         }
         mat.needsUpdate = true
       })
@@ -1417,22 +1410,17 @@ function CharacterModel(props: React.ComponentProps<"group">) {
   }, [scene])
   return (
     <group ref={group} {...props}>
-      {/* R96.95 · key fill warm puntual sobre el character ·
-          intensidad baja · simula bounce-light cálido desde la
-          arena · sin alterar el resto de la escena. */}
+      {/* R96.96 · key + rim lights con intensidad /2 vs R96.95. */}
       <pointLight
         position={[0.6, 1.4, 0.8]}
-        intensity={0.55}
+        intensity={0.275}
         color="#ffb86b"
         distance={3.5}
         decay={2}
       />
-      {/* R96.95 · rim cyan trasero · separación del fondo · matchea
-          el directional cyan global pero localizado al character
-          para definir silhouette contra el cielo/agua. */}
       <pointLight
         position={[-0.8, 1.2, -0.6]}
-        intensity={0.35}
+        intensity={0.175}
         color="#4DD4D8"
         distance={3.5}
         decay={2}
