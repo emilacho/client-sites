@@ -805,7 +805,8 @@ function CofreSoundwaveFX({ center }: { center: [number, number, number] }) {
       }
       ref.current.visible = true
       const cycle = elapsed / life
-      const scale = 0.55 + cycle * 1.6
+      // R96.77 · scale reducido 40% · 0.55 -> 0.33 start · 2.15 -> 1.29 peak
+      const scale = 0.33 + cycle * 0.96
       const opacity = (1 - cycle) * RING_PEAK_OPACITY[i]
       ref.current.scale.setScalar(scale)
       const mat = ref.current.material as THREE.MeshBasicMaterial
