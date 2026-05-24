@@ -279,8 +279,13 @@ export function Scene({
               acostada front-left (message-in-a-bottle vibe). Scale
               + position son tentativos · ajustar visualmente post
               first deploy si quedan fuera de proporción. */}
-          <CrabModel position={[1.4, 0.12, 1.2]} rotation={[0, -0.6, 0]} scale={0.35} />
-          <BottleModel position={[-0.9, 0.08, 1.6]} rotation={[Math.PI / 2, 0, 0.4]} scale={0.4} />
+          {/* R96.36 · ambos props reducidos 60% (crab 0.35→0.14 ·
+              botella 0.4→0.16). Camera at +X looking toward -X · so
+              +Z = izquierda cámara · -X = atras isla. Crab parte de
+              atrás cerca orilla · botella orilla izquierda mitad
+              agua/arena (Y bajo · X positive = lado frontal isla). */}
+          <CrabModel position={[-1.6, 0.08, 0.2]} rotation={[0, 0.4, 0]} scale={0.14} />
+          <BottleModel position={[0.4, 0.02, 2.0]} rotation={[Math.PI / 2, 0, 0.4]} scale={0.16} />
 
           {/* Round 85 · pergamino emerges FROM the cofre on click.
               Round 96 · click sobre el pergamino · dispara vanish
