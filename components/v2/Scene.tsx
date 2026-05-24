@@ -770,7 +770,10 @@ function CofreSoundwaveFX({ center }: { center: [number, number, number] }) {
   const ring3Ref = useRef<THREE.Mesh>(null)
   const ring4Ref = useRef<THREE.Mesh>(null)
   const ringRefs = [ring1Ref, ring2Ref, ring3Ref, ring4Ref]
-  const RING_DELAYS = [0, 0.18, 0.36, 0.54]
+  // R96.72 · ondas nacen DESPUÉS que el cofre empieza a vibrar.
+  // Delay inicial 0.12s · vibración pure ANTES que onda 1 aparezca ·
+  // imita "la vibración causa las ondas".
+  const RING_DELAYS = [0.12, 0.32, 0.52, 0.72]
   const RING_LIVES = [1.4, 1.2, 1.0, 0.8]
   const RING_PEAK_OPACITY = [0.75, 0.5, 0.32, 0.18]
   const DROP_INTERVAL = 3.2
@@ -810,12 +813,20 @@ function CofreSoundwaveFX({ center }: { center: [number, number, number] }) {
       totalEnergy += opacity
     })
 
-    // Shake amplitude proporcional a energía cumulativa de las ondas.
-    // Max teórico ≈ 1.25 (primary 0.75 + secondary 0.5 en pico). Cuando
-    // todas las ondas terminan · totalEnergy=0 · cofre queda quieto
-    // perfectamente sincronizado.
+    // R96.72 · shake amplitude · dos componentes ·
+    //  A · dropPulse · arranca al t=0 del drop · decae exponencial
+    //      en 500ms · ESTE es la "vibración que causa las ondas".
+    //  B · energyAmp · proporcional a energía cumulativa de ondas
+    //      activas · sigue la cascada después que las ondas nacen.
+    // El max(A, B) garantiza · cofre vibra PRIMERO (antes de spawn
+    // primera onda) · luego shake sostiene durante la cascada · 0 al
+    // final cuando todas las ondas terminan.
+    const timeSinceDrop = t - lastDropRef.current
+    const dropPulse =
+      timeSinceDrop < 0.5 ? 0.032 * Math.exp(-timeSinceDrop * 5) : 0
     const energyNorm = Math.min(totalEnergy / 1.0, 1)
-    const shakeAmp = 0.028 * energyNorm
+    const energyAmp = 0.025 * energyNorm
+    const shakeAmp = Math.max(dropPulse, energyAmp)
     if (groupRef.current) {
       groupRef.current.position.x = center[0] + Math.sin(t * 50) * shakeAmp
       groupRef.current.position.y = center[1] + Math.cos(t * 47) * shakeAmp * 0.7
