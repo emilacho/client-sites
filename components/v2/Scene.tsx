@@ -830,8 +830,10 @@ function CofreSoundwaveFX({
       timeSinceDrop < 0.5 ? 0.032 * Math.exp(-timeSinceDrop * 5) : 0
     const energyNorm = Math.min(totalEnergy / 1.0, 1)
     const energyAmp = 0.025 * energyNorm
-    // R96.79 · shake amplitude también escala por intensity
-    const shakeAmp = Math.max(dropPulse, energyAmp) * intensity
+    // R96.80 · shake amplitude FULL · NO escalada por intensity ·
+    // botella vibra igual de fuerte que cofre · intensity solo
+    // afecta scale de ondas (proporcional al tamaño del prop).
+    const shakeAmp = Math.max(dropPulse, energyAmp)
     if (groupRef.current) {
       groupRef.current.position.x = center[0] + Math.sin(t * 50) * shakeAmp
       groupRef.current.position.y = center[1] + Math.cos(t * 47) * shakeAmp * 0.7
