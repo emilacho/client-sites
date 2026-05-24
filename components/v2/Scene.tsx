@@ -291,7 +291,7 @@ export function Scene({
               Sec 3.3 · crab adentro cluster palmas anchor (X=-1.6 Z=-1.8)
               · ligeramente delante · semi-oculto entre troncos. */}
           <CrabModel position={[-1.8, 0.08, -1.6]} rotation={[0, 0.6, 0]} scale={0.185} />
-          <BottleModel position={[-2, 0.13, -2]} rotation={[Math.PI / 2, 0, 0.4]} scale={0.212} />
+          <BottleModel position={[-1.8, 0.13, 1.7]} rotation={[Math.PI / 2, 0, 0.4]} scale={0.212} />
 
           {/* Round 85 · pergamino emerges FROM the cofre on click.
               Round 96 · click sobre el pergamino · dispara vanish
