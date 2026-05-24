@@ -388,16 +388,29 @@ export default function RuletaModal({ open, onClose }: RuletaModalProps) {
       window.setTimeout(() => {
         setPrize(data.prize ?? null)
         setPhase("result")
-        // R96.103 · adjuntar el premio al carrito como regalo gratis ·
-        // solo cuando el premio es un ítem real (chifle · pan · cola) ·
-        // "siga" no agrega nada.
+        // R96.104 · adjuntar el premio al carrito como regalo gratis ·
+        // NO acumulativo · se borran premios anteriores antes de agregar
+        // el nuevo (evita "40 chifles gratis" si el usuario gana varios
+        // días sin consumir). Timestamp se persiste para que cart-context
+        // pueda barrer premios >24h en hidratación.
         if (
           data.prizeKey === "chifle" ||
           data.prizeKey === "pan" ||
           data.prizeKey === "cola"
         ) {
+          cart.remove("prize-chifle")
+          cart.remove("prize-pan")
+          cart.remove("prize-cola")
           const item = PRIZE_TO_CART_ITEM[data.prizeKey]
           cart.add({ id: item.id, name: item.name, priceUsd: 0 }, 1)
+          try {
+            window.localStorage.setItem(
+              "naufrago_prize_added_at",
+              String(Date.now()),
+            )
+          } catch {
+            // ignore quota errors
+          }
         }
       }, 3500)
     } catch (err) {

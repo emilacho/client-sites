@@ -19,6 +19,13 @@ import {
 const STORAGE_KEY = "naufrago_cart_v1"
 const DISCOUNT_KEY = "naufrago_discount_v1"
 
+// R96.104 · premios de la ruleta NO son acumulativos · si pasan más
+// de 24h sin consumir → se borran del carrito en la hidratación.
+// Evita que un usuario acumule "40 chifles" entre días.
+const PRIZE_TS_KEY = "naufrago_prize_added_at"
+const PRIZE_LINE_IDS = ["prize-chifle", "prize-pan", "prize-cola"]
+const PRIZE_RESET_HOURS = 24
+
 /* Round 77 · discount codes from the treasure-chest reveal.
  * Round 87 · code rebrand · NAUFRAGO5 retired in favor of
  * SurfBollado (mixed-case display, uppercase lookup key).
@@ -132,6 +139,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
     setHydrated(true)
   }, [])
+
+  // R96.104 · cleanup premios vencidos (>24h sin consumir) post-hidratación.
+  // Si pasaron >=24h desde que se agregó · se barren las líneas prize-* del
+  // carrito. Evita acumulación entre días.
+  useEffect(() => {
+    if (!hydrated) return
+    try {
+      const ts = window.localStorage.getItem(PRIZE_TS_KEY)
+      if (!ts) return
+      const ageHours = (Date.now() - Number(ts)) / 3600_000
+      if (ageHours >= PRIZE_RESET_HOURS) {
+        setLines((prev) =>
+          prev.filter((l) => !PRIZE_LINE_IDS.includes(l.id)),
+        )
+        window.localStorage.removeItem(PRIZE_TS_KEY)
+      }
+    } catch {
+      // ignore
+    }
+  }, [hydrated])
 
   // Persist whenever lines change (post-hydration only)
   useEffect(() => {
