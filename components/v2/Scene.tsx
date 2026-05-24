@@ -1215,8 +1215,9 @@ function createPromoTexture(): THREE.CanvasTexture | null {
   // a castaway scribbling with a quill). Caveat is the
   // fallback · a slightly cleaner but still informal cursive
   // for platforms that haven't loaded Homemade Apple yet.
-  const handwritten =
-    '"Homemade Apple", "Caveat", "Snell Roundhand", cursive'
+  // R96.86 · handwritten font stack removido · solo se usa
+  // handwrittenLegible ahora que el header con Homemade Apple
+  // fue eliminado. Caveat es directly used para todo.
   // Caveat is used directly for the smaller labels (Código
   // Promo · — El Náufrago) where Homemade Apple becomes
   // hard to read · script font swap for legibility.
