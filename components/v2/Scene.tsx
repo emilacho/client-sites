@@ -752,15 +752,8 @@ function SurfboardModel(props: React.ComponentProps<"group">) {
 }
 
 /**
- * CofreSoundwaveFX · R96.67 · efecto altavoz/distorsión sonora.
- *
- *  - 4 rings concéntricos cyan en plano horizontal · expanden de
- *    radius 0.3 a 2.1 y desvanecen · loop 1.5s · phase staggered
- *    per-ring para que siempre haya 4 ondas en cascada.
- *  - Shake fuerte del grupo entero · sin de alta frecuencia (50/47/53
- *    Hz) con amplitud 0.02u (mayor que R96.64).
- *  - Halo central resonance blur · sphere amber pulsante baja
- *    frecuencia 2.2Hz · da "fuente del sonido".
+ * CofreSoundwaveFX · R96.68 · solo 4 ondas concéntricas + shake.
+ * Halo amber removido per Emilio · queda speaker-style waves only.
  */
 function CofreSoundwaveFX({ center }: { center: [number, number, number] }) {
   const groupRef = useRef<THREE.Group>(null)
@@ -768,52 +761,30 @@ function CofreSoundwaveFX({ center }: { center: [number, number, number] }) {
   const ring2Ref = useRef<THREE.Mesh>(null)
   const ring3Ref = useRef<THREE.Mesh>(null)
   const ring4Ref = useRef<THREE.Mesh>(null)
-  const haloRef = useRef<THREE.Mesh>(null)
   const ringRefs = [ring1Ref, ring2Ref, ring3Ref, ring4Ref]
 
   useFrame(() => {
     const t = performance.now() * 0.001
-    // Shake fuerte
     if (groupRef.current) {
       groupRef.current.position.x = center[0] + Math.sin(t * 50) * 0.02
       groupRef.current.position.y = center[1] + Math.cos(t * 47) * 0.015
       groupRef.current.position.z = center[2] + Math.sin(t * 53) * 0.02
     }
-    // Soundwave rings · cycle 1.5s · staggered phase
     const period = 1.5
     ringRefs.forEach((ref, i) => {
       if (!ref.current) return
       const phaseOffset = (i / 4) * period
-      const cycle = ((t + phaseOffset) % period) / period // 0-1
-      const scale = 0.3 + cycle * 1.8 // expand 0.3 → 2.1
-      const opacity = (1 - cycle) * 0.55 // fade out as expands
+      const cycle = ((t + phaseOffset) % period) / period
+      const scale = 0.3 + cycle * 1.8
+      const opacity = (1 - cycle) * 0.55
       ref.current.scale.setScalar(scale)
       const mat = ref.current.material as THREE.MeshBasicMaterial
       mat.opacity = opacity
     })
-    // Resonance blur halo central
-    if (haloRef.current) {
-      const breathe = 0.85 + Math.sin(t * 2.2) * 0.15
-      haloRef.current.scale.setScalar(breathe)
-      const mat = haloRef.current.material as THREE.MeshBasicMaterial
-      mat.opacity = 0.28 + Math.sin(t * 2.2) * 0.08
-    }
   })
 
   return (
     <group ref={groupRef} position={center}>
-      {/* Resonance blur halo · fuente del sonido */}
-      <mesh ref={haloRef}>
-        <sphereGeometry args={[0.4, 24, 24]} />
-        <meshBasicMaterial
-          color="#FFC93C"
-          transparent
-          opacity={0.3}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </mesh>
-      {/* 4 rings concentricos expandiendo · plano horizontal */}
       {ringRefs.map((ref, i) => (
         <mesh key={i} ref={ref} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[0.5, 0.58, 48]} />
