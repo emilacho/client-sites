@@ -32,6 +32,24 @@ export interface MenuItemModifier {
   defaultOn?: boolean
 }
 
+/** R96.26 · ingredient toggle tri-state · cliente ajusta cantidad de
+ *  un ingrediente que viene por default · puede pedir sin, normal o
+ *  extra · misma UX que un stepper +/− centrado en 0. Para ingredientes
+ *  que típicamente quitan o piden duplicar (cebolla · chifle · yerbita).
+ *
+ *  removeLabel · texto cuando estado = -1 ("Sin cebolla").
+ *  extraLabel · texto cuando estado = +1 ("Extra cebolla").
+ *  extraPriceDelta · cargo extra cuando estado = +1 (0 default).
+ */
+export interface MenuItemIngredientToggle {
+  id: string
+  label: string
+  emoji?: string
+  removeLabel: string
+  extraLabel: string
+  extraPriceDelta?: number
+}
+
 /** R96.25 · variants single-select · cliente elige UNO de N obligatorio
  *  antes de agregar al cart. Usado para bebidas brand-multi · jugos por
  *  sabor · etc. priceDelta normalmente 0 (el variant es el "subtipo"
@@ -98,6 +116,10 @@ export interface MenuItem {
   /** R96.20 · modifiers opcionales · cliente toggle en el menu modal ·
    *  affect precio + persisten en CartLine.customizations. */
   modifiers?: MenuItemModifier[]
+  /** R96.26 · ingredient toggles tri-state · cada uno tiene 3 estados
+   *  (-1 sin · 0 normal default · +1 extra). Para ingredientes que
+   *  vienen por default y cliente puede ajustar (cebolla · chifle · etc). */
+  ingredientToggles?: MenuItemIngredientToggle[]
   /** R96.25 · variants static (data-driven) · obligatorio elegir 1 al
    *  agregar al cart. Mutuamente exclusivo con `dynamicVariantsKey`. */
   variants?: MenuItemVariant[]
@@ -106,6 +128,60 @@ export interface MenuItem {
    *  catálogo día a día sin redeploy (jugos por sabor del día, etc.). */
   dynamicVariantsKey?: string
 }
+
+/** R96.26 · ingredient toggles compartidos · 3 ingredientes estándar
+ *  de encebollados costa EC que el cliente típicamente quita o pide
+ *  extra. Reutilizables across los 3 encebollados (Náufrago · Mixto ·
+ *  Junior) + ceviches que comparten estos ingredientes. */
+export const ENCEBOLLADO_TOGGLES: MenuItemIngredientToggle[] = [
+  {
+    id: "cebolla",
+    label: "Cebolla",
+    emoji: "🧅",
+    removeLabel: "Sin cebolla",
+    extraLabel: "+ Extra cebolla",
+  },
+  {
+    id: "chifle",
+    label: "Chifle",
+    emoji: "🍌",
+    removeLabel: "Sin chifle",
+    extraLabel: "+ Extra chifle",
+    extraPriceDelta: 0.5,
+  },
+  {
+    id: "yerbita",
+    label: "Yerbita",
+    emoji: "🌿",
+    removeLabel: "Sin yerbita",
+    extraLabel: "+ Extra yerbita",
+  },
+]
+
+export const CEVICHE_TOGGLES: MenuItemIngredientToggle[] = [
+  {
+    id: "cebolla",
+    label: "Cebolla",
+    emoji: "🧅",
+    removeLabel: "Sin cebolla",
+    extraLabel: "+ Extra cebolla",
+  },
+  {
+    id: "chifle",
+    label: "Chifle",
+    emoji: "🍌",
+    removeLabel: "Sin chifle",
+    extraLabel: "+ Extra chifle",
+    extraPriceDelta: 0.5,
+  },
+  {
+    id: "mani",
+    label: "Salsa de maní",
+    emoji: "🥜",
+    removeLabel: "Sin salsa de maní",
+    extraLabel: "+ Extra salsa de maní",
+  },
+]
 
 export const MENU_CATEGORIES: Array<{ id: MenuCategoryId; label: string; emoji: string }> = [
   { id: "encebollados", label: "Encebollados", emoji: "🍲" },
@@ -134,11 +210,13 @@ export const MENU_ITEMS: MenuItem[] = [
     gradient: "from-amber-700 via-amber-500 to-orange-400",
     allergens: ["pescado"],
     modifiers: [
+      { id: "extra-pescado", label: "+ 50g pescado adicional", priceDelta: 1.5 },
+      { id: "extra-aguacate", label: "+ aguacate", priceDelta: 1.0 },
       { id: "extra-yuca", label: "+ porción extra yuca", priceDelta: 1.0 },
       { id: "extra-pan", label: "+ pan adicional", priceDelta: 0.5 },
-      { id: "no-cebolla", label: "Sin cebolla cruda", priceDelta: 0 },
       { id: "extra-limon", label: "Limón extra", priceDelta: 0 },
     ],
+    ingredientToggles: ENCEBOLLADO_TOGGLES,
   },
   {
     id: "encebollado-mixto",
@@ -152,12 +230,14 @@ export const MENU_ITEMS: MenuItem[] = [
     gradient: "from-amber-700 via-orange-500 to-rose-400",
     allergens: ["pescado", "mariscos"],
     modifiers: [
+      { id: "extra-pescado", label: "+ 50g pescado adicional", priceDelta: 1.5 },
+      { id: "extra-camaron", label: "+ camarón adicional", priceDelta: 2.0 },
+      { id: "extra-aguacate", label: "+ aguacate", priceDelta: 1.0 },
       { id: "extra-yuca", label: "+ porción extra yuca", priceDelta: 1.0 },
       { id: "extra-pan", label: "+ pan adicional", priceDelta: 0.5 },
-      { id: "extra-camaron", label: "+ camarón adicional", priceDelta: 2.0 },
-      { id: "no-cebolla", label: "Sin cebolla cruda", priceDelta: 0 },
       { id: "extra-limon", label: "Limón extra", priceDelta: 0 },
     ],
+    ingredientToggles: ENCEBOLLADO_TOGGLES,
   },
   {
     id: "encebollado-junior",
@@ -173,11 +253,12 @@ export const MENU_ITEMS: MenuItem[] = [
     allergens: ["pescado"],
     modifiers: [
       { id: "extra-pescado", label: "+ 50g pescado adicional", priceDelta: 1.5 },
+      { id: "extra-aguacate", label: "+ aguacate", priceDelta: 1.0 },
       { id: "extra-yuca", label: "+ porción extra yuca", priceDelta: 1.0 },
       { id: "extra-pan", label: "+ pan adicional", priceDelta: 0.5 },
-      { id: "no-cebolla", label: "Sin cebolla cruda", priceDelta: 0 },
       { id: "extra-limon", label: "Limón extra", priceDelta: 0 },
     ],
+    ingredientToggles: ENCEBOLLADO_TOGGLES,
   },
 
   // ── Ceviches (2) ──────────────────────────────────────────────────
@@ -194,12 +275,12 @@ export const MENU_ITEMS: MenuItem[] = [
     gradient: "from-cyan-600 via-emerald-500 to-lime-400",
     allergens: ["pescado", "mani"],
     modifiers: [
-      { id: "extra-aguacate", label: "+ aguacate extra", priceDelta: 1.0 },
+      { id: "extra-pescado", label: "+ 50g pescado adicional", priceDelta: 1.5 },
       { id: "extra-camaron", label: "+ doble camarón", priceDelta: 2.0 },
-      { id: "no-cebolla", label: "Sin cebolla", priceDelta: 0 },
-      { id: "no-mani", label: "Sin salsa de maní", priceDelta: 0 },
+      { id: "extra-aguacate", label: "+ aguacate", priceDelta: 1.0 },
       { id: "extra-limon", label: "Limón extra", priceDelta: 0 },
     ],
+    ingredientToggles: CEVICHE_TOGGLES,
   },
   {
     id: "ceviche-mixto",
@@ -214,12 +295,12 @@ export const MENU_ITEMS: MenuItem[] = [
     gradient: "from-emerald-600 via-cyan-500 to-sky-400",
     allergens: ["pescado", "mariscos", "mani"],
     modifiers: [
-      { id: "extra-aguacate", label: "+ aguacate extra", priceDelta: 1.0 },
+      { id: "extra-pescado", label: "+ 50g pescado adicional", priceDelta: 1.5 },
       { id: "extra-camaron", label: "+ doble camarón", priceDelta: 2.0 },
-      { id: "no-cebolla", label: "Sin cebolla", priceDelta: 0 },
-      { id: "no-mani", label: "Sin salsa de maní", priceDelta: 0 },
+      { id: "extra-aguacate", label: "+ aguacate", priceDelta: 1.0 },
       { id: "extra-limon", label: "Limón extra", priceDelta: 0 },
     ],
+    ingredientToggles: CEVICHE_TOGGLES,
   },
 
   // ── Otros (1) ─────────────────────────────────────────────────────
@@ -236,8 +317,25 @@ export const MENU_ITEMS: MenuItem[] = [
     allergens: ["lacteo", "huevo"],
     modifiers: [
       { id: "extra-queso", label: "+ queso extra", priceDelta: 0.5 },
-      { id: "no-huevo", label: "Sin huevo", priceDelta: 0 },
-      { id: "no-queso", label: "Sin queso", priceDelta: 0 },
+      { id: "extra-aguacate", label: "+ aguacate", priceDelta: 1.0 },
+    ],
+    ingredientToggles: [
+      {
+        id: "huevo",
+        label: "Huevo",
+        emoji: "🥚",
+        removeLabel: "Sin huevo",
+        extraLabel: "+ Extra huevo",
+        extraPriceDelta: 0.5,
+      },
+      {
+        id: "queso",
+        label: "Queso",
+        emoji: "🧀",
+        removeLabel: "Sin queso",
+        extraLabel: "+ Extra queso",
+        extraPriceDelta: 0.5,
+      },
     ],
   },
 

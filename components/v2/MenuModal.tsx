@@ -30,6 +30,7 @@ import {
   MENU_CATEGORIES,
   type MenuCategoryId,
   type MenuItem,
+  type MenuItemIngredientToggle,
   type MenuItemVariant,
 } from "@/lib/v2/naufrago-content"
 import { usePopularItems, type PopularItem } from "@/lib/v2/use-popular-items"
@@ -275,20 +276,51 @@ function MenuCard({ item }: { item: MenuItem }) {
   // R96.20 · panel modifiers · toggle open + selected ids set.
   const [modOpen, setModOpen] = useState(false)
   const [selectedMods, setSelectedMods] = useState<Set<string>>(new Set())
+  // R96.26 · ingredient toggles · tri-state map por id · -1 sin · 0 normal · +1 extra
+  const [toggleStates, setToggleStates] = useState<Record<string, -1 | 0 | 1>>({})
   // R96.25 · variant picker modal · si item tiene variants/dynamicVariantsKey
   const [variantPickerOpen, setVariantPickerOpen] = useState(false)
 
   const modifiers = item.modifiers ?? []
+  const ingredientToggles = item.ingredientToggles ?? []
   const hasVariants = !!item.variants?.length || !!item.dynamicVariantsKey
+  const hasCustomization = modifiers.length > 0 || ingredientToggles.length > 0
   const modPriceDelta = modifiers.reduce((sum, m) => {
     return selectedMods.has(m.id) ? sum + m.priceDelta : sum
   }, 0)
-  const totalPrice = item.priceUsd + modPriceDelta
+  const togglePriceDelta = ingredientToggles.reduce((sum, t) => {
+    const state = toggleStates[t.id] ?? 0
+    return state === 1 ? sum + (t.extraPriceDelta ?? 0) : sum
+  }, 0)
+  const totalPrice = item.priceUsd + modPriceDelta + togglePriceDelta
+
+  const togglesAsCustomizations = ingredientToggles
+    .filter((t) => (toggleStates[t.id] ?? 0) !== 0)
+    .map((t) => {
+      const state = toggleStates[t.id] ?? 0
+      return state === 1
+        ? {
+            id: `tg-extra-${t.id}`,
+            label: t.extraLabel,
+            priceDelta: t.extraPriceDelta ?? 0,
+          }
+        : {
+            id: `tg-sin-${t.id}`,
+            label: t.removeLabel,
+            priceDelta: 0,
+          }
+    })
+
+  const setToggleState = (id: string, next: -1 | 0 | 1) =>
+    setToggleStates((prev) => ({ ...prev, [id]: next }))
 
   const addToCart = (variant?: MenuItemVariant | { id: string; label: string }) => {
-    const customizations = modifiers
-      .filter((m) => selectedMods.has(m.id))
-      .map((m) => ({ id: m.id, label: m.label, priceDelta: m.priceDelta }))
+    const customizations = [
+      ...togglesAsCustomizations,
+      ...modifiers
+        .filter((m) => selectedMods.has(m.id))
+        .map((m) => ({ id: m.id, label: m.label, priceDelta: m.priceDelta })),
+    ]
     if (variant) {
       customizations.unshift({
         id: variant.id,
@@ -309,6 +341,7 @@ function MenuCard({ item }: { item: MenuItem }) {
     })
     setFlash(true)
     setSelectedMods(new Set())
+    setToggleStates({})
     setModOpen(false)
     setVariantPickerOpen(false)
     window.setTimeout(() => setFlash(false), 1200)
@@ -370,16 +403,18 @@ function MenuCard({ item }: { item: MenuItem }) {
           ) : null}
           <div className="mt-2 flex items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1">
-              {modifiers.length > 0 ? (
+              {hasCustomization ? (
                 <button
                   type="button"
                   onClick={() => setModOpen((v) => !v)}
                   className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium text-violet-200 ring-1 ring-violet-500/20 hover:bg-violet-500/20"
                 >
                   {modOpen ? "− Cerrar" : "+ Customizar"}
-                  {selectedMods.size > 0 && !modOpen ? (
+                  {(selectedMods.size > 0 ||
+                    togglesAsCustomizations.length > 0) &&
+                  !modOpen ? (
                     <span className="ml-0.5 rounded-full bg-violet-500/40 px-1.5 text-[9px] font-bold">
-                      {selectedMods.size}
+                      {selectedMods.size + togglesAsCustomizations.length}
                     </span>
                   ) : null}
                 </button>
@@ -409,31 +444,59 @@ function MenuCard({ item }: { item: MenuItem }) {
           </div>
         </div>
       </div>
-      {modOpen && modifiers.length > 0 ? (
-        <div className="mt-3 grid grid-cols-2 gap-1.5 border-t border-slate-800 pt-3">
-          {modifiers.map((m) => {
-            const active = selectedMods.has(m.id)
-            return (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => toggleMod(m.id)}
-                className={[
-                  "flex items-center justify-between gap-1 rounded-md border px-2 py-1.5 text-left text-[11px] transition-colors",
-                  active
-                    ? "border-cyan-500 bg-cyan-500/15 text-cyan-100"
-                    : "border-slate-700 bg-slate-950 text-slate-300 hover:bg-slate-800",
-                ].join(" ")}
-              >
-                <span className="truncate">{m.label}</span>
-                {m.priceDelta > 0 ? (
-                  <span className="shrink-0 font-mono text-[10px] text-cyan-200">
-                    +${m.priceDelta.toFixed(2)}
-                  </span>
-                ) : null}
-              </button>
-            )
-          })}
+      {modOpen && hasCustomization ? (
+        <div className="mt-3 space-y-3 border-t border-slate-800 pt-3">
+          {ingredientToggles.length > 0 ? (
+            <div className="space-y-1.5">
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-slate-500">
+                Ingredientes
+              </p>
+              <div className="space-y-1.5">
+                {ingredientToggles.map((tg) => (
+                  <IngredientStepper
+                    key={tg.id}
+                    toggle={tg}
+                    state={toggleStates[tg.id] ?? 0}
+                    onChange={(next) => setToggleState(tg.id, next)}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {modifiers.length > 0 ? (
+            <div className="space-y-1.5">
+              {ingredientToggles.length > 0 ? (
+                <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-slate-500">
+                  Extras
+                </p>
+              ) : null}
+              <div className="grid grid-cols-2 gap-1.5">
+                {modifiers.map((m) => {
+                  const active = selectedMods.has(m.id)
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => toggleMod(m.id)}
+                      className={[
+                        "flex items-center justify-between gap-1 rounded-md border px-2 py-1.5 text-left text-[11px] transition-colors",
+                        active
+                          ? "border-cyan-500 bg-cyan-500/15 text-cyan-100"
+                          : "border-slate-700 bg-slate-950 text-slate-300 hover:bg-slate-800",
+                      ].join(" ")}
+                    >
+                      <span className="truncate">{m.label}</span>
+                      {m.priceDelta > 0 ? (
+                        <span className="shrink-0 font-mono text-[10px] text-cyan-200">
+                          +${m.priceDelta.toFixed(2)}
+                        </span>
+                      ) : null}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
       {variantPickerOpen ? (
@@ -444,6 +507,87 @@ function MenuCard({ item }: { item: MenuItem }) {
         />
       ) : null}
     </article>
+  )
+}
+
+/* R96.26 · IngredientStepper · row con [- label +] tri-state.
+   −1 sin (rose) · 0 normal default (slate) · +1 extra (cyan).
+   Click + desde 0 → +1. Click + desde -1 → 0. Click − desde 0 → -1.
+   Click − desde +1 → 0. Bouncy clamp 0,±1. */
+function IngredientStepper({
+  toggle,
+  state,
+  onChange,
+}: {
+  toggle: MenuItemIngredientToggle
+  state: -1 | 0 | 1
+  onChange: (next: -1 | 0 | 1) => void
+}) {
+  const onMinus = () => {
+    if (state === 1) onChange(0)
+    else if (state === 0) onChange(-1)
+  }
+  const onPlus = () => {
+    if (state === -1) onChange(0)
+    else if (state === 0) onChange(1)
+  }
+  const stateText =
+    state === -1 ? toggle.removeLabel : state === 1 ? toggle.extraLabel : null
+  const containerStyle =
+    state === -1
+      ? "border-rose-500 bg-rose-500/10 text-rose-100"
+      : state === 1
+        ? "border-cyan-500 bg-cyan-500/15 text-cyan-100"
+        : "border-slate-700 bg-slate-950 text-slate-300"
+
+  return (
+    <div
+      className={[
+        "flex items-center justify-between gap-2 rounded-md border px-2 py-1 transition-colors",
+        containerStyle,
+      ].join(" ")}
+    >
+      <div className="flex min-w-0 items-center gap-2">
+        {toggle.emoji ? (
+          <span aria-hidden className="text-base">
+            {toggle.emoji}
+          </span>
+        ) : null}
+        <div className="flex min-w-0 flex-col">
+          <span className="truncate text-[11px] font-medium">
+            {stateText ?? toggle.label}
+          </span>
+          {state === 1 && toggle.extraPriceDelta ? (
+            <span className="font-mono text-[9px] text-cyan-200">
+              +${toggle.extraPriceDelta.toFixed(2)}
+            </span>
+          ) : null}
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center rounded-full border border-slate-600 bg-slate-950/60">
+        <button
+          type="button"
+          onClick={onMinus}
+          disabled={state === -1}
+          aria-label={`Quitar ${toggle.label}`}
+          className="rounded-full p-1 text-slate-300 transition-colors hover:bg-slate-800 hover:text-rose-200 disabled:cursor-not-allowed disabled:opacity-30"
+        >
+          <span className="font-mono text-xs">−</span>
+        </button>
+        <span className="min-w-[16px] text-center font-mono text-[10px] tabular-nums">
+          {state === 0 ? "" : state > 0 ? "+" : "−"}
+        </span>
+        <button
+          type="button"
+          onClick={onPlus}
+          disabled={state === 1}
+          aria-label={`Agregar ${toggle.label}`}
+          className="rounded-full p-1 text-slate-300 transition-colors hover:bg-slate-800 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-30"
+        >
+          <span className="font-mono text-xs">+</span>
+        </button>
+      </div>
+    </div>
   )
 }
 
