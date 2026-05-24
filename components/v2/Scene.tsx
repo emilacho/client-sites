@@ -1374,8 +1374,69 @@ function CharacterModel(props: React.ComponentProps<"group">) {
       mixer?.stopAllAction()
     }
   }, [actions, mixer])
+  // R96.95 · materials tuning · adaptar contraste e iluminación del
+  // esqueleto a la paleta de la isla (Naufrago palette · sunset env).
+  // Sin tuning · el GLB se renderea PBR-default · muy plano contra
+  // la arena cálida y agua cyan · falta lift en sombras + un toque
+  // warm para integrarse al sunset env. Tuning aplicado una sola vez
+  // al mount · idempotente via flag `userData.__nfTuned`.
+  useEffect(() => {
+    scene.traverse((obj) => {
+      const m = (obj as THREE.Mesh).material as
+        | THREE.MeshStandardMaterial
+        | THREE.MeshStandardMaterial[]
+        | undefined
+      if (!m) return
+      const mats = Array.isArray(m) ? m : [m]
+      mats.forEach((mat) => {
+        if (!(mat instanceof THREE.MeshStandardMaterial)) return
+        if (mat.userData.__nfTuned) return
+        mat.userData.__nfTuned = true
+        // Sunset env integration · subir envMapIntensity para que el
+        // character reciba los warm reflections del Environment.
+        mat.envMapIntensity = 0.95
+        // Sombra-lift · slight warm emissive para que las zonas en
+        // sombra no se vean negras y matcheen el calor del sunset.
+        if (mat.emissive) {
+          mat.emissive = new THREE.Color("#3a1f0a")
+          mat.emissiveIntensity = 0.18
+        }
+        // Roughness · subir leve para diffuse warm light bouncing
+        // desde la arena (la isla refleja sand color).
+        mat.roughness = Math.min(1, (mat.roughness ?? 0.5) + 0.1)
+        // Tone-shift sutil en el albedo · -5% blue + 5% red para
+        // empujar el color hacia tonos cálidos coherentes con isla.
+        if (mat.color) {
+          const c = mat.color
+          c.r = Math.min(1, c.r * 1.05)
+          c.b = Math.max(0, c.b * 0.95)
+        }
+        mat.needsUpdate = true
+      })
+    })
+  }, [scene])
   return (
     <group ref={group} {...props}>
+      {/* R96.95 · key fill warm puntual sobre el character ·
+          intensidad baja · simula bounce-light cálido desde la
+          arena · sin alterar el resto de la escena. */}
+      <pointLight
+        position={[0.6, 1.4, 0.8]}
+        intensity={0.55}
+        color="#ffb86b"
+        distance={3.5}
+        decay={2}
+      />
+      {/* R96.95 · rim cyan trasero · separación del fondo · matchea
+          el directional cyan global pero localizado al character
+          para definir silhouette contra el cielo/agua. */}
+      <pointLight
+        position={[-0.8, 1.2, -0.6]}
+        intensity={0.35}
+        color="#4DD4D8"
+        distance={3.5}
+        decay={2}
+      />
       <primitive object={scene} />
     </group>
   )
