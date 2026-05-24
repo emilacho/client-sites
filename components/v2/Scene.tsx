@@ -1231,92 +1231,95 @@ function createPromoTexture(): THREE.CanvasTexture | null {
   // gracefully. Slight per-line rotation is what sells the
   // hand-written feel · the font does the rest.
   //
-  // R96.86 · header "Has encontrado el Tesoro de Náufrago" removido
-  // per Emilio · resto del contenido expandido para cubrir todo el
-  // pergamino. Plus botón "Aplicar promo" pintado en la parte inferior.
+  // R96.88 · layout fit a canvas 1024x768 + paleta Náufrago canon ·
+  // PURPLE #3D2466 + CYAN #4DD4D8 en lugar de RED. Header removido ·
+  // espacio re-aprovechado · botón "Aplicar promo" cabe dentro 768.
 
-  // Código Promo · top · más grande para fill the upper space
-  lineAt("Código Promo", 512, 130, `78px ${handwrittenLegible}`, -0.02)
+  const PURPLE_NF = "#3D2466"
+  const CYAN_NF = "#4DD4D8"
 
-  // Hand-drawn box around the code · más ancho · ocupa mid section
-  ctx.strokeStyle = INK
+  // "Código Promo" · top · 70px
+  lineAt("Código Promo", 512, 80, `70px ${handwrittenLegible}`, -0.02, PURPLE_NF)
+
+  // Box del código · 130-280
+  ctx.strokeStyle = PURPLE_NF
   ctx.lineWidth = 8
   ctx.beginPath()
-  ctx.moveTo(140, 200)
-  ctx.lineTo(884, 194)
-  ctx.lineTo(890, 340)
-  ctx.lineTo(138, 346)
+  ctx.moveTo(140, 130)
+  ctx.lineTo(884, 124)
+  ctx.lineTo(890, 280)
+  ctx.lineTo(138, 286)
   ctx.closePath()
   ctx.stroke()
-  ctx.strokeStyle = "rgba(13,10,6,0.65)"
+  ctx.strokeStyle = "rgba(61,36,102,0.55)"
   ctx.lineWidth = 4
   ctx.beginPath()
-  ctx.moveTo(146, 206)
-  ctx.lineTo(878, 200)
-  ctx.lineTo(884, 334)
-  ctx.lineTo(144, 340)
+  ctx.moveTo(146, 136)
+  ctx.lineTo(878, 130)
+  ctx.lineTo(884, 274)
+  ctx.lineTo(144, 280)
   ctx.closePath()
   ctx.stroke()
 
-  // "SurfBollado" · centrado dentro del box · BIG
+  // "SurfBollado" · centrado dentro del box · usa cyan
   ctx.fillStyle = INK
   lineAt(
     "“SurfBollado”",
     518,
-    280,
-    `bold 120px ${handwrittenLegible}`,
+    215,
+    `bold 110px ${handwrittenLegible}`,
     -0.012,
-    RED,
+    CYAN_NF,
   )
 
-  // "5% DSCT" · debajo del box · grande prominente
-  lineAt("5% DSCT", 512, 470, `bold 160px ${handwrittenLegible}`, -0.028, RED)
+  // "5% DSCT" · 380 · purple
+  lineAt("5% DSCT", 512, 380, `bold 150px ${handwrittenLegible}`, -0.028, PURPLE_NF)
 
-  // Signature
+  // Signature "El Náufrago" · 470
   lineAt(
     "— El Náufrago",
     760,
-    580,
-    `48px ${handwrittenLegible}`,
+    470,
+    `44px ${handwrittenLegible}`,
     -0.05,
+    PURPLE_NF,
   )
 
-  // Sea-wave squiggle under signature
-  ctx.strokeStyle = "rgba(13,10,6,0.85)"
+  // Sea-wave squiggle
+  ctx.strokeStyle = PURPLE_NF
   ctx.lineWidth = 3
   ctx.beginPath()
-  ctx.moveTo(625, 615)
+  ctx.moveTo(625, 500)
   for (let i = 0; i <= 7; i++) {
     const x = 625 + i * 28
-    const y = 615 + ((i % 2 === 0 ? -1 : 1) * 4)
+    const y = 500 + ((i % 2 === 0 ? -1 : 1) * 4)
     ctx.lineTo(x, y)
   }
   ctx.stroke()
 
-  // R96.86 · Botón "Aplicar promo" · pill rojo grande abajo del
-  // pergamino · prompts the user to claim. Click en cualquier parte
-  // del pergamino dispara el roll-up via PergaminoPropModel onClick.
-  const BTN_Y = 720
+  // R96.88 · Botón "Aplicar promo" · purple Náufrago · cabe dentro
+  // del canvas 768 · Y=580-690 + sombra hasta 700.
+  const BTN_Y = 580
   const BTN_W = 460
   const BTN_H = 110
   const BTN_X = 512 - BTN_W / 2
   // Sombra suave
-  ctx.fillStyle = "rgba(13,10,6,0.35)"
+  ctx.fillStyle = "rgba(13,10,6,0.30)"
   ctx.beginPath()
   ctx.roundRect(BTN_X + 5, BTN_Y + 8, BTN_W, BTN_H, BTN_H / 2)
   ctx.fill()
-  // Fondo botón rojo
-  ctx.fillStyle = RED
+  // Fondo botón · purple Náufrago
+  ctx.fillStyle = PURPLE_NF
   ctx.beginPath()
   ctx.roundRect(BTN_X, BTN_Y, BTN_W, BTN_H, BTN_H / 2)
   ctx.fill()
-  // Borde botón
-  ctx.strokeStyle = INK
+  // Borde botón · cyan
+  ctx.strokeStyle = CYAN_NF
   ctx.lineWidth = 4
   ctx.stroke()
-  // Texto botón
-  ctx.fillStyle = "#FFFFFF"
-  ctx.font = `bold 56px ${handwrittenLegible}`
+  // Texto botón · cyan claro
+  ctx.fillStyle = CYAN_NF
+  ctx.font = `bold 54px ${handwrittenLegible}`
   ctx.textAlign = "center"
   ctx.textBaseline = "middle"
   ctx.fillText("Aplicar promo", 512, BTN_Y + BTN_H / 2 + 4)
