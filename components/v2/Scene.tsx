@@ -1275,24 +1275,28 @@ function createPromoTexture(): THREE.CanvasTexture | null {
   lineAt("5%", 420, 380, `bold 117px ${handwrittenLegible}`, -0.028, PURPLE_NF)
   lineAt("DSCT", 600, 380, `bold 90px ${handwrittenLegible}`, -0.028, PURPLE_NF)
 
-  // Signature "El Náufrago" · 470 · R96.91 · +30% (53→69)
+  // Signature "El Náufrago" · 470 · R96.92 · centrado X=512 +
+  // Homemade Apple stack (true connected-cursive · cada letra
+  // junta a la siguiente en un solo rasgo).
+  const handwrittenSignature =
+    '"Homemade Apple", "Sacramento", "Brush Script MT", cursive'
   lineAt(
     "— El Náufrago",
-    760,
+    512,
     470,
-    `69px ${handwrittenLegible}`,
+    `69px ${handwrittenSignature}`,
     -0.05,
     PURPLE_NF,
   )
 
-  // Sea-wave squiggle
+  // Sea-wave squiggle · centrado bajo la firma · R96.92
   ctx.strokeStyle = PURPLE_NF
   ctx.lineWidth = 3
   ctx.beginPath()
-  ctx.moveTo(625, 500)
+  ctx.moveTo(412, 510)
   for (let i = 0; i <= 7; i++) {
-    const x = 625 + i * 28
-    const y = 500 + ((i % 2 === 0 ? -1 : 1) * 4)
+    const x = 412 + i * 28
+    const y = 510 + ((i % 2 === 0 ? -1 : 1) * 4)
     ctx.lineTo(x, y)
   }
   ctx.stroke()
