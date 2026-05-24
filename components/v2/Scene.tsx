@@ -779,7 +779,9 @@ function CofreSoundwaveFX({
   intensity?: number
   children?: React.ReactNode
 }) {
-  const groupRef = useRef<THREE.Group>(null)
+  // R96.82 · shakeRef solo aplica al sub-group de children (GLB que
+  // queremos vibrar). Las rings viven afuera · estáticas · sin shake.
+  const shakeRef = useRef<THREE.Group>(null)
   const ring1Ref = useRef<THREE.Mesh>(null)
   const ring2Ref = useRef<THREE.Mesh>(null)
   const ring3Ref = useRef<THREE.Mesh>(null)
@@ -848,15 +850,18 @@ function CofreSoundwaveFX({
     // children slot que comparte el group ref · GLB se mueve con
     // ondas chicas sincronizadas.
     const shakeAmp = Math.max(dropPulse, energyAmp) * intensity
-    if (groupRef.current) {
-      groupRef.current.position.x = center[0] + Math.sin(t * 50) * shakeAmp
-      groupRef.current.position.y = center[1] + Math.cos(t * 47) * shakeAmp * 0.7
-      groupRef.current.position.z = center[2] + Math.sin(t * 53) * shakeAmp
+    if (shakeRef.current) {
+      // R96.82 · shake aplicado solo al sub-group de children (GLB) ·
+      // position relativa al outer group · ondas NO se mueven.
+      shakeRef.current.position.x = Math.sin(t * 50) * shakeAmp
+      shakeRef.current.position.y = Math.cos(t * 47) * shakeAmp * 0.7
+      shakeRef.current.position.z = Math.sin(t * 53) * shakeAmp
     }
   })
 
   return (
-    <group ref={groupRef} position={center}>
+    <group position={center}>
+      {/* Rings · outer group estático · NO shake aplicado */}
       {ringRefs.map((ref, i) => (
         <mesh key={i} ref={ref} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
           <ringGeometry args={[0.5, 0.58, 48]} />
@@ -870,7 +875,8 @@ function CofreSoundwaveFX({
           />
         </mesh>
       ))}
-      {children}
+      {/* Children (GLB botella) · sub-group con shake aplicado solo a ellos */}
+      <group ref={shakeRef}>{children}</group>
     </group>
   )
 }
