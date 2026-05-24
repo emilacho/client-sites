@@ -291,43 +291,58 @@ export function Scene({
               acostada Y=0.13 lateral · gap visible respecto barco +40%.
               Sec 3.3 · crab adentro cluster palmas anchor (X=-1.6 Z=-1.8)
               · ligeramente delante · semi-oculto entre troncos. */}
-          {/* R96.54 · debug helpers en qaMode · GridHelper 6×6 step
-              0.5 (12 divs) + AxesHelper 3u + LABELS de coord en cada
-              unidad entera (X=-3..+3 · Z=-3..+3). Permite al user
-              leer coords directamente del grid visible. */}
+          {/* R96.55 · debug helpers en qaMode · GridHelper magenta +
+              AxesHelper red/green/blue · 4 direction labels grandes
+              en los extremos de los ejes (DERECHA · IZQUIERDA · FRENTE
+              · ATRÁS) + 4 corner markers en las esquinas del sand mesh
+              con coords (X,Z). Limpiado · sin labels por unidad que
+              confundían. */}
           {qaMode ? (
             <>
               <gridHelper args={[6, 12, "#ff00ff", "#666666"]} position={[0, 0.05, 0]} />
               <axesHelper args={[3]} position={[0, 0.06, 0]} />
-              {/* X labels along Z=0 axis */}
-              {[-3, -2, -1, 1, 2, 3].map((x) => (
-                <Text
-                  key={`x-${x}`}
-                  position={[x, 0.5, 0]}
-                  fontSize={0.25}
-                  color="#ff2266"
-                  anchorX="center"
-                  anchorY="middle"
-                  rotation={[-Math.PI / 2, 0, 0]}
-                >
-                  {`X=${x > 0 ? "+" : ""}${x}`}
-                </Text>
-              ))}
-              {/* Z labels along X=0 axis */}
-              {[-3, -2, -1, 1, 2, 3].map((z) => (
-                <Text
-                  key={`z-${z}`}
-                  position={[0, 0.5, z]}
-                  fontSize={0.25}
-                  color="#22aaff"
-                  anchorX="center"
-                  anchorY="middle"
-                  rotation={[-Math.PI / 2, 0, 0]}
-                >
-                  {`Z=${z > 0 ? "+" : ""}${z}`}
-                </Text>
-              ))}
-              {/* Corner labels · 4 corner spots */}
+              {/* Direction labels grandes en los 4 extremos */}
+              <Text
+                position={[3.5, 0.8, 0]}
+                fontSize={0.4}
+                color="#ff2266"
+                anchorX="center"
+                anchorY="middle"
+                rotation={[-Math.PI / 2, 0, 0]}
+              >
+                {"+X DERECHA →"}
+              </Text>
+              <Text
+                position={[-3.5, 0.8, 0]}
+                fontSize={0.4}
+                color="#ff2266"
+                anchorX="center"
+                anchorY="middle"
+                rotation={[-Math.PI / 2, 0, 0]}
+              >
+                {"← IZQUIERDA −X"}
+              </Text>
+              <Text
+                position={[0, 0.8, 3.5]}
+                fontSize={0.4}
+                color="#22aaff"
+                anchorX="center"
+                anchorY="middle"
+                rotation={[-Math.PI / 2, 0, 0]}
+              >
+                {"+Z FRENTE ↓"}
+              </Text>
+              <Text
+                position={[0, 0.8, -3.5]}
+                fontSize={0.4}
+                color="#22aaff"
+                anchorX="center"
+                anchorY="middle"
+                rotation={[-Math.PI / 2, 0, 0]}
+              >
+                {"↑ ATRÁS −Z"}
+              </Text>
+              {/* Corner labels · 4 esquinas del sand mesh */}
               {[
                 [-2, -2],
                 [2, -2],
@@ -336,14 +351,14 @@ export function Scene({
               ].map(([x, z], i) => (
                 <Text
                   key={`corner-${i}`}
-                  position={[x, 0.8, z]}
-                  fontSize={0.3}
+                  position={[x, 0.6, z]}
+                  fontSize={0.35}
                   color="#ffff00"
                   anchorX="center"
                   anchorY="middle"
                   rotation={[-Math.PI / 2, 0, 0]}
                 >
-                  {`(${x > 0 ? "+" : ""}${x},${z > 0 ? "+" : ""}${z})`}
+                  {`(X=${x > 0 ? "+" : ""}${x},Z=${z > 0 ? "+" : ""}${z})`}
                 </Text>
               ))}
             </>
