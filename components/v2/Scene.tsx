@@ -287,13 +287,27 @@ export function Scene({
               position={[0, -0.05, 0]}
               rotation={[Math.PI / 2, 0, 0.4]}
               scale={0.212}
+            />
+            {/* R96.84 · hitbox invisible amplio · botella GLB es chiquita
+                (scale 0.212) · el modelo en sí tiene area clickable mini.
+                Esta sphere transparent radius 0.4 captura clicks en una
+                zona generosa alrededor de la botella sin afectar visual. */}
+            <mesh
+              position={[0, 0.1, 0]}
               onClick={(e) => {
                 e.stopPropagation()
                 if (typeof window !== "undefined") {
                   window.dispatchEvent(new CustomEvent("naufrago:open-pergamino"))
                 }
               }}
-            />
+            >
+              <sphereGeometry args={[0.4, 16, 16]} />
+              <meshBasicMaterial
+                transparent
+                opacity={0}
+                depthWrite={false}
+              />
+            </mesh>
           </CofreSoundwaveFX>
 
           {/* Round 96.5 · props secundarios decorativos · cangrejo
