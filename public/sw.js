@@ -1,15 +1,40 @@
-// Náufrago Service Worker · R96.17 · Web Push handler.
+// Náufrago Service Worker · R96.17 push handler + R96.133 PWA basics.
 //
-// Solo maneja eventos push y notificationclick · cualquier otro
-// caching está delegado al Next.js framework (no PWA todavía).
+// Maneja · push notifications + notificationclick + offline fallback
+// básico (cachea / + /privacidad + /mi-cuenta para que la app abra
+// sin red mostrando esos shells · contenido dinámico falla con UX OK).
 
-self.addEventListener("install", () => {
-  // Activar inmediatamente · no esperar al close de pestañas viejas
+const CACHE_NAME = "naufrago-v1"
+const OFFLINE_URLS = ["/", "/privacidad", "/mi-cuenta"]
+
+self.addEventListener("install", (event) => {
   self.skipWaiting()
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(OFFLINE_URLS).catch(() => {})),
+  )
 })
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim())
+  event.waitUntil(
+    Promise.all([
+      self.clients.claim(),
+      caches.keys().then((keys) =>
+        Promise.all(
+          keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)),
+        ),
+      ),
+    ]),
+  )
+})
+
+self.addEventListener("fetch", (event) => {
+  // Solo interceptar navegación GET · NO API calls ni assets dinámicos.
+  if (event.request.mode !== "navigate") return
+  event.respondWith(
+    fetch(event.request).catch(() =>
+      caches.match(event.request).then((cached) => cached || caches.match("/")),
+    ),
+  )
 })
 
 self.addEventListener("push", (event) => {
