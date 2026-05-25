@@ -9,6 +9,7 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useAccount } from "@/lib/v2/use-account"
+import OrderHistorySection from "@/components/v2/OrderHistorySection"
 
 const PURPLE = "#3D2466"
 const CYAN = "#4DD4D8"
@@ -113,12 +114,7 @@ export default function MiCuentaPage() {
           cta="Editar"
           disabled
         />
-        <SectionPlaceholder
-          title="Histórico de pedidos"
-          subtitle="Tus últimos pedidos · pedí igual con 1 click"
-          cta="Ver pedidos"
-          disabled
-        />
+        <OrderHistorySection />
 
         <div className="mt-8 flex items-center justify-between border-t border-slate-800 pt-4">
           <span className="font-mono text-[10px] uppercase tracking-widest text-slate-500">
