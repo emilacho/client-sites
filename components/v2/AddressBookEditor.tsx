@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react"
 import { Pencil, Trash2, Plus, Check, X, MapPin } from "lucide-react"
 import { getSupabaseBrowser } from "@/lib/supabase-browser"
+import MapAddressPicker from "./MapAddressPicker"
 
 export interface AddressEntry {
   street: string
@@ -260,6 +261,8 @@ function AddressForm({
   const [street, setStreet] = useState(initial.street ?? "")
   const [detail, setDetail] = useState(initial.detail ?? "")
   const [label, setLabel] = useState(initial.label ?? "Otra")
+  const [lat, setLat] = useState<number | null>(initial.lat ?? null)
+  const [lng, setLng] = useState<number | null>(initial.lng ?? null)
 
   const canSave = street.trim().length > 2
 
@@ -281,12 +284,16 @@ function AddressForm({
           </button>
         ))}
       </div>
-      <input
-        type="text"
-        value={street}
-        onChange={(e) => setStreet(e.target.value)}
-        placeholder="Calle · número · barrio"
-        className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none"
+      {/* R96.120 · Google Maps + Places · al elegir suggestion o
+          drag-end del marker · populamos street/lat/lng auto. Si no
+          hay API key configurada · degrade a input simple. */}
+      <MapAddressPicker
+        initial={{ street, lat, lng }}
+        onChange={({ street: s, lat: la, lng: ln }) => {
+          setStreet(s)
+          setLat(la)
+          setLng(ln)
+        }}
       />
       <input
         type="text"
@@ -313,6 +320,8 @@ function AddressForm({
               street: street.trim(),
               detail: detail.trim() || null,
               label,
+              lat,
+              lng,
             })
           }
           className="flex-1 rounded-md bg-gradient-to-r from-violet-500 to-cyan-500 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
