@@ -56,7 +56,10 @@ export function useGoogleMapsScript(): {
       script.defer = true
       // libraries=places para Autocomplete + PlacesService.
       // loading=async + region=EC + language=es-419 para best results LATAM.
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places&loading=async&region=EC&language=es-419`
+      // R96.123 · removido `loading=async` · ese modo requiere el API
+      // moderno `importLibrary("places")` y rompe el approach legacy
+      // `new google.maps.places.Autocomplete(...)` que usa el picker.
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places&region=EC&language=es-419`
       script.onload = () => resolve()
       script.onerror = () => reject(new Error("script_error"))
       document.head.appendChild(script)
