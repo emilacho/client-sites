@@ -145,8 +145,8 @@ export function Scene({
     <Canvas
       shadows
       camera={{ position: [9, 4, 0], fov: 38 }}
-      gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
-      dpr={[1, 2]}
+      gl={{ antialias: false, alpha: true, powerPreference: "high-performance" }}
+      dpr={[1, 1.5]}
     >
       {/* Round 11 single-issue fix · removed
           `<color attach="background" args={["#06080f"]} />`

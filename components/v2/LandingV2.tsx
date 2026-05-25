@@ -39,23 +39,70 @@ import CookieConsentBanner from "./CookieConsentBanner"
 import { SceneErrorBoundary } from "./SceneErrorBoundary"
 import type { AnchorKind } from "./Scene"
 
-// The r3f Canvas can't SSR · dynamic import with ssr:false.
+// R96.130 · Wave 1 Item #3 · LCP optimization · poster visible
+// inmediato + Canvas deferido 800ms post-mount o 1ra interacción ·
+// captura LCP en el poster (no en el Canvas pesado · 3D models toman
+// 2-3s en decode + paint). Domino's research · 100ms LCP = 1% conv.
 const Scene = dynamic(() => import("./Scene").then((m) => m.Scene), {
   ssr: false,
-  loading: () => <SceneFallback />,
+  loading: () => <ScenePoster />,
 })
 
-function SceneFallback() {
+/**
+ * ScenePoster · LCP element · gradient grande + headline visible
+ * inmediato sin requerir el bundle r3f (54KB de chunk separado).
+ */
+function ScenePoster() {
   return (
-    <div className="absolute inset-0 flex items-center justify-center bg-slate-950">
-      <div className="flex flex-col items-center gap-3 text-slate-400">
-        <span className="h-3 w-3 animate-pulse rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.8)]" />
-        <span className="font-mono text-[10px] uppercase tracking-[0.2em]">
-          cargando la isla…
+    <div
+      className="absolute inset-0 flex items-center justify-center"
+      style={{
+        background:
+          "radial-gradient(ellipse at 50% 40%, #1a2545 0%, #0a1124 60%, #060914 100%)",
+      }}
+    >
+      <div className="flex flex-col items-center gap-3 opacity-70">
+        <span className="text-6xl" aria-hidden>
+          🏝️
+        </span>
+        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan-300">
+          isla en aguas tranquilas
         </span>
       </div>
     </div>
   )
+}
+
+/** DeferredScene · monta el Canvas pesado tras 800ms post-mount o
+ *  primera interacción (scroll · touch · click) · lo que llegue antes.
+ *  Mientras tanto sirve el poster · LCP scoring captura el poster. */
+function DeferredScene(props: React.ComponentProps<typeof Scene>) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    if (mounted) return
+    let cancelled = false
+    const timeoutId = window.setTimeout(() => {
+      if (!cancelled) setMounted(true)
+    }, 800)
+    const onInteract = () => {
+      if (!cancelled) {
+        setMounted(true)
+        window.clearTimeout(timeoutId)
+      }
+    }
+    window.addEventListener("scroll", onInteract, { once: true, passive: true })
+    window.addEventListener("touchstart", onInteract, { once: true, passive: true })
+    window.addEventListener("click", onInteract, { once: true })
+    return () => {
+      cancelled = true
+      window.clearTimeout(timeoutId)
+      window.removeEventListener("scroll", onInteract)
+      window.removeEventListener("touchstart", onInteract)
+      window.removeEventListener("click", onInteract)
+    }
+  }, [mounted])
+  if (!mounted) return <ScenePoster />
+  return <Scene {...props} />
 }
 
 function LandingInner() {
@@ -166,7 +213,7 @@ function LandingInner() {
           the boundary and keep working when the scene fails. */}
       <div className="absolute inset-0 z-0">
         <SceneErrorBoundary>
-          <Scene
+          <DeferredScene
             onAnchorClick={handleAnchor}
             treasureOpen={treasureOpen}
             onTreasureClose={() => setTreasureOpen(false)}
