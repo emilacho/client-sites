@@ -27,6 +27,7 @@ import { MenuModal } from "./MenuModal"
 import { TrackOrderModal } from "./TrackOrderModal"
 import { SubscribeModal } from "./SubscribeModal"
 import RuletaModal from "./RuletaModal"
+import AccountModal from "./AccountModal"
 // Round 85 · TreasureRewardModal (R82 castaway SVG modal) retired ·
 // the 3D pergamino in-scene that emerges from the cofre on click
 // replaces it · same discount flow, more immersive reveal.
@@ -79,6 +80,8 @@ function LandingInner() {
   const [subscribeOpen, setSubscribeOpen] = useState(false)
   // R96.98 · ruleta del cofre · click cofre abre la rueda giratoria.
   const [ruletaOpen, setRuletaOpen] = useState(false)
+  // R96.113 · Account modal · botón usuario en TopBar abre login/perfil.
+  const [accountOpen, setAccountOpen] = useState(false)
   // Round 95 · OrderTracker state eliminado · pendiente nuevo
   // approach del usuario.
 
@@ -136,9 +139,25 @@ function LandingInner() {
     return () => window.removeEventListener("naufrago:open-pergamino", handler)
   }, [])
 
+  // R96.113 · si la URL trae ?login=1 (redirect desde /mi-cuenta sin
+  // sesión) · auto-abrir AccountModal y limpiar el query param.
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("login") === "1") {
+      setAccountOpen(true)
+      params.delete("login")
+      const newUrl =
+        window.location.pathname +
+        (params.toString() ? `?${params.toString()}` : "") +
+        window.location.hash
+      window.history.replaceState({}, "", newUrl)
+    }
+  }, [])
+
   return (
     <main className="relative min-h-[100svh] overflow-hidden bg-slate-950 text-slate-100">
-      <TopBar />
+      <TopBar onOpenAccount={() => setAccountOpen(true)} />
 
       {/* 3D scene · full viewport · hero copy sits over it.
           Wrapped in SceneErrorBoundary so an unloadable asset doesn't
@@ -354,6 +373,7 @@ function LandingInner() {
       <TrackOrderModal open={trackOpen} onClose={() => setTrackOpen(false)} />
       <SubscribeModal open={subscribeOpen} onClose={() => setSubscribeOpen(false)} />
       <RuletaModal open={ruletaOpen} onClose={() => setRuletaOpen(false)} />
+      <AccountModal open={accountOpen} onClose={() => setAccountOpen(false)} />
       <OverlayPanels active={overlay} onClose={() => setOverlay(null)} />
 
     </main>

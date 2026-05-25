@@ -10,7 +10,6 @@
  * spinner while in-flight). The "· ghost kitchen Olón" sublabel
  * stays pinned · it's the brand anchor regardless of user location.
  */
-import Link from "next/link"
 import { AnimatePresence, motion } from "framer-motion"
 import { Loader2, MapPin, User } from "lucide-react"
 import { useCart } from "@/lib/v2/cart-context"
@@ -20,7 +19,11 @@ import { useAccount } from "@/lib/v2/use-account"
 import { cliente } from "@/cliente.config"
 import { CanoeIcon } from "./CanoeIcon"
 
-export function TopBar() {
+interface TopBarProps {
+  onOpenAccount?: () => void
+}
+
+export function TopBar({ onOpenAccount }: TopBarProps = {}) {
   const cart = useCart()
   const { state: locState, label: locLabel } = useUserLocation()
   const hours = useBusinessHours()
@@ -128,26 +131,27 @@ export function TopBar() {
             <>Cerrado · {hours.opensAtText ? `vuelve ${hours.opensAtText}` : "vuelve pronto"}</>
           )}
         </span>
-        {/* R96.112 · perlas chip · visible cuando hay sesión · click navega
-            a /mi-cuenta. Si NO hay sesión · solo icono usuario (login). */}
+        {/* R96.113 · perlas chip + icono usuario · click abre AccountModal. */}
         {account && account.perlas > 0 ? (
-          <Link
-            href="/mi-cuenta"
+          <button
+            type="button"
+            onClick={onOpenAccount}
             className="mr-2 inline-flex shrink-0 items-center gap-1 rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-100 transition-colors hover:bg-cyan-500/20"
             title={`${account.perlas} perlas · ≈$${(account.perlas * 0.01).toFixed(2)}`}
           >
             <span aria-hidden>✦</span>
             <span className="tabular-nums">{account.perlas}</span>
-          </Link>
+          </button>
         ) : null}
-        <Link
-          href="/mi-cuenta"
+        <button
+          type="button"
+          onClick={onOpenAccount}
           className="mr-2 inline-flex shrink-0 items-center justify-center rounded-full border border-cyan-500/30 bg-cyan-500/10 p-1.5 text-cyan-100 transition-colors hover:bg-cyan-500/20"
           aria-label="Mi cuenta"
           title={account ? "Mi cuenta" : "Iniciar sesión"}
         >
           <User className="h-4 w-4" />
-        </Link>
+        </button>
         <button
           type="button"
           onClick={cart.open}

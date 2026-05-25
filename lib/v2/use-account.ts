@@ -1,10 +1,11 @@
 "use client"
 /**
- * useAccount · R96.112 · client hook · GET /api/account/me al mount.
- * Devuelve { account, loading, refresh, logout }. Sin auth context global ·
- * componentes que necesiten esto lo importan directo.
+ * useAccount · R96.113 · client hook · usa Supabase Auth (email magic
+ * link / Google OAuth). Si hay session · pasa el access_token a
+ * /api/account/me que resuelve el perfil del cliente (linked o nuevo).
  */
 import { useCallback, useEffect, useState } from "react"
+import { getSupabaseBrowser } from "@/lib/supabase-browser"
 
 export interface AccountAddress {
   street?: string
@@ -16,9 +17,10 @@ export interface AccountAddress {
 
 export interface AccountProfile {
   authenticated: true
-  whatsapp: string
-  name: string | null
+  authUserId: string
   email: string | null
+  whatsapp: string | null
+  name: string | null
   addresses: AccountAddress[]
   preferences: string | null
   totalOrders: number
@@ -42,7 +44,15 @@ export function useAccount(): {
   const refresh = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch("/api/account/me", { credentials: "include" })
+      const supa = getSupabaseBrowser()
+      const { data: { session } } = await supa.auth.getSession()
+      if (!session?.access_token) {
+        setAccount(null)
+        return
+      }
+      const res = await fetch("/api/account/me", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
       const data = await res.json()
       if (data?.ok && data.authenticated) {
         setAccount(data as AccountProfile)
@@ -57,23 +67,29 @@ export function useAccount(): {
   }, [])
 
   const logout = useCallback(async () => {
-    await fetch("/api/account/logout", {
-      method: "POST",
-      credentials: "include",
-    }).catch(() => {})
+    try {
+      const supa = getSupabaseBrowser()
+      await supa.auth.signOut()
+    } catch {
+      // ignore
+    }
     setAccount(null)
   }, [])
 
   useEffect(() => {
     void refresh()
-    // R96.112 Fase B · refresh on tab focus · captura updates de
-    // balance post-DELIVERED sin necesidad de realtime ws. Simple,
-    // robusto, sin nueva infra.
+    const supa = getSupabaseBrowser()
+    const { data: sub } = supa.auth.onAuthStateChange(() => {
+      void refresh()
+    })
     const onFocus = () => {
       void refresh()
     }
     window.addEventListener("focus", onFocus)
-    return () => window.removeEventListener("focus", onFocus)
+    return () => {
+      sub.subscription.unsubscribe()
+      window.removeEventListener("focus", onFocus)
+    }
   }, [refresh])
 
   return { account, loading, refresh, logout }
