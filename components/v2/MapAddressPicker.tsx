@@ -73,6 +73,7 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
     street: string
     lat: number
     lng: number
+    accuracy: number
   } | null>(null)
   const [detecting, setDetecting] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
@@ -217,29 +218,31 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
     if (!ready || failed || initial?.lat) return
     if (typeof navigator === "undefined" || !navigator.geolocation) return
     setDetecting(true)
+    // R96.126 · maximumAge=0 fuerza fresh fetch (sin cache) ·
+    // timeout=15s da más chance al GPS de converger · accuracy se
+    // captura para indicar al usuario si la posición es aproximada.
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const lat = pos.coords.latitude
         const lng = pos.coords.longitude
+        const accuracy = pos.coords.accuracy ?? 9999
+        // Zoom adaptivo · 18 si <50m · 17 si <200m · 16 si <500m · 14 sino
+        const zoom =
+          accuracy < 50 ? 18 : accuracy < 200 ? 17 : accuracy < 500 ? 16 : 14
         const geocoder = geocoderRef.current
         if (!geocoder) {
-          setDetected({ street: "", lat, lng })
+          setDetected({ street: "", lat, lng, accuracy })
           setShowOverlay(true)
           setDetecting(false)
           return
         }
         geocoder.geocode({ location: { lat, lng } }, (results, status) => {
           setDetecting(false)
-          // Centrar el mapa en la ubicación detectada incluso si el
-          // geocode no devuelve una dirección legible.
           if (mapRef.current && markerRef.current) {
             mapRef.current.setCenter({ lat, lng })
-            mapRef.current.setZoom(17)
+            mapRef.current.setZoom(zoom)
             markerRef.current.setPosition({ lat, lng })
           }
-          // R96.125 · si NO devuelve address con letras · NO mostrar
-          // overlay (ej. Geocoding API disabled · ubicación remota sin
-          // mapeo). El usuario busca manual o draggea el pin.
           if (status !== "OK" || !results || results.length === 0) {
             console.warn("[MapAddressPicker] geocode no result", status)
             return
@@ -249,7 +252,7 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
             console.warn("[MapAddressPicker] geocode returned non-address")
             return
           }
-          setDetected({ street, lat, lng })
+          setDetected({ street, lat, lng, accuracy })
           setShowOverlay(true)
         })
       },
@@ -257,7 +260,7 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
         console.warn("[MapAddressPicker] geolocation denied/failed", err)
         setDetecting(false)
       },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, failed])
@@ -320,16 +323,27 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
             <p className="text-xs text-cyan-300">Detectando tu ubicación…</p>
           </div>
         )}
-        {/* R96.124 · overlay confirmación post-geolocation · "¿Es tu dirección actual?" */}
+        {/* R96.124+126 · overlay confirmación + indicador de precisión */}
         {showOverlay && detected && (
           <div className="absolute inset-0 flex items-center justify-center bg-slate-950/85 p-3 backdrop-blur-sm">
-            <div className="w-full max-w-[300px] rounded-lg border border-cyan-500/40 bg-slate-900 p-3 shadow-lg">
+            <div className="w-full max-w-[320px] rounded-lg border border-cyan-500/40 bg-slate-900 p-3 shadow-lg">
               <p className="text-[11px] uppercase tracking-widest text-cyan-300">
                 ¿Esta es tu dirección actual?
               </p>
               <p className="mt-1 text-sm text-slate-100">
                 {detected.street || `${detected.lat.toFixed(4)}, ${detected.lng.toFixed(4)}`}
               </p>
+              {detected.accuracy > 200 && (
+                <p className="mt-1 text-[10px] text-amber-300">
+                  ⚠ Ubicación aproximada (±{Math.round(detected.accuracy)}m) ·
+                  arrastrá el pin si está lejos
+                </p>
+              )}
+              {detected.accuracy <= 200 && detected.accuracy > 0 && (
+                <p className="mt-1 text-[10px] text-slate-500">
+                  Precisión ±{Math.round(detected.accuracy)}m
+                </p>
+              )}
               <div className="mt-3 flex gap-2">
                 <button
                   type="button"
