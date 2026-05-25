@@ -8,6 +8,8 @@ import {
   Caveat,
 } from "next/font/google"
 import { cliente } from "@/cliente.config"
+import { restaurantSchema, localBusinessSchema } from "@/lib/structured-data"
+import { JsonLdScript } from "@/lib/structured-data-script"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
@@ -60,6 +62,15 @@ export const metadata: Metadata = {
     template: `%s · ${cliente.name}`,
   },
   description: cliente.description,
+  keywords: [
+    "ceviche Olón",
+    "encebollado Ecuador",
+    "delivery Santa Elena",
+    "ghost kitchen",
+    "comida costera",
+    "mariscos Olón",
+    cliente.name,
+  ],
   openGraph: {
     title: cliente.name,
     description: cliente.description,
@@ -67,6 +78,30 @@ export const metadata: Metadata = {
     siteName: cliente.name,
     type: "website",
     locale: "es_EC",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: `${cliente.name} · ceviche y encebollado en Olón`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: cliente.name,
+    description: cliente.description,
+    images: ["/og-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 }
 
@@ -75,6 +110,11 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es" suppressHydrationWarning>
+      <head>
+        {/* R96.131 · JSON-LD schema.org · Restaurant + LocalBusiness ·
+            AI search (ChatGPT/Perplexity/Gemini) + Google rich results. */}
+        <JsonLdScript data={[restaurantSchema(), localBusinessSchema()]} />
+      </head>
       <body
         className={`${inter.variable} ${displaySerif.variable} ${marker.variable} ${bebas.variable} ${handwritten.variable} ${caveat.variable} font-sans antialiased`}
       >
