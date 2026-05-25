@@ -14,6 +14,7 @@ import OrderHistorySection from "@/components/v2/OrderHistorySection"
 import AddressBookEditor from "@/components/v2/AddressBookEditor"
 import PreferencesEditor from "@/components/v2/PreferencesEditor"
 import WhatsappChanger from "@/components/v2/WhatsappChanger"
+import PrivacySection from "@/components/v2/PrivacySection"
 
 const PURPLE = "#3D2466"
 const CYAN = "#4DD4D8"
@@ -129,6 +130,7 @@ function MiCuentaInner() {
           initialValue={account.preferences}
         />
         <OrderHistorySection />
+        <PrivacySection />
 
         <div className="mt-8 border-t border-slate-800 pt-4">
           <span className="block font-mono text-[10px] uppercase tracking-widest text-slate-500">
