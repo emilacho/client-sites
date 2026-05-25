@@ -37,6 +37,7 @@ export function useAccount(): {
   loading: boolean
   refresh: () => Promise<void>
   logout: () => Promise<void>
+  logoutAllDevices: () => Promise<void>
 } {
   const [account, setAccount] = useState<AccountProfile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -77,6 +78,18 @@ export function useAccount(): {
     setAccount(null)
   }, [])
 
+  // R96.119 · Cerrar sesión en TODOS los devices · scope global invalida
+  // todos los refresh_tokens del user · útil si perdió un device.
+  const logoutAllDevices = useCallback(async () => {
+    try {
+      const supa = getSupabaseBrowser()
+      await supa.auth.signOut({ scope: "global" })
+    } catch (err) {
+      console.error("[useAccount] logoutAll error", err)
+    }
+    setAccount(null)
+  }, [])
+
   useEffect(() => {
     void refresh()
     const supa = getSupabaseBrowser()
@@ -93,5 +106,32 @@ export function useAccount(): {
     }
   }, [refresh])
 
-  return { account, loading, refresh, logout }
+  // R96.119 · realtime sub al balance de perlas · si el cliente tiene
+  // whatsapp_e164 · subscribe a UPDATE en naufrago_loyalty_balance
+  // filtered por phone · al recibir un cambio · refresh el account.
+  // Útil para que el chip perlas se actualice al instante post-DELIVERED.
+  useEffect(() => {
+    if (!account?.whatsapp) return
+    const supa = getSupabaseBrowser()
+    const channel = supa
+      .channel(`loyalty-${account.whatsapp}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "naufrago_loyalty_balance",
+          filter: `phone=eq.${account.whatsapp}`,
+        },
+        () => {
+          void refresh()
+        },
+      )
+      .subscribe()
+    return () => {
+      void supa.removeChannel(channel)
+    }
+  }, [account?.whatsapp, refresh])
+
+  return { account, loading, refresh, logout, logoutAllDevices }
 }

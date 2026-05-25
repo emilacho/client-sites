@@ -18,6 +18,7 @@ import { useBusinessHours } from "@/lib/v2/use-business-hours"
 import { useAccount } from "@/lib/v2/use-account"
 import { cliente } from "@/cliente.config"
 import { CanoeIcon } from "./CanoeIcon"
+import PerlasChip from "./PerlasChip"
 
 interface TopBarProps {
   onOpenAccount?: () => void
@@ -131,17 +132,9 @@ export function TopBar({ onOpenAccount }: TopBarProps = {}) {
             <>Cerrado · {hours.opensAtText ? `vuelve ${hours.opensAtText}` : "vuelve pronto"}</>
           )}
         </span>
-        {/* R96.113 · perlas chip + icono usuario · click abre AccountModal. */}
-        {account && account.perlas > 0 ? (
-          <button
-            type="button"
-            onClick={onOpenAccount}
-            className="mr-2 inline-flex shrink-0 items-center gap-1 rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-100 transition-colors hover:bg-cyan-500/20"
-            title={`${account.perlas} perlas · ≈$${(account.perlas * 0.01).toFixed(2)}`}
-          >
-            <span aria-hidden>✦</span>
-            <span className="tabular-nums">{account.perlas}</span>
-          </button>
+        {/* R96.119 · perlas chip animated count-up + click abre AccountModal */}
+        {account ? (
+          <PerlasChip value={Number(account.perlas) || 0} onClick={onOpenAccount} />
         ) : null}
         <button
           type="button"

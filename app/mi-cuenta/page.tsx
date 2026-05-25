@@ -11,6 +11,9 @@ import Link from "next/link"
 import { useAccount } from "@/lib/v2/use-account"
 import { CartProvider } from "@/lib/v2/cart-context"
 import OrderHistorySection from "@/components/v2/OrderHistorySection"
+import AddressBookEditor from "@/components/v2/AddressBookEditor"
+import PreferencesEditor from "@/components/v2/PreferencesEditor"
+import WhatsappChanger from "@/components/v2/WhatsappChanger"
 
 const PURPLE = "#3D2466"
 const CYAN = "#4DD4D8"
@@ -27,7 +30,7 @@ export default function MiCuentaPage() {
 }
 
 function MiCuentaInner() {
-  const { account, loading, logout } = useAccount()
+  const { account, loading, logout, logoutAllDevices, refresh } = useAccount()
   const router = useRouter()
 
   useEffect(() => {
@@ -51,7 +54,6 @@ function MiCuentaInner() {
   const perlasNum = Number(account.perlas) || 0
   const totalSpendNum = Number(account.totalSpendUsd) || 0
   const totalOrdersNum = Number(account.totalOrders) || 0
-  const addressesArr = Array.isArray(account.addresses) ? account.addresses : []
   const perlasUsd = (perlasNum * 0.01).toFixed(2)
   const nextRewardCost = 100
   const progressPct = Math.min(
@@ -117,33 +119,45 @@ function MiCuentaInner() {
           cta="Pedirlo de nuevo"
           href="/"
         />
-        <SectionPlaceholder
-          title="Mis direcciones"
-          subtitle={`${addressesArr.length} ${
-            addressesArr.length === 1 ? "guardada" : "guardadas"
-          }`}
-          cta="Ver / editar"
-          disabled
+        <AddressBookEditor />
+        <WhatsappChanger
+          currentWhatsapp={account.whatsapp}
+          onChange={refresh}
         />
-        <SectionPlaceholder
-          title="Mis preferencias"
-          subtitle={account.preferences || "Sin notas guardadas todavía"}
-          cta="Editar"
-          disabled
+        <PreferencesEditor
+          whatsapp={account.whatsapp}
+          initialValue={account.preferences}
         />
         <OrderHistorySection />
 
-        <div className="mt-8 flex items-center justify-between border-t border-slate-800 pt-4">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-slate-500">
+        <div className="mt-8 border-t border-slate-800 pt-4">
+          <span className="block font-mono text-[10px] uppercase tracking-widest text-slate-500">
             {account.email ?? account.whatsapp ?? "—"}
           </span>
-          <button
-            type="button"
-            onClick={logout}
-            className="rounded-full border border-slate-700 px-3 py-1.5 text-[11px] uppercase tracking-widest text-slate-400 hover:bg-slate-800"
-          >
-            Cerrar sesión
-          </button>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={logout}
+              className="flex-1 rounded-full border border-slate-700 px-3 py-1.5 text-[11px] uppercase tracking-widest text-slate-400 hover:bg-slate-800"
+            >
+              Cerrar sesión
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (
+                  confirm(
+                    "¿Cerrar sesión en TODOS los devices? Vas a tener que volver a entrar en cada uno.",
+                  )
+                ) {
+                  void logoutAllDevices()
+                }
+              }}
+              className="flex-1 rounded-full border border-rose-700/50 px-3 py-1.5 text-[11px] uppercase tracking-widest text-rose-400 hover:bg-rose-900/20"
+            >
+              Cerrar todos
+            </button>
+          </div>
         </div>
       </div>
     </main>
