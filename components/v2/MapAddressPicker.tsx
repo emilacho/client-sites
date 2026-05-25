@@ -62,10 +62,16 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
   const mapRef = useRef<GMapInstance | null>(null)
   const markerRef = useRef<GMarkerInstance | null>(null)
   const [streetLocal, setStreetLocal] = useState(initial?.street ?? "")
+  // R96.122 · si la inicialización del mapa throw (script timing race ·
+  // referrer rechazado · billing missing) · degrade gracefully al input
+  // simple sin romper el render entero.
+  const [failed, setFailed] = useState(false)
 
   // Mount the map + autocomplete once script is ready.
   useEffect(() => {
     if (!ready || !mapDivRef.current || !inputRef.current) return
+    let cleanup: (() => void) | undefined
+    try {
     const w = window as unknown as {
       google: {
         maps: {
@@ -165,16 +171,25 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
       })
     })
 
-    return () => {
-      if (markerRef.current) markerRef.current.setMap(null)
+    cleanup = () => {
+      try {
+        if (markerRef.current) markerRef.current.setMap(null)
+      } catch (err) {
+        console.error("[MapAddressPicker] cleanup error", err)
+      }
       mapRef.current = null
       markerRef.current = null
     }
+    } catch (err) {
+      console.error("[MapAddressPicker] init error", err)
+      setFailed(true)
+    }
+    return cleanup
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready])
 
-  // Fallback · sin API key · degrade al input simple.
-  if (unavailable) {
+  // Fallback · sin API key o init falló · degrade al input simple.
+  if (unavailable || failed) {
     return (
       <input
         type="text"
