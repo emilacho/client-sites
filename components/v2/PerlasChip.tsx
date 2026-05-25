@@ -34,7 +34,9 @@ export default function PerlasChip({ value, onClick }: Props) {
     return () => controls.stop()
   }, [value])
 
-  if (value <= 0) return null
+  // R96.128 · siempre visible cuando hay sesión · incluso con 0 perlas ·
+  // así el cliente nuevo (logueado pero sin pedidos) ve la feature loyalty
+  // existe · le motiva a hacer el primer pedido. Pre-R96.128 ocultaba si <=0.
 
   return (
     <button
