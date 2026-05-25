@@ -47,16 +47,21 @@ export default function OrderHistorySection() {
   const cart = useCart()
 
   function reorder(order: OrderHistoryItem) {
+    // R96.116 · cast defensive · jsonb columns pueden devolver numbers
+    // como strings · Number() los normaliza · sin NaN.
     for (const line of order.cart_lines) {
+      const qty = Number(line.qty) || 1
+      const priceUsd = Number(line.priceUsd) || 0
+      if (!line.id || !line.name) continue
       cart.add(
         {
           id: line.id,
           name: line.name,
-          priceUsd: line.priceUsd,
+          priceUsd,
           notes: line.notes,
           customizations: line.customizations,
         },
-        line.qty,
+        qty,
       )
     }
     cart.open()
@@ -132,10 +137,29 @@ function OrderCard({
 }) {
   const style = STATUS_STYLES[order.status] ?? STATUS_STYLES.PENDING
   const label = STATUS_LABELS[order.status] ?? order.status
-  const itemCount = order.cart_lines.reduce((s, l) => s + l.qty, 0)
-  const firstNames = order.cart_lines.slice(0, 2).map((l) => l.name).join(" · ")
-  const extra = order.cart_lines.length > 2 ? ` + ${order.cart_lines.length - 2} más` : ""
-  const canReorder = order.cart_lines.length > 0
+  // R96.116 · defensive · cart_lines puede venir undefined / object string
+  // si el orden fue creado en una versión vieja del schema. Normalizamos.
+  const rawLines = order.cart_lines
+  const lines: OrderHistoryItem["cart_lines"] = Array.isArray(rawLines)
+    ? rawLines
+    : typeof rawLines === "string"
+      ? (() => {
+          try {
+            const parsed = JSON.parse(rawLines)
+            return Array.isArray(parsed) ? parsed : []
+          } catch {
+            return []
+          }
+        })()
+      : []
+  const itemCount = lines.reduce((s, l) => s + (Number(l.qty) || 0), 0)
+  const firstNames = lines
+    .slice(0, 2)
+    .map((l) => l.name)
+    .filter(Boolean)
+    .join(" · ")
+  const extra = lines.length > 2 ? ` + ${lines.length - 2} más` : ""
+  const canReorder = lines.length > 0
 
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/40 px-3 py-3">
@@ -167,7 +191,7 @@ function OrderCard({
       </div>
       <button
         type="button"
-        onClick={() => onReorder(order)}
+        onClick={() => onReorder({ ...order, cart_lines: lines })}
         disabled={!canReorder}
         className="inline-flex shrink-0 items-center gap-1 rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-white shadow-md disabled:opacity-40"
         title="Pedí igual"
