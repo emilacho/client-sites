@@ -3,19 +3,19 @@
  * /auth/callback · R96.113 · landing post-OAuth/magic link. Supabase-js
  * detecta el hash `#access_token=...` automáticamente y setea la
  * sesión · luego redirigimos a la home (o `next` query param si vino).
+ *
+ * R96.114 · useSearchParams wrapped in Suspense per Next 15 SSG requirement.
  */
-import { useEffect } from "react"
+import { Suspense, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { getSupabaseBrowser } from "@/lib/supabase-browser"
 
-export default function AuthCallback() {
+function CallbackInner() {
   const router = useRouter()
   const params = useSearchParams()
 
   useEffect(() => {
     const supa = getSupabaseBrowser()
-    // detectSessionInUrl=true se encarga de parsear el hash · solo
-    // esperamos 1 tick a que la sesión quede persistida en storage.
     const { data: sub } = supa.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
         const next = params.get("next") || "/"
@@ -23,7 +23,6 @@ export default function AuthCallback() {
         router.replace(next)
       }
     })
-    // Fallback timeout · si nada pasa en 4s · redirige a home anyway.
     const timeout = window.setTimeout(() => {
       router.replace("/")
     }, 4000)
@@ -33,9 +32,15 @@ export default function AuthCallback() {
     }
   }, [router, params])
 
+  return <p className="text-sm">Entrando a tu cuenta…</p>
+}
+
+export default function AuthCallback() {
   return (
     <main className="flex min-h-[100svh] items-center justify-center bg-slate-950 text-slate-400">
-      <p className="text-sm">Entrando a tu cuenta…</p>
+      <Suspense fallback={<p className="text-sm">Entrando a tu cuenta…</p>}>
+        <CallbackInner />
+      </Suspense>
     </main>
   )
 }
