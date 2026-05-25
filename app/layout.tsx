@@ -10,6 +10,7 @@ import {
 import { cliente } from "@/cliente.config"
 import { restaurantSchema, localBusinessSchema } from "@/lib/structured-data"
 import { JsonLdScript } from "@/lib/structured-data-script"
+import PageViewTracker from "@/components/v2/PageViewTracker"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
@@ -131,6 +132,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${displaySerif.variable} ${marker.variable} ${bebas.variable} ${handwritten.variable} ${caveat.variable} font-sans antialiased`}
       >
+        <PageViewTracker />
         {children}
       </body>
     </html>

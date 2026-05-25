@@ -29,6 +29,7 @@ function getDistinctId(): string {
 }
 
 export type FunnelEvent =
+  | "$pageview"
   | "menu_viewed"
   | "item_added_to_cart"
   | "cart_opened"
@@ -41,6 +42,18 @@ export type FunnelEvent =
   | "push_subscribed"
   | "ruleta_spun"
   | "login_completed"
+
+/** Pageview event · R96.135 · llamado por PageViewTracker en cada
+ *  navegación · usePathname() watcher. PostHog canonical event name
+ *  $pageview · habilita funnel step 1 standard. */
+export function pageview(properties: Record<string, unknown> = {}): void {
+  track("$pageview", {
+    ...properties,
+    $pathname:
+      typeof window !== "undefined" ? window.location.pathname : undefined,
+    $host: typeof window !== "undefined" ? window.location.host : undefined,
+  })
+}
 
 /** Track event · fire-and-forget · safe contra missing key + offline. */
 export function track(
