@@ -131,12 +131,13 @@ export function OrderTracker({ initial, orderCode }: Props) {
         {stage === "en_route" && snap.rider_info ? (
           <RiderCard info={snap.rider_info} />
         ) : null}
-        {stage !== "delivered" && snap.status !== "CANCELLED" ? (
-          <PushCta orderCode={orderCode} />
-        ) : null}
+        {/* R96.127 · push permission · diferido hasta primer DELIVERED ·
+            best moment (positive experience just happened) · NO en cada
+            visita al tracker (quema conversión). Skip en pre-delivered. */}
         {stage === "delivered" ? (
           <>
             <ReviewCard orderCode={orderCode} />
+            <PushCta orderCode={orderCode} />
             <PreferencesPrompt phone={snap.customer_phone} />
             <ReorderCta />
           </>
@@ -755,46 +756,84 @@ function computeEtaText(snap: OrderSnapshot): string {
   return `Listo en ~${remaining} min`
 }
 
-/* R96.17 · PushCta · pide permiso de notifications y suscribe
-   al order code · render solo si el browser soporta y el cliente
-   no se suscribió todavía · pill compact por encima del summary. */
+/* R96.127 · PushCta diferido al primer DELIVERED · copy reframed
+   al próximo pedido (no este · ya entregado) · dismissible 30 días
+   con localStorage flag para no spammear al cliente.
+   R96.17 baseline · subscribe via usePushSubscription hook. */
+const DISMISS_KEY = "naufrago_push_dismissed_at"
+const DISMISS_DAYS = 30
+
 function PushCta({ orderCode }: { orderCode: string }) {
   const { state, subscribe, errorMessage } = usePushSubscription(orderCode)
+  const [dismissed, setDismissed] = useState(false)
+
+  useEffect(() => {
+    try {
+      const ts = window.localStorage.getItem(DISMISS_KEY)
+      if (!ts) return
+      const ageDays = (Date.now() - Number(ts)) / (24 * 3600_000)
+      if (ageDays < DISMISS_DAYS) setDismissed(true)
+    } catch {
+      // ignore
+    }
+  }, [])
+
   if (
     state === "unsupported" ||
     state === "subscribed" ||
-    state === "denied"
+    state === "denied" ||
+    dismissed
   ) {
     return null
   }
+
+  function dismiss() {
+    setDismissed(true)
+    try {
+      window.localStorage.setItem(DISMISS_KEY, String(Date.now()))
+    } catch {
+      // ignore
+    }
+  }
+
   return (
     <div
-      className="my-3 flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-sm"
+      className="my-3 rounded-xl border px-3 py-3"
       style={{
         borderColor: `${CYAN}55`,
         background: `${CYAN}10`,
       }}
     >
-      <div className="min-w-0 flex-1">
-        <p
-          className="font-[family-name:var(--font-caveat)] text-base"
-          style={{ color: PURPLE }}
-        >
-          ¿Te avisamos cuando esté lista?
-        </p>
-        {errorMessage ? (
-          <p className="text-[11px] text-rose-500">{errorMessage}</p>
-        ) : null}
-      </div>
-      <button
-        type="button"
-        onClick={subscribe}
-        disabled={state === "subscribing"}
-        className="shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold text-white shadow-md transition-all disabled:opacity-50"
-        style={{ background: PURPLE }}
+      <p
+        className="font-[family-name:var(--font-caveat)] text-base"
+        style={{ color: PURPLE }}
       >
-        {state === "subscribing" ? "Activando…" : "Activar avisos"}
-      </button>
+        ¿Te avisamos cuando salga tu próximo pedido?
+      </p>
+      <p className="mt-0.5 text-[11px] text-slate-600">
+        Notificación instantánea cuando el motorizado salga hacia ti.
+      </p>
+      {errorMessage ? (
+        <p className="mt-1 text-[11px] text-rose-500">{errorMessage}</p>
+      ) : null}
+      <div className="mt-2 flex gap-2">
+        <button
+          type="button"
+          onClick={dismiss}
+          className="flex-1 rounded-full border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+        >
+          Más tarde
+        </button>
+        <button
+          type="button"
+          onClick={subscribe}
+          disabled={state === "subscribing"}
+          className="flex-1 rounded-full px-3 py-1.5 text-xs font-semibold text-white shadow-md transition-all disabled:opacity-50"
+          style={{ background: PURPLE }}
+        >
+          {state === "subscribing" ? "Activando…" : "Sí · avisame"}
+        </button>
+      </div>
     </div>
   )
 }
