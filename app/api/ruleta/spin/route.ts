@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server"
 import { createHash } from "node:crypto"
 import { getSupabaseAdmin } from "@/lib/supabase"
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 
 /**
  * POST /api/ruleta/spin · R96.98 · cofre ruleta · 1 spin por
@@ -52,15 +53,22 @@ function hashIp(ip: string): string {
   return createHash("sha256").update(`${IP_SALT}|${ip}`).digest("hex")
 }
 
-function getClientIp(req: NextRequest): string {
-  const fwd = req.headers.get("x-forwarded-for")
-  if (fwd) return fwd.split(",")[0].trim()
-  const real = req.headers.get("x-real-ip")
-  if (real) return real.trim()
-  return "unknown"
-}
-
 export async function POST(req: NextRequest) {
+  // R96.132 · rate limit · 5 spins/min/IP (cooldown server-side de 24h
+  // ya gobierna · este rate limit previene DOS-attacks contra DB).
+  const ipForRl = getClientIp(req)
+  const rl = await checkRateLimit(ipForRl, {
+    limit: 5,
+    windowSec: 60,
+    bucket: "ruleta_spin",
+  })
+  if (!rl.ok) {
+    return Response.json(
+      { ok: false, error: "rate_limited", retryIn: rl.resetIn },
+      { status: 429 },
+    )
+  }
+
   let body: SpinBody = {}
   try {
     body = (await req.json()) as SpinBody

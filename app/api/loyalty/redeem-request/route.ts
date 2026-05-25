@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server"
 import { createHash, randomInt } from "node:crypto"
 import { getSupabaseAdmin } from "@/lib/supabase"
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 
 /**
  * POST /api/loyalty/redeem-request · R96.111
@@ -58,6 +59,20 @@ async function sendOtpWhatsApp(phone: string, code: string): Promise<boolean> {
 }
 
 export async function POST(req: NextRequest) {
+  // R96.132 · rate limit · 3 OTP requests/5min/IP (anti-spam Twilio cost).
+  const ipForRl = getClientIp(req)
+  const rl = await checkRateLimit(ipForRl, {
+    limit: 3,
+    windowSec: 300,
+    bucket: "otp_redeem_request",
+  })
+  if (!rl.ok) {
+    return Response.json(
+      { ok: false, error: "rate_limited", retryIn: rl.resetIn },
+      { status: 429 },
+    )
+  }
+
   let body: { whatsapp?: unknown }
   try {
     body = await req.json()
