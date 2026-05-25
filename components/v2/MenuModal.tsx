@@ -404,7 +404,7 @@ function MenuCard({ item }: { item: MenuItem }) {
                   onClick={() => setModOpen((v) => !v)}
                   className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium text-violet-200 ring-1 ring-violet-500/20 hover:bg-violet-500/20"
                 >
-                  {modOpen ? "− Cerrar" : "+ Customizar"}
+                  {modOpen ? "− Cerrar" : "+ Personalizar"}
                   {togglesAsCustomizations.length > 0 && !modOpen ? (
                     <span className="ml-0.5 rounded-full bg-violet-500/40 px-1.5 text-[9px] font-bold">
                       {togglesAsCustomizations.length}
