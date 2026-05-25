@@ -9,6 +9,7 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useAccount } from "@/lib/v2/use-account"
+import { CartProvider } from "@/lib/v2/cart-context"
 import OrderHistorySection from "@/components/v2/OrderHistorySection"
 
 const PURPLE = "#3D2466"
@@ -16,6 +17,16 @@ const CYAN = "#4DD4D8"
 const SAND = "#F5E9D2"
 
 export default function MiCuentaPage() {
+  // R96.118 · envolver con CartProvider · OrderHistorySection usa useCart()
+  // para "Pedí igual" · sin provider rompe la página al click "Ver detalles".
+  return (
+    <CartProvider>
+      <MiCuentaInner />
+    </CartProvider>
+  )
+}
+
+function MiCuentaInner() {
   const { account, loading, logout } = useAccount()
   const router = useRouter()
 
