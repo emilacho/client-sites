@@ -25,6 +25,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useCart } from "@/lib/v2/cart-context"
 import { buildWhatsAppLink, naufragoV2 } from "@/lib/v2/naufrago-content"
 import { saveLastOrder } from "@/lib/v2/use-last-order"
+import MapAddressPicker from "./MapAddressPicker"
 import {
   LOYALTY_REWARDS,
   perlasToUsd,
@@ -307,13 +308,24 @@ export function CartDrawer() {
 function CartFooter() {
   const cart = useCart()
   const [shipping, setShipping] = useState<ShippingState>({ kind: "none" })
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    street: string
+    detail: string
+    name: string
+    phone: string
+    email: string
+    notes: string
+    lat: number | null
+    lng: number | null
+  }>({
     street: "",
     detail: "",
     name: "",
     phone: "",
     email: "",
     notes: "",
+    lat: null,
+    lng: null,
   })
   // R96.21 · loyalty perlas · lookup balance by form.phone debounced.
   const { balance: loyaltyBalance } = useLoyaltyBalance(form.phone)
@@ -374,7 +386,12 @@ function CartFooter() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          dropoff: { street: form.street, detail: form.detail || undefined },
+          dropoff: {
+            street: form.street,
+            detail: form.detail || undefined,
+            latitude: form.lat ?? undefined,
+            longitude: form.lng ?? undefined,
+          },
           lines: cart.lines.map((l) => ({
             id: l.id,
             name: l.name,
@@ -414,7 +431,12 @@ function CartFooter() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           quoteToken,
-          dropoff: { street: form.street, detail: form.detail || undefined },
+          dropoff: {
+            street: form.street,
+            detail: form.detail || undefined,
+            latitude: form.lat ?? undefined,
+            longitude: form.lng ?? undefined,
+          },
           customer: {
             name: form.name,
             phone: form.phone,
@@ -462,8 +484,8 @@ function CartFooter() {
           dropoff: {
             street: form.street,
             detail: form.detail || null,
-            latitude: null,
-            longitude: null,
+            latitude: form.lat,
+            longitude: form.lng,
             countryCode: "EC",
           },
           payment_method: "whatsapp",
@@ -696,12 +718,15 @@ function CartFooter() {
               }))
             }
           />
-          <input
-            required
-            placeholder="Dirección · calle y número"
-            value={form.street}
-            onChange={(e) => setForm((f) => ({ ...f, street: e.target.value }))}
-            className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500"
+          {/* R96.121 · Google Maps + Places · si la API key está
+              configurada · busqueda + mapa con marker draggable.
+              Sin API key · degrade al input simple. Para clientes
+              no-registrados o direcciones one-off. */}
+          <MapAddressPicker
+            initial={{ street: form.street, lat: form.lat, lng: form.lng }}
+            onChange={({ street, lat, lng }) =>
+              setForm((f) => ({ ...f, street, lat, lng }))
+            }
           />
           <input
             placeholder="Piso · depto · referencia (opcional)"
