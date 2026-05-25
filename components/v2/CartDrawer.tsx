@@ -26,6 +26,7 @@ import { useCart } from "@/lib/v2/cart-context"
 import { buildWhatsAppLink, naufragoV2 } from "@/lib/v2/naufrago-content"
 import { saveLastOrder } from "@/lib/v2/use-last-order"
 import MapAddressPicker from "./MapAddressPicker"
+import { track } from "@/lib/v2/posthog-track"
 import {
   LOYALTY_REWARDS,
   perlasToUsd,
@@ -119,6 +120,16 @@ export function CartDrawer() {
     mq.addEventListener("change", h)
     return () => mq.removeEventListener("change", h)
   }, [])
+
+  // R96.134 · funnel event · cart_opened cada vez que el drawer abre
+  useEffect(() => {
+    if (cart.isOpen) {
+      track("cart_opened", {
+        item_count: cart.itemCount,
+        subtotal: cart.subtotal,
+      })
+    }
+  }, [cart.isOpen, cart.itemCount, cart.subtotal])
 
   return (
     <AnimatePresence>
@@ -466,6 +477,15 @@ function CartFooter() {
         lines: cart.lines,
         totalUsd: total,
       })
+      // R96.134 · funnel event · order_submitted
+      track("order_submitted", {
+        order_id: json.orderId ?? null,
+        total: total,
+        item_count: cart.itemCount,
+        method: "pedidosya",
+        has_loyalty_redemption: !!selectedReward,
+        has_discount_code: !!cart.discount,
+      })
       // R96.106 · save Easy Order ("Hambre de Náufrago") · cross-device.
       // Best-effort · si falla solo no persiste el perfil server-side.
       try {
@@ -657,6 +677,21 @@ function CartFooter() {
                 lines: cart.lines,
                 totalUsd: total,
               })
+              // R96.134 · funnel event · checkout_started + order_submitted
+              // (WhatsApp flow combina ambos · cliente clicka y va al chat)
+              track("checkout_started", {
+                method: "whatsapp",
+                subtotal: cart.subtotal,
+                item_count: cart.itemCount,
+              })
+              track("order_submitted", {
+                order_id: null,
+                total,
+                item_count: cart.itemCount,
+                method: "whatsapp",
+                has_loyalty_redemption: !!selectedReward,
+                has_discount_code: !!cart.discount,
+              })
             }}
             style={
               buttonsDisabled
@@ -679,7 +714,14 @@ function CartFooter() {
           </a>
           <button
             type="button"
-            onClick={() => setShipping({ kind: "address" })}
+            onClick={() => {
+              track("checkout_started", {
+                method: "pedidosya",
+                subtotal: cart.subtotal,
+                item_count: cart.itemCount,
+              })
+              setShipping({ kind: "address" })
+            }}
             disabled={buttonsDisabled}
             style={
               buttonsDisabled
@@ -805,6 +847,10 @@ function CartFooter() {
                             setOtpState("requesting")
                             setOtpError(null)
                             try {
+                              track("otp_requested", {
+                                purpose: "loyalty_redeem",
+                                reward_id: r.id,
+                              })
                               const res = await fetch(
                                 "/api/loyalty/redeem-request",
                                 {
@@ -1041,6 +1087,11 @@ function CartFooter() {
                     })
                     const data = await res.json()
                     if (data.ok) {
+                      track("loyalty_redeemed", {
+                        reward_id: otpReward?.id,
+                        reward_label: otpReward?.label,
+                        cost_perlas: otpReward?.cost,
+                      })
                       setSelectedReward(otpReward)
                       setUseLoyalty(false)
                       setOtpReward(null)

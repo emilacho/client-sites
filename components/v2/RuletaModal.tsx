@@ -20,6 +20,7 @@ import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X } from "lucide-react"
 import { useCart } from "@/lib/v2/cart-context"
+import { track } from "@/lib/v2/posthog-track"
 
 type Phase = "idle" | "spinning" | "result" | "cooldown" | "error"
 
@@ -388,6 +389,11 @@ export default function RuletaModal({ open, onClose }: RuletaModalProps) {
       window.setTimeout(() => {
         setPrize(data.prize ?? null)
         setPhase("result")
+        // R96.134 · funnel · ruleta_spun con prize ganado
+        track("ruleta_spun", {
+          prize: data.prize ?? null,
+          prize_key: data.prizeKey ?? null,
+        })
         // R96.104 · adjuntar el premio al carrito como regalo gratis ·
         // NO acumulativo · se borran premios anteriores antes de agregar
         // el nuevo (evita "40 chifles gratis" si el usuario gana varios

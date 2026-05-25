@@ -46,6 +46,18 @@ export function MenuModal({ open, onClose }: MenuModalProps) {
   const [activeCat, setActiveCat] = useState<MenuCategoryId>("encebollados")
   const cart = useCart()
 
+  // R96.134 · funnel · menu_viewed cuando se abre el modal.
+  useEffect(() => {
+    if (open) {
+      // Lazy import para evitar overhead bundle si el módulo no lo
+      // requiere · funnel events son cross-cutting.
+      void import("@/lib/v2/posthog-track").then(({ track }) =>
+        track("menu_viewed", { active_cat: activeCat }),
+      )
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
   // ESC closes the modal · only attached while open
   useEffect(() => {
     if (!open) return

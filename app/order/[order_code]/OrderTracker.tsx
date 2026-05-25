@@ -24,6 +24,7 @@ import type {
 } from "@/lib/schemas"
 import { TRACKER_STAGES, type TrackerStageKey } from "@/lib/tracker/stages"
 import { usePushSubscription } from "@/lib/v2/use-push-subscription"
+import { track } from "@/lib/v2/posthog-track"
 
 // R96.6 · escena 3D del pescado para stage "preparando". Dynamic
 // import sin SSR · r3f Canvas no puede server-render. Loading state
@@ -83,6 +84,23 @@ interface Props {
 
 export function OrderTracker({ initial, orderCode }: Props) {
   const [snap, setSnap] = useState<OrderSnapshot>(initial)
+
+  // R96.134 · funnel · order_delivered cuando status llega a DELIVERED
+  // (1 sola vez · idempotente via localStorage flag por order_code).
+  useEffect(() => {
+    if (snap.status !== "DELIVERED") return
+    try {
+      const key = `naufrago_funnel_delivered_${orderCode}`
+      if (window.localStorage.getItem(key)) return
+      window.localStorage.setItem(key, String(Date.now()))
+      track("order_delivered", {
+        order_code: orderCode,
+        total_usd: snap.total_usd,
+      })
+    } catch {
+      // ignore
+    }
+  }, [snap.status, orderCode, snap.total_usd])
 
   useEffect(() => {
     if (snap.status === "DELIVERED" || snap.status === "CANCELLED") return
@@ -778,6 +796,21 @@ function PushCta({ orderCode }: { orderCode: string }) {
     }
   }, [])
 
+  // R96.134 · funnel · push_subscribed cuando state pasa a subscribed
+  useEffect(() => {
+    if (state === "subscribed") {
+      try {
+        const key = "naufrago_funnel_push_subscribed_v1"
+        if (!window.localStorage.getItem(key)) {
+          window.localStorage.setItem(key, String(Date.now()))
+          track("push_subscribed", {})
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, [state])
+
   if (
     state === "unsupported" ||
     state === "subscribed" ||
@@ -869,6 +902,7 @@ function ReviewCard({ orderCode }: { orderCode: string }) {
       if (!res.ok || !json.ok) {
         throw new Error(json.detail || json.error || "review_failed")
       }
+      track("review_submitted", { order_code: orderCode, stars })
       setState("submitted")
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al guardar")

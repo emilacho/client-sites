@@ -6,6 +6,7 @@
  */
 import { useCallback, useEffect, useState } from "react"
 import { getSupabaseBrowser } from "@/lib/supabase-browser"
+import { identify, track } from "@/lib/v2/posthog-track"
 
 export interface AccountAddress {
   street?: string
@@ -56,7 +57,18 @@ export function useAccount(): {
       })
       const data = await res.json()
       if (data?.ok && data.authenticated) {
-        setAccount(data as AccountProfile)
+        const next = data as AccountProfile
+        setAccount(next)
+        // R96.134 · identify post-login para attribution funnel.
+        identify(next.authUserId, {
+          email: next.email,
+          whatsapp_set: !!next.whatsapp,
+          total_orders: next.totalOrders,
+        })
+        track("login_completed", {
+          method: next.email ? "email_or_google" : "unknown",
+          has_whatsapp: !!next.whatsapp,
+        })
       } else {
         setAccount(null)
       }
