@@ -29,6 +29,7 @@ import { SubscribeModal } from "./SubscribeModal"
 import RuletaModal from "./RuletaModal"
 import AccountModal from "./AccountModal"
 import CookieConsentBanner from "./CookieConsentBanner"
+import SiteFooter from "./SiteFooter"
 // Round 85 · TreasureRewardModal (R82 castaway SVG modal) retired ·
 // the 3D pergamino in-scene that emerges from the cofre on click
 // replaces it · same discount flow, more immersive reveal.
@@ -423,6 +424,7 @@ function LandingInner() {
       <RuletaModal open={ruletaOpen} onClose={() => setRuletaOpen(false)} />
       <AccountModal open={accountOpen} onClose={() => setAccountOpen(false)} />
       <CookieConsentBanner />
+      <SiteFooter />
       <OverlayPanels active={overlay} onClose={() => setOverlay(null)} />
 
     </main>
