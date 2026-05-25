@@ -59,7 +59,8 @@ export function useAccount(): {
       } else {
         setAccount(null)
       }
-    } catch {
+    } catch (err) {
+      console.error("[useAccount] refresh error", err)
       setAccount(null)
     } finally {
       setLoading(false)

@@ -81,6 +81,7 @@ export function useOrderHistory(): {
       setOrders(page.orders)
       setHasMore(page.hasMore)
     } catch (err) {
+      console.error("[useOrderHistory] error", err)
       setError(err instanceof Error ? err.message : "Error desconocido")
     } finally {
       setLoading(false)
@@ -98,6 +99,7 @@ export function useOrderHistory(): {
       setOrders((prev) => [...prev, ...page.orders])
       setHasMore(page.hasMore)
     } catch (err) {
+      console.error("[useOrderHistory] error", err)
       setError(err instanceof Error ? err.message : "Error desconocido")
     } finally {
       setLoadingMore(false)

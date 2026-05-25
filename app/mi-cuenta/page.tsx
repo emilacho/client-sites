@@ -35,11 +35,17 @@ export default function MiCuentaPage() {
     )
   }
 
-  const perlasUsd = (account.perlas * 0.01).toFixed(2)
+  // R96.117 · defensive · numbers pueden venir como string de Supabase
+  // numeric columns · normalizar antes de operar.
+  const perlasNum = Number(account.perlas) || 0
+  const totalSpendNum = Number(account.totalSpendUsd) || 0
+  const totalOrdersNum = Number(account.totalOrders) || 0
+  const addressesArr = Array.isArray(account.addresses) ? account.addresses : []
+  const perlasUsd = (perlasNum * 0.01).toFixed(2)
   const nextRewardCost = 100
   const progressPct = Math.min(
     100,
-    Math.round((account.perlas / nextRewardCost) * 100),
+    Math.round((perlasNum / nextRewardCost) * 100),
   )
   return (
     <main className="min-h-[100svh] bg-slate-950 text-slate-100">
@@ -60,13 +66,13 @@ export default function MiCuentaPage() {
               ✦
             </span>
             <span className="font-[family-name:var(--font-bebas),sans-serif] text-4xl tracking-wide tabular-nums">
-              {account.perlas}
+              {perlasNum}
             </span>
             <span className="text-sm opacity-80">
               perlas (≈${perlasUsd})
             </span>
           </div>
-          {account.perlas < nextRewardCost && (
+          {perlasNum < nextRewardCost && (
             <div className="mt-3">
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/20">
                 <div
@@ -75,7 +81,7 @@ export default function MiCuentaPage() {
                 />
               </div>
               <p className="mt-1 text-[10px] opacity-80">
-                {nextRewardCost - account.perlas} perlas para el primer reward
+                {nextRewardCost - perlasNum} perlas para el primer reward
               </p>
             </div>
           )}
@@ -87,10 +93,10 @@ export default function MiCuentaPage() {
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
-          <StatChip label="Pedidos" value={`${account.totalOrders}`} />
+          <StatChip label="Pedidos" value={`${totalOrdersNum}`} />
           <StatChip
             label="Consumo total"
-            value={`$${account.totalSpendUsd.toFixed(2)}`}
+            value={`$${totalSpendNum.toFixed(2)}`}
           />
         </div>
 
@@ -102,8 +108,8 @@ export default function MiCuentaPage() {
         />
         <SectionPlaceholder
           title="Mis direcciones"
-          subtitle={`${account.addresses.length} ${
-            account.addresses.length === 1 ? "guardada" : "guardadas"
+          subtitle={`${addressesArr.length} ${
+            addressesArr.length === 1 ? "guardada" : "guardadas"
           }`}
           cta="Ver / editar"
           disabled
