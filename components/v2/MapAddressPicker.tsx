@@ -66,6 +66,17 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
   // referrer rechazado · billing missing) · degrade gracefully al input
   // simple sin romper el render entero.
   const [failed, setFailed] = useState(false)
+  // R96.124 · auto-detect ubicación · al abrir el picker · si el browser
+  // permite geolocation · centrar mapa ahí + reverse geocode + mostrar
+  // overlay "¿Esta es tu dirección actual?" con Sí/No.
+  const [detected, setDetected] = useState<{
+    street: string
+    lat: number
+    lng: number
+  } | null>(null)
+  const [detecting, setDetecting] = useState(false)
+  const [showOverlay, setShowOverlay] = useState(false)
+  const geocoderRef = useRef<GGeocoderInstance | null>(null)
 
   // Mount the map + autocomplete once script is ready.
   useEffect(() => {
@@ -132,6 +143,7 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
     markerRef.current = marker
 
     const geocoder = new g.Geocoder()
+    geocoderRef.current = geocoder
 
     const autocomplete = new g.places.Autocomplete(inputRef.current, {
       componentRestrictions: { country: "ec" },
@@ -188,6 +200,63 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready])
 
+  // R96.124 · auto-detect ubicación al primer mount · solo si no hay
+  // initial.lat (no es edición de address existente). Browser pide
+  // permiso · si OK · reverse geocode + overlay con "Sí/No".
+  useEffect(() => {
+    if (!ready || failed || initial?.lat) return
+    if (typeof navigator === "undefined" || !navigator.geolocation) return
+    setDetecting(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude
+        const lng = pos.coords.longitude
+        const geocoder = geocoderRef.current
+        if (!geocoder) {
+          setDetected({ street: "", lat, lng })
+          setShowOverlay(true)
+          setDetecting(false)
+          return
+        }
+        geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+          const street =
+            status === "OK" && results && results.length > 0
+              ? (results[0].formatted_address ?? "")
+              : `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+          setDetected({ street, lat, lng })
+          setShowOverlay(true)
+          setDetecting(false)
+          // Centrar el mapa en la ubicación detectada
+          if (mapRef.current && markerRef.current) {
+            mapRef.current.setCenter({ lat, lng })
+            mapRef.current.setZoom(17)
+            markerRef.current.setPosition({ lat, lng })
+          }
+        })
+      },
+      (err) => {
+        console.warn("[MapAddressPicker] geolocation denied/failed", err)
+        setDetecting(false)
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 },
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, failed])
+
+  function applyDetected() {
+    if (!detected) return
+    setStreetLocal(detected.street)
+    if (inputRef.current) inputRef.current.value = detected.street
+    onChange({ street: detected.street, lat: detected.lat, lng: detected.lng })
+    setShowOverlay(false)
+  }
+
+  function rejectDetected() {
+    setShowOverlay(false)
+    // Mantiene el mapa donde quedó pero NO escribe nada al parent ·
+    // usuario busca manual o draggea el pin.
+  }
+
   // Fallback · sin API key o init falló · degrade al input simple.
   if (unavailable || failed) {
     return (
@@ -217,12 +286,46 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
       />
       <div
         ref={mapDivRef}
-        className="h-48 w-full overflow-hidden rounded-md border border-slate-700 bg-slate-900"
+        className="relative h-48 w-full overflow-hidden rounded-md border border-slate-700 bg-slate-900"
         style={{ minHeight: 192 }}
       >
         {!ready && (
           <div className="flex h-full items-center justify-center text-xs text-slate-500">
             Cargando mapa…
+          </div>
+        )}
+        {detecting && (
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm">
+            <p className="text-xs text-cyan-300">Detectando tu ubicación…</p>
+          </div>
+        )}
+        {/* R96.124 · overlay confirmación post-geolocation · "¿Es tu dirección actual?" */}
+        {showOverlay && detected && (
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-950/85 p-3 backdrop-blur-sm">
+            <div className="w-full max-w-[300px] rounded-lg border border-cyan-500/40 bg-slate-900 p-3 shadow-lg">
+              <p className="text-[11px] uppercase tracking-widest text-cyan-300">
+                ¿Esta es tu dirección actual?
+              </p>
+              <p className="mt-1 text-sm text-slate-100">
+                {detected.street || `${detected.lat.toFixed(4)}, ${detected.lng.toFixed(4)}`}
+              </p>
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={rejectDetected}
+                  className="flex-1 rounded-md border border-slate-700 px-2 py-1.5 text-[11px] text-slate-300 hover:bg-slate-800"
+                >
+                  No · cambiar
+                </button>
+                <button
+                  type="button"
+                  onClick={applyDetected}
+                  className="flex-1 rounded-md bg-gradient-to-r from-violet-500 to-cyan-500 px-2 py-1.5 text-[11px] font-semibold text-white"
+                >
+                  Sí · aplicar
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
