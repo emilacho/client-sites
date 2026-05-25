@@ -77,6 +77,12 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
   const [detecting, setDetecting] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
   const geocoderRef = useRef<GGeocoderInstance | null>(null)
+  // R96.125 · last known coords · sirven cuando el cliente edita el
+  // input "Dirección final" pero mantenemos la lat/lng del último
+  // geocode/autocomplete/drag (el server las usa para Olón delivery
+  // radius check).
+  const [lastLat, setLastLat] = useState<number | null>(initial?.lat ?? null)
+  const [lastLng, setLastLng] = useState<number | null>(initial?.lng ?? null)
 
   // Mount the map + autocomplete once script is ready.
   useEffect(() => {
@@ -162,6 +168,8 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
       marker.setPosition({ lat, lng })
       const street = place.formatted_address ?? place.name ?? ""
       setStreetLocal(street)
+      setLastLat(lat)
+      setLastLng(lng)
       onChange({ street, lat, lng })
     })
 
@@ -170,6 +178,8 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
       if (!pos) return
       const lat = pos.lat()
       const lng = pos.lng()
+      setLastLat(lat)
+      setLastLng(lng)
       // Reverse geocode para actualizar el street.
       geocoder.geocode({ location: { lat, lng } }, (results, status) => {
         if (status === "OK" && results && results.length > 0) {
@@ -219,19 +229,28 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
           return
         }
         geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-          const street =
-            status === "OK" && results && results.length > 0
-              ? (results[0].formatted_address ?? "")
-              : `${lat.toFixed(5)}, ${lng.toFixed(5)}`
-          setDetected({ street, lat, lng })
-          setShowOverlay(true)
           setDetecting(false)
-          // Centrar el mapa en la ubicación detectada
+          // Centrar el mapa en la ubicación detectada incluso si el
+          // geocode no devuelve una dirección legible.
           if (mapRef.current && markerRef.current) {
             mapRef.current.setCenter({ lat, lng })
             mapRef.current.setZoom(17)
             markerRef.current.setPosition({ lat, lng })
           }
+          // R96.125 · si NO devuelve address con letras · NO mostrar
+          // overlay (ej. Geocoding API disabled · ubicación remota sin
+          // mapeo). El usuario busca manual o draggea el pin.
+          if (status !== "OK" || !results || results.length === 0) {
+            console.warn("[MapAddressPicker] geocode no result", status)
+            return
+          }
+          const street = results[0].formatted_address ?? ""
+          if (!street || /^[\d.,\s-]+$/.test(street)) {
+            console.warn("[MapAddressPicker] geocode returned non-address")
+            return
+          }
+          setDetected({ street, lat, lng })
+          setShowOverlay(true)
         })
       },
       (err) => {
@@ -247,6 +266,8 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
     if (!detected) return
     setStreetLocal(detected.street)
     if (inputRef.current) inputRef.current.value = detected.street
+    setLastLat(detected.lat)
+    setLastLng(detected.lng)
     onChange({ street: detected.street, lat: detected.lat, lng: detected.lng })
     setShowOverlay(false)
   }
@@ -329,8 +350,25 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
           </div>
         )}
       </div>
+      {/* R96.125 · input controlled · auto-fill desde autocomplete/geocode/overlay
+          · cliente edita libremente · ESTE es el campo final que viaja al server. */}
+      <div>
+        <label className="block text-[10px] uppercase tracking-widest text-cyan-300/80 mb-1">
+          Dirección final (podés editarla)
+        </label>
+        <input
+          type="text"
+          value={streetLocal}
+          onChange={(e) => {
+            setStreetLocal(e.target.value)
+            onChange({ street: e.target.value, lat: lastLat, lng: lastLng })
+          }}
+          placeholder="Calle · número · barrio"
+          className="w-full rounded-md border border-cyan-500/30 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none"
+        />
+      </div>
       <p className="text-[10px] text-slate-500">
-        Buscá tu dirección · o arrastrá el pin en el mapa para ajustar exacto.
+        Buscá arriba · arrastrá el pin · o editá manualmente la dirección final.
       </p>
     </div>
   )
