@@ -232,10 +232,10 @@ function LandingInner() {
         <button
           type="button"
           onClick={openMenu}
-          className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-5 py-3 font-semibold text-white shadow-lg shadow-violet-500/30 transition-transform hover:translate-y-[-1px]"
+          className="pointer-events-auto inline-flex w-[180px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-violet-500/30 transition-transform hover:translate-y-[-1px]"
         >
+          <ChevronDown className="h-4 w-4 shrink-0" />
           {naufragoV2.hero.ctaSecondary}
-          <ChevronDown className="h-4 w-4" />
         </button>
         {easyOrder ? (
           <div
@@ -320,13 +320,14 @@ function LandingInner() {
         <button
           type="button"
           onClick={() => setTrackOpen(true)}
-          className="pointer-events-auto inline-flex items-center gap-2 rounded-full border-2 px-4 py-2 text-sm font-semibold backdrop-blur-sm transition-all hover:translate-y-[-1px]"
+          className="pointer-events-auto inline-flex w-[180px] items-center justify-center gap-2 rounded-full border-2 px-4 py-2 text-sm font-semibold backdrop-blur-sm transition-all hover:translate-y-[-1px]"
           style={{
             borderColor: "#3D2466",
             color: "#3D2466",
             background: "rgba(255,255,255,0.55)",
           }}
         >
+          <RotateCw className="h-4 w-4 shrink-0" />
           Sigue tu pedido
         </button>
         <a
@@ -334,7 +335,7 @@ function LandingInner() {
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Hablar por WhatsApp"
-          className="pointer-events-auto inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-lg transition-transform hover:translate-y-[-1px]"
+          className="pointer-events-auto inline-flex w-[180px] items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-lg transition-transform hover:translate-y-[-1px]"
           style={{
             background: "linear-gradient(180deg, #25D366 0%, #1FB855 100%)",
             boxShadow: "0 10px 24px -10px rgba(37,211,102,0.55)",
@@ -348,14 +349,15 @@ function LandingInner() {
         <button
           type="button"
           onClick={() => setSubscribeOpen(true)}
-          className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold backdrop-blur-sm transition-colors hover:bg-white/30"
+          className="pointer-events-auto inline-flex w-[180px] items-center justify-center gap-2 rounded-full border-2 px-4 py-2 text-sm font-semibold backdrop-blur-sm transition-all hover:translate-y-[-1px]"
           style={{
+            borderColor: "#3D2466",
             color: "#3D2466",
             background: "rgba(255,255,255,0.40)",
           }}
         >
-          <Bell className="h-3 w-3" />
-          Registrate para promos
+          <Bell className="h-4 w-4 shrink-0" />
+          Registrate
         </button>
       </div>
 
