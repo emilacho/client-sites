@@ -328,6 +328,7 @@ function CartFooter() {
     notes: string
     lat: number | null
     lng: number | null
+    optInPromos: boolean
   }>({
     street: "",
     detail: "",
@@ -337,6 +338,7 @@ function CartFooter() {
     notes: "",
     lat: null,
     lng: null,
+    optInPromos: false,
   })
   // R96.21 · loyalty perlas · lookup balance by form.phone debounced.
   const { balance: loyaltyBalance } = useLoyaltyBalance(form.phone)
@@ -492,6 +494,23 @@ function CartFooter() {
         window.localStorage.setItem("naufrago_customer_whatsapp", form.phone)
       } catch {
         // ignore quota
+      }
+      // R96.144 · opt-in promos · si el cliente marcó el checkbox ·
+      // upsert al subscriber list para envíos marketing futuros.
+      if (form.optInPromos) {
+        void fetch("/api/subscribers/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: form.name,
+            whatsapp: form.phone,
+            email: form.email || undefined,
+            optInPromos: true,
+            optInTracking: false,
+            source: "cart_checkout",
+          }),
+          keepalive: true,
+        }).catch(() => {})
       }
       void fetch("/api/easy-order/save", {
         method: "POST",
@@ -793,6 +812,19 @@ function CartFooter() {
               className="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500"
             />
           </div>
+          {/* R96.144 · opt-in promos checkbox · LOPDP granular consent ·
+              default unchecked · solo se persiste si el cliente lo marca. */}
+          <label className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-300">
+            <input
+              type="checkbox"
+              checked={form.optInPromos}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, optInPromos: e.target.checked }))
+              }
+              className="h-4 w-4 shrink-0 accent-cyan-500"
+            />
+            <span>Quiero recibir promos por WhatsApp</span>
+          </label>
           {loyaltyBalance && loyaltyBalance.perlas > 0 ? (
             <div className="space-y-2 rounded-md border border-violet-500/40 bg-violet-500/10 p-3 text-xs text-violet-100">
               <div className="flex items-baseline justify-between gap-2">

@@ -18,13 +18,12 @@ import { CartProvider, useCart } from "@/lib/v2/cart-context"
 import { naufragoV2 } from "@/lib/v2/naufrago-content"
 import { useLastOrder } from "@/lib/v2/use-last-order"
 import { useEasyOrder } from "@/lib/v2/use-easy-order"
-import { Bell, RotateCw } from "lucide-react"
+import { RotateCw } from "lucide-react"
 import { TopBar } from "./TopBar"
 import { CartDrawer } from "./CartDrawer"
 import { OverlayPanels, type OverlayKind } from "./OverlayPanels"
 import { MenuModal } from "./MenuModal"
 import { TrackOrderModal } from "./TrackOrderModal"
-import { SubscribeModal } from "./SubscribeModal"
 import RuletaModal from "./RuletaModal"
 import AccountModal from "./AccountModal"
 import CookieConsentBanner from "./CookieConsentBanner"
@@ -124,8 +123,6 @@ function LandingInner() {
   // Round 96.7 · "Sigue tu pedido" CTA · modal pide order code
   // y redirige a /order/[code].
   const [trackOpen, setTrackOpen] = useState(false)
-  // R96.10 · "Registrate" CTA · subscriber lite opt-in.
-  const [subscribeOpen, setSubscribeOpen] = useState(false)
   // R96.98 · ruleta del cofre · click cofre abre la rueda giratoria.
   const [ruletaOpen, setRuletaOpen] = useState(false)
   // R96.113 · Account modal · botón usuario en TopBar abre login/perfil.
@@ -324,16 +321,10 @@ function LandingInner() {
           <RotateCw className="h-4 w-4 shrink-0" />
           Sigue tu pedido
         </button>
-        {/* R96.142 · WhatsApp CTA movido al SiteFooter como logo
-            redondo clásico junto a Instagram + FAQ + Privacidad. */}
-        <button
-          type="button"
-          onClick={() => setSubscribeOpen(true)}
-          className="pointer-events-auto inline-flex w-[180px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-violet-500/30 transition-transform hover:translate-y-[-1px]"
-        >
-          <Bell className="h-4 w-4 shrink-0" />
-          Registrate
-        </button>
+        {/* R96.142 · WhatsApp CTA movido al SiteFooter como logo brand.
+            R96.144 · "Registrate" CTA removido · redundante con icono
+            usuario topbar · opt-in promos ahora se captura en checkout
+            (CartDrawer checkbox) y en /mi-cuenta (sección notificaciones). */}
       </div>
 
       {/* Hero copy · esquina inferior izquierda · solo headline +
@@ -397,7 +388,6 @@ function LandingInner() {
       <CartDrawer />
       <MenuModal open={menuOpen} onClose={() => setMenuOpen(false)} />
       <TrackOrderModal open={trackOpen} onClose={() => setTrackOpen(false)} />
-      <SubscribeModal open={subscribeOpen} onClose={() => setSubscribeOpen(false)} />
       <RuletaModal open={ruletaOpen} onClose={() => setRuletaOpen(false)} />
       <AccountModal open={accountOpen} onClose={() => setAccountOpen(false)} />
       <CookieConsentBanner />
