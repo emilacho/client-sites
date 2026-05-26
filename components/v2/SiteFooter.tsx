@@ -5,6 +5,7 @@
  * (sobre la isla 3D) y en sub-pages. Mobile-first.
  */
 import Link from "next/link"
+import { Package } from "lucide-react"
 import { cliente } from "@/cliente.config"
 
 /** Instagram brand logo · gradient oficial (yellow→orange→pink→purple→blue)
@@ -91,6 +92,19 @@ export default function SiteFooter() {
         >
           <InstagramLogo className="h-6 w-6" />
         </a>
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new CustomEvent("naufrago:open-tracker"))
+            }
+          }}
+          className="inline-flex items-center justify-center rounded-full bg-cyan-500/20 p-1 text-cyan-300 transition-colors hover:bg-cyan-500/30 hover:text-cyan-200"
+          aria-label="Seguir mi pedido"
+          title="Seguir mi pedido"
+        >
+          <Package className="h-4 w-4" />
+        </button>
         <span className="text-slate-700">·</span>
         <Link
           href="/faq"

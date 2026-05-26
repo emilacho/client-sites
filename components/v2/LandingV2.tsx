@@ -184,6 +184,14 @@ function LandingInner() {
     return () => window.removeEventListener("naufrago:open-pergamino", handler)
   }, [])
 
+  // R96.145 · listener · SiteFooter "Sigue tu pedido" ícono dispara
+  // CustomEvent · abre TrackOrderModal.
+  useEffect(() => {
+    const handler = () => setTrackOpen(true)
+    window.addEventListener("naufrago:open-tracker", handler)
+    return () => window.removeEventListener("naufrago:open-tracker", handler)
+  }, [])
+
   // R96.113 · si la URL trae ?login=1 (redirect desde /mi-cuenta sin
   // sesión) · auto-abrir AccountModal y limpiar el query param.
   useEffect(() => {
@@ -313,14 +321,8 @@ function LandingInner() {
             </button>
           </div>
         ) : null}
-        <button
-          type="button"
-          onClick={() => setTrackOpen(true)}
-          className="pointer-events-auto inline-flex w-[180px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-violet-500/30 transition-transform hover:translate-y-[-1px]"
-        >
-          <RotateCw className="h-4 w-4 shrink-0" />
-          Sigue tu pedido
-        </button>
+        {/* R96.145 · "Sigue tu pedido" movido al SiteFooter como icon
+            pequeño · listener naufrago:open-tracker abre el modal. */}
         {/* R96.142 · WhatsApp CTA movido al SiteFooter como logo brand.
             R96.144 · "Registrate" CTA removido · redundante con icono
             usuario topbar · opt-in promos ahora se captura en checkout
