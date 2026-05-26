@@ -50,61 +50,19 @@ function InstagramLogo({ className }: { className?: string }) {
   )
 }
 
-/** BoxTrackLogo · caja frontal simple estilo emoji 📦 · vista plana
- *  flat 2D · cardboard kraft con tape brown vertical cruzando · top fold
- *  line · esquinas levemente redondeadas. Reconocible inmediatamente
- *  como caja de envío sin perspectiva isométrica complicada. */
+/** BoxTrackLogo · emoji 📦 system-rendered · cross-OS reconocible al
+ *  instante como caja de envío. Cada plataforma (iOS · Android · Win)
+ *  muestra su propio glyph nativo. */
 function BoxTrackLogo({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 32 32" aria-hidden className={className}>
-      {/* Background circle kraft brown · mantiene línea visual con
-          WhatsApp/Instagram brand logos */}
-      <circle cx="16" cy="16" r="16" fill="#8B5E2E" />
-      {/* Box body · vista frontal plana · kraft claro */}
-      <rect
-        x="6"
-        y="9"
-        width="20"
-        height="16"
-        rx="1"
-        fill="#E8C896"
-        stroke="#3D2A15"
-        strokeWidth="0.8"
-      />
-      {/* Top fold line · separa el lid de la base de la caja */}
-      <line
-        x1="6"
-        y1="13.5"
-        x2="26"
-        y2="13.5"
-        stroke="#3D2A15"
-        strokeWidth="0.8"
-      />
-      {/* Brown packing tape vertical · centrado · cruza top fold */}
-      <rect
-        x="13.5"
-        y="9"
-        width="5"
-        height="16"
-        fill="#9C6532"
-        stroke="#3D2A15"
-        strokeWidth="0.4"
-      />
-      {/* Tape highlight · fina raya blanca translucida down middle */}
-      <line
-        x1="16"
-        y1="9"
-        x2="16"
-        y2="25"
-        stroke="rgba(255,255,255,0.3)"
-        strokeWidth="0.5"
-      />
-      {/* Detalle · 2 corrugated marks en los costados del front */}
-      <line x1="8" y1="17" x2="11" y2="17" stroke="#A87A4A" strokeWidth="0.5" />
-      <line x1="8" y1="20" x2="11" y2="20" stroke="#A87A4A" strokeWidth="0.5" />
-      <line x1="21" y1="17" x2="24" y2="17" stroke="#A87A4A" strokeWidth="0.5" />
-      <line x1="21" y1="20" x2="24" y2="20" stroke="#A87A4A" strokeWidth="0.5" />
-    </svg>
+    <span
+      role="img"
+      aria-hidden
+      className={`inline-flex items-center justify-center leading-none ${className ?? ""}`}
+      style={{ fontSize: "20px" }}
+    >
+      📦
+    </span>
   )
 }
 
