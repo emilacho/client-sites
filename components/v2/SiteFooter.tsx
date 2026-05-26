@@ -50,53 +50,110 @@ function InstagramLogo({ className }: { className?: string }) {
   )
 }
 
-/** BoxTrackLogo · ícono delivery box · cardboard brown #B07A47 background
- *  + caja kraft #E8C896 con tape blanca cruzada · mismo footprint visual
- *  que WhatsApp/Instagram logos (h-6 w-6 · circle outer · branded color).
- *  Diseño · caja 3D ligeramente abierta con tape adhesiva delivery. */
+/** BoxTrackLogo · cardboard delivery box isométrica realista · estilo
+ *  FedEx/UPS · 3 faces 3D con gradients kraft + textura corrugated +
+ *  brown packing tape sealed top + drop shadow inferior. Reconocible
+ *  inmediatamente como caja de envío. Misma altura visual h-6 w-6
+ *  que WhatsApp/Instagram pero más ancha (viewBox 40x32). */
 function BoxTrackLogo({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 32 32" aria-hidden className={className}>
-      {/* Background cardboard brown */}
-      <circle cx="16" cy="16" r="16" fill="#A8763E" />
-      {/* Box top face (lid · slightly angled · darker kraft) */}
+    <svg viewBox="0 0 40 32" aria-hidden className={className}>
+      <defs>
+        {/* Cardboard kraft realista · 3 tonos para 3 faces */}
+        <linearGradient id="bx-top" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#E8C896" />
+          <stop offset="100%" stopColor="#C99565" />
+        </linearGradient>
+        <linearGradient id="bx-front" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#D4A574" />
+          <stop offset="100%" stopColor="#A87A4A" />
+        </linearGradient>
+        <linearGradient id="bx-side" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#8B6235" />
+          <stop offset="100%" stopColor="#5C3A1A" />
+        </linearGradient>
+        {/* Brown packing tape · color marrón típico cinta adhesiva */}
+        <linearGradient id="bx-tape" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#C4844A" />
+          <stop offset="100%" stopColor="#9C6532" />
+        </linearGradient>
+      </defs>
+
+      {/* Drop shadow base · simulates floor */}
+      <ellipse cx="20" cy="29" rx="14" ry="1.5" fill="rgba(0,0,0,0.25)" />
+
+      {/* Top face · lid */}
       <polygon
-        points="6,11 16,7 26,11 16,15"
-        fill="#C99565"
-        stroke="#5C3A1A"
-        strokeWidth="0.6"
+        points="4,11 20,5 36,11 20,17"
+        fill="url(#bx-top)"
+        stroke="#3D2A15"
+        strokeWidth="0.5"
         strokeLinejoin="round"
       />
-      {/* Box front face (light kraft) */}
+      {/* Front face · main visible · lighter kraft */}
       <polygon
-        points="6,11 16,15 16,25 6,21"
-        fill="#E8C896"
-        stroke="#5C3A1A"
-        strokeWidth="0.6"
+        points="4,11 20,17 20,28 4,22"
+        fill="url(#bx-front)"
+        stroke="#3D2A15"
+        strokeWidth="0.5"
         strokeLinejoin="round"
       />
-      {/* Box right side (medium kraft · darker shadow) */}
+      {/* Right side face · darker · in shadow */}
       <polygon
-        points="16,15 26,11 26,21 16,25"
-        fill="#B88859"
-        stroke="#5C3A1A"
-        strokeWidth="0.6"
+        points="20,17 36,11 36,22 20,28"
+        fill="url(#bx-side)"
+        stroke="#3D2A15"
+        strokeWidth="0.5"
         strokeLinejoin="round"
       />
-      {/* Tape adhesiva blanca cruzando el top + bajando al front */}
+
+      {/* Corrugated texture · lines on side face simulating cardboard ondas */}
+      <g stroke="#3D2A15" strokeWidth="0.25" opacity="0.55" fill="none">
+        <line x1="36" y1="13" x2="20" y2="19" />
+        <line x1="36" y1="15" x2="20" y2="21" />
+        <line x1="36" y1="17" x2="20" y2="23" />
+        <line x1="36" y1="19" x2="20" y2="25" />
+        <line x1="36" y1="21" x2="20" y2="27" />
+      </g>
+
+      {/* Brown packing tape · sealed seam top crossing down front */}
       <polygon
-        points="13,9 19,9 19,13.5 16,15 13,13.5"
-        fill="#FAF6EA"
-        opacity="0.85"
+        points="16.5,8.2 23.5,8.2 23.5,14.5 20,17 16.5,14.5"
+        fill="url(#bx-tape)"
+        stroke="#5C3A1A"
+        strokeWidth="0.25"
       />
       <rect
-        x="13"
-        y="15"
-        width="3"
-        height="9.6"
-        fill="#FAF6EA"
-        opacity="0.85"
+        x="16.5"
+        y="17"
+        width="4.0"
+        height="10.5"
+        fill="url(#bx-tape)"
+        stroke="#5C3A1A"
+        strokeWidth="0.25"
       />
+
+      {/* Tape highlight · thin shine line down the middle of tape */}
+      <line
+        x1="18.5"
+        y1="9.5"
+        x2="18.5"
+        y2="26.5"
+        stroke="rgba(255,255,255,0.25)"
+        strokeWidth="0.6"
+      />
+
+      {/* Small barcode-like stamp · marca de envío en front */}
+      <g fill="#3D2A15" opacity="0.45">
+        <rect x="5.5" y="24" width="0.5" height="2" />
+        <rect x="6.4" y="24" width="0.8" height="2" />
+        <rect x="7.6" y="24" width="0.4" height="2" />
+        <rect x="8.4" y="24" width="0.6" height="2" />
+        <rect x="9.3" y="24" width="0.3" height="2" />
+        <rect x="9.9" y="24" width="0.7" height="2" />
+        <rect x="11" y="24" width="0.5" height="2" />
+        <rect x="11.8" y="24" width="0.4" height="2" />
+      </g>
     </svg>
   )
 }
@@ -153,7 +210,7 @@ export default function SiteFooter() {
           aria-label="Seguir mi pedido"
           title="Seguir mi pedido"
         >
-          <BoxTrackLogo className="h-6 w-6" />
+          <BoxTrackLogo className="h-6 w-[30px]" />
         </button>
         <span className="text-slate-700">·</span>
         <Link
