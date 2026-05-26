@@ -5,7 +5,6 @@
  * (sobre la isla 3D) y en sub-pages. Mobile-first.
  */
 import Link from "next/link"
-import { Package } from "lucide-react"
 import { cliente } from "@/cliente.config"
 
 /** Instagram brand logo · gradient oficial (yellow→orange→pink→purple→blue)
@@ -47,6 +46,57 @@ function InstagramLogo({ className }: { className?: string }) {
         strokeWidth="2"
       />
       <circle cx="22" cy="10" r="1.4" fill="#FFFFFF" />
+    </svg>
+  )
+}
+
+/** BoxTrackLogo · ícono delivery box · cardboard brown #B07A47 background
+ *  + caja kraft #E8C896 con tape blanca cruzada · mismo footprint visual
+ *  que WhatsApp/Instagram logos (h-6 w-6 · circle outer · branded color).
+ *  Diseño · caja 3D ligeramente abierta con tape adhesiva delivery. */
+function BoxTrackLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden className={className}>
+      {/* Background cardboard brown */}
+      <circle cx="16" cy="16" r="16" fill="#A8763E" />
+      {/* Box top face (lid · slightly angled · darker kraft) */}
+      <polygon
+        points="6,11 16,7 26,11 16,15"
+        fill="#C99565"
+        stroke="#5C3A1A"
+        strokeWidth="0.6"
+        strokeLinejoin="round"
+      />
+      {/* Box front face (light kraft) */}
+      <polygon
+        points="6,11 16,15 16,25 6,21"
+        fill="#E8C896"
+        stroke="#5C3A1A"
+        strokeWidth="0.6"
+        strokeLinejoin="round"
+      />
+      {/* Box right side (medium kraft · darker shadow) */}
+      <polygon
+        points="16,15 26,11 26,21 16,25"
+        fill="#B88859"
+        stroke="#5C3A1A"
+        strokeWidth="0.6"
+        strokeLinejoin="round"
+      />
+      {/* Tape adhesiva blanca cruzando el top + bajando al front */}
+      <polygon
+        points="13,9 19,9 19,13.5 16,15 13,13.5"
+        fill="#FAF6EA"
+        opacity="0.85"
+      />
+      <rect
+        x="13"
+        y="15"
+        width="3"
+        height="9.6"
+        fill="#FAF6EA"
+        opacity="0.85"
+      />
     </svg>
   )
 }
@@ -99,11 +149,11 @@ export default function SiteFooter() {
               window.dispatchEvent(new CustomEvent("naufrago:open-tracker"))
             }
           }}
-          className="inline-flex items-center justify-center rounded-full bg-cyan-500/20 p-1 text-cyan-300 transition-colors hover:bg-cyan-500/30 hover:text-cyan-200"
+          className="inline-flex items-center transition-transform hover:translate-y-[-1px]"
           aria-label="Seguir mi pedido"
           title="Seguir mi pedido"
         >
-          <Package className="h-4 w-4" />
+          <BoxTrackLogo className="h-6 w-6" />
         </button>
         <span className="text-slate-700">·</span>
         <Link
