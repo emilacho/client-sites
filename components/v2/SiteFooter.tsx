@@ -50,110 +50,60 @@ function InstagramLogo({ className }: { className?: string }) {
   )
 }
 
-/** BoxTrackLogo · cardboard delivery box isométrica realista · estilo
- *  FedEx/UPS · 3 faces 3D con gradients kraft + textura corrugated +
- *  brown packing tape sealed top + drop shadow inferior. Reconocible
- *  inmediatamente como caja de envío. Misma altura visual h-6 w-6
- *  que WhatsApp/Instagram pero más ancha (viewBox 40x32). */
+/** BoxTrackLogo · caja frontal simple estilo emoji 📦 · vista plana
+ *  flat 2D · cardboard kraft con tape brown vertical cruzando · top fold
+ *  line · esquinas levemente redondeadas. Reconocible inmediatamente
+ *  como caja de envío sin perspectiva isométrica complicada. */
 function BoxTrackLogo({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 40 32" aria-hidden className={className}>
-      <defs>
-        {/* Cardboard kraft realista · 3 tonos para 3 faces */}
-        <linearGradient id="bx-top" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#E8C896" />
-          <stop offset="100%" stopColor="#C99565" />
-        </linearGradient>
-        <linearGradient id="bx-front" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#D4A574" />
-          <stop offset="100%" stopColor="#A87A4A" />
-        </linearGradient>
-        <linearGradient id="bx-side" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#8B6235" />
-          <stop offset="100%" stopColor="#5C3A1A" />
-        </linearGradient>
-        {/* Brown packing tape · color marrón típico cinta adhesiva */}
-        <linearGradient id="bx-tape" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#C4844A" />
-          <stop offset="100%" stopColor="#9C6532" />
-        </linearGradient>
-      </defs>
-
-      {/* Drop shadow base · simulates floor */}
-      <ellipse cx="20" cy="29" rx="14" ry="1.5" fill="rgba(0,0,0,0.25)" />
-
-      {/* Top face · lid */}
-      <polygon
-        points="4,11 20,5 36,11 20,17"
-        fill="url(#bx-top)"
-        stroke="#3D2A15"
-        strokeWidth="0.5"
-        strokeLinejoin="round"
-      />
-      {/* Front face · main visible · lighter kraft */}
-      <polygon
-        points="4,11 20,17 20,28 4,22"
-        fill="url(#bx-front)"
-        stroke="#3D2A15"
-        strokeWidth="0.5"
-        strokeLinejoin="round"
-      />
-      {/* Right side face · darker · in shadow */}
-      <polygon
-        points="20,17 36,11 36,22 20,28"
-        fill="url(#bx-side)"
-        stroke="#3D2A15"
-        strokeWidth="0.5"
-        strokeLinejoin="round"
-      />
-
-      {/* Corrugated texture · lines on side face simulating cardboard ondas */}
-      <g stroke="#3D2A15" strokeWidth="0.25" opacity="0.55" fill="none">
-        <line x1="36" y1="13" x2="20" y2="19" />
-        <line x1="36" y1="15" x2="20" y2="21" />
-        <line x1="36" y1="17" x2="20" y2="23" />
-        <line x1="36" y1="19" x2="20" y2="25" />
-        <line x1="36" y1="21" x2="20" y2="27" />
-      </g>
-
-      {/* Brown packing tape · sealed seam top crossing down front */}
-      <polygon
-        points="16.5,8.2 23.5,8.2 23.5,14.5 20,17 16.5,14.5"
-        fill="url(#bx-tape)"
-        stroke="#5C3A1A"
-        strokeWidth="0.25"
-      />
+    <svg viewBox="0 0 32 32" aria-hidden className={className}>
+      {/* Background circle kraft brown · mantiene línea visual con
+          WhatsApp/Instagram brand logos */}
+      <circle cx="16" cy="16" r="16" fill="#8B5E2E" />
+      {/* Box body · vista frontal plana · kraft claro */}
       <rect
-        x="16.5"
-        y="17"
-        width="4.0"
-        height="10.5"
-        fill="url(#bx-tape)"
-        stroke="#5C3A1A"
-        strokeWidth="0.25"
+        x="6"
+        y="9"
+        width="20"
+        height="16"
+        rx="1"
+        fill="#E8C896"
+        stroke="#3D2A15"
+        strokeWidth="0.8"
       />
-
-      {/* Tape highlight · thin shine line down the middle of tape */}
+      {/* Top fold line · separa el lid de la base de la caja */}
       <line
-        x1="18.5"
-        y1="9.5"
-        x2="18.5"
-        y2="26.5"
-        stroke="rgba(255,255,255,0.25)"
-        strokeWidth="0.6"
+        x1="6"
+        y1="13.5"
+        x2="26"
+        y2="13.5"
+        stroke="#3D2A15"
+        strokeWidth="0.8"
       />
-
-      {/* Small barcode-like stamp · marca de envío en front */}
-      <g fill="#3D2A15" opacity="0.45">
-        <rect x="5.5" y="24" width="0.5" height="2" />
-        <rect x="6.4" y="24" width="0.8" height="2" />
-        <rect x="7.6" y="24" width="0.4" height="2" />
-        <rect x="8.4" y="24" width="0.6" height="2" />
-        <rect x="9.3" y="24" width="0.3" height="2" />
-        <rect x="9.9" y="24" width="0.7" height="2" />
-        <rect x="11" y="24" width="0.5" height="2" />
-        <rect x="11.8" y="24" width="0.4" height="2" />
-      </g>
+      {/* Brown packing tape vertical · centrado · cruza top fold */}
+      <rect
+        x="13.5"
+        y="9"
+        width="5"
+        height="16"
+        fill="#9C6532"
+        stroke="#3D2A15"
+        strokeWidth="0.4"
+      />
+      {/* Tape highlight · fina raya blanca translucida down middle */}
+      <line
+        x1="16"
+        y1="9"
+        x2="16"
+        y2="25"
+        stroke="rgba(255,255,255,0.3)"
+        strokeWidth="0.5"
+      />
+      {/* Detalle · 2 corrugated marks en los costados del front */}
+      <line x1="8" y1="17" x2="11" y2="17" stroke="#A87A4A" strokeWidth="0.5" />
+      <line x1="8" y1="20" x2="11" y2="20" stroke="#A87A4A" strokeWidth="0.5" />
+      <line x1="21" y1="17" x2="24" y2="17" stroke="#A87A4A" strokeWidth="0.5" />
+      <line x1="21" y1="20" x2="24" y2="20" stroke="#A87A4A" strokeWidth="0.5" />
     </svg>
   )
 }
@@ -210,7 +160,7 @@ export default function SiteFooter() {
           aria-label="Seguir mi pedido"
           title="Seguir mi pedido"
         >
-          <BoxTrackLogo className="h-6 w-[30px]" />
+          <BoxTrackLogo className="h-6 w-6" />
         </button>
         <span className="text-slate-700">·</span>
         <Link
