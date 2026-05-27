@@ -26,6 +26,7 @@ import RuletaModal from "./RuletaModal"
 import AccountModal from "./AccountModal"
 import CookieConsentBanner from "./CookieConsentBanner"
 import SiteFooter from "./SiteFooter"
+import MenuSign3D from "./MenuSign3D"
 // Round 85 · TreasureRewardModal (R82 castaway SVG modal) retired ·
 // the 3D pergamino in-scene that emerges from the cofre on click
 // replaces it · same discount flow, more immersive reveal.
@@ -231,77 +232,10 @@ function LandingInner() {
           (más prominent) · 'Pedí lo mismo' (condicional) · 'Sigue tu
           pedido' · 'Hablar por WhatsApp' · 'Registrate'. */}
       <div className="pointer-events-none absolute left-3 top-20 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-start gap-2">
-        {/* R96.150 · botón "Ver menú" estilo letrero de madera Náufrago ·
-            replica el sign del 3D scene · wood plank kraft + texto Bebas
-            Neue uppercase sand · bolts en esquinas + wood grain lines */}
-        <button
-          type="button"
-          onClick={openMenu}
-          className="pointer-events-auto group relative inline-flex w-[200px] items-center justify-center px-5 py-3 transition-all hover:translate-y-[-1px] active:scale-[0.97]"
-          style={{
-            background:
-              "linear-gradient(180deg, #C99565 0%, #A8763E 50%, #8B5E2E 100%)",
-            border: "2.5px solid #3D2A15",
-            borderRadius: "6px 10px 6px 10px",
-            boxShadow:
-              "inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -3px 0 rgba(60,42,21,0.5), 0 6px 14px rgba(0,0,0,0.4)",
-          }}
-        >
-          {/* Bolts/nails en las 4 esquinas · simulan tornillos del letrero */}
-          <span
-            aria-hidden
-            className="absolute left-2 top-1.5 h-1.5 w-1.5 rounded-full"
-            style={{
-              background: "#3D2A15",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2)",
-            }}
-          />
-          <span
-            aria-hidden
-            className="absolute right-2 top-1.5 h-1.5 w-1.5 rounded-full"
-            style={{
-              background: "#3D2A15",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2)",
-            }}
-          />
-          <span
-            aria-hidden
-            className="absolute bottom-1.5 left-2 h-1.5 w-1.5 rounded-full"
-            style={{
-              background: "#3D2A15",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2)",
-            }}
-          />
-          <span
-            aria-hidden
-            className="absolute bottom-1.5 right-2 h-1.5 w-1.5 rounded-full"
-            style={{
-              background: "#3D2A15",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2)",
-            }}
-          />
-          {/* Wood grain lines · sutil textura horizontal */}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-x-3 top-3 h-px"
-            style={{ background: "rgba(60,42,21,0.25)" }}
-          />
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-x-3 bottom-3 h-px"
-            style={{ background: "rgba(60,42,21,0.25)" }}
-          />
-          {/* Texto MENÚ · Bebas Neue uppercase tracking wide · sand color */}
-          <span
-            className="font-[family-name:var(--font-bebas),sans-serif] text-2xl tracking-[0.25em]"
-            style={{
-              color: "#F5E9D2",
-              textShadow: "0 1px 2px rgba(0,0,0,0.55)",
-            }}
-          >
-            MENÚ
-          </span>
-        </button>
+        {/* R96.151 · botón "MENÚ" letrero 3D · carga el sign GLB del
+            isla rotado 180°Y (esconde "NÁUFRAGO" baked) + Text drei
+            "MENÚ" overlay en la cara frontal · idle balanceo gentle. */}
+        <MenuSign3D onClick={openMenu} />
         {easyOrder ? (
           <div
             className="pointer-events-auto flex max-w-full items-center gap-2 rounded-2xl border-2 px-3 py-2 shadow-lg backdrop-blur-sm"
