@@ -240,63 +240,65 @@ function LandingInner() {
           className="pointer-events-auto group relative inline-flex w-[200px] items-center justify-center px-5 py-3 transition-all hover:translate-y-[-1px] active:scale-[0.97]"
           style={{
             background:
-              "linear-gradient(180deg, #4DD4D8 0%, #3D2466 100%)",
-            border: "2.5px solid #1F1138",
+              "linear-gradient(180deg, #542D67 0%, #4B2855 50%, #38154B 100%)",
+            border: "2.5px solid #2D1135",
             borderRadius: "6px 10px 6px 10px",
             boxShadow:
-              "inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -3px 0 rgba(31,17,56,0.55), 0 6px 14px rgba(61,36,102,0.45)",
+              "inset 0 1px 0 rgba(102,55,114,0.5), inset 0 -3px 0 rgba(26,8,40,0.6), 0 6px 14px rgba(45,17,53,0.5)",
           }}
         >
-          {/* Bolts/nails en las 4 esquinas · purple oscuro Náufrago canon */}
+          {/* Bolts/nails · purple muy oscuro · matchea sign GLB bordes */}
           <span
             aria-hidden
             className="absolute left-2 top-1.5 h-1.5 w-1.5 rounded-full"
             style={{
-              background: "#1F1138",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.22)",
+              background: "#1A0828",
+              boxShadow: "inset 0 1px 0 rgba(102,55,114,0.4)",
             }}
           />
           <span
             aria-hidden
             className="absolute right-2 top-1.5 h-1.5 w-1.5 rounded-full"
             style={{
-              background: "#1F1138",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.22)",
+              background: "#1A0828",
+              boxShadow: "inset 0 1px 0 rgba(102,55,114,0.4)",
             }}
           />
           <span
             aria-hidden
             className="absolute bottom-1.5 left-2 h-1.5 w-1.5 rounded-full"
             style={{
-              background: "#1F1138",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.22)",
+              background: "#1A0828",
+              boxShadow: "inset 0 1px 0 rgba(102,55,114,0.4)",
             }}
           />
           <span
             aria-hidden
             className="absolute bottom-1.5 right-2 h-1.5 w-1.5 rounded-full"
             style={{
-              background: "#1F1138",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.22)",
+              background: "#1A0828",
+              boxShadow: "inset 0 1px 0 rgba(102,55,114,0.4)",
             }}
           />
-          {/* Grain lines · sand semi-translucido sobre el gradient */}
+          {/* Grain lines · purple claro #663772 semi-translucido */}
           <span
             aria-hidden
             className="pointer-events-none absolute inset-x-3 top-3 h-px"
-            style={{ background: "rgba(245,233,210,0.28)" }}
+            style={{ background: "rgba(102,55,114,0.45)" }}
           />
           <span
             aria-hidden
             className="pointer-events-none absolute inset-x-3 bottom-3 h-px"
-            style={{ background: "rgba(245,233,210,0.28)" }}
+            style={{ background: "rgba(102,55,114,0.45)" }}
           />
-          {/* Texto MENÚ · Bebas Neue uppercase tracking wide · sand cream */}
+          {/* Texto MENÚ · cyan-mint #51D4B4 · matchea exacto el color
+              del texto "NÁUFRAGO" baked en el GLB original */}
           <span
             className="font-[family-name:var(--font-bebas),sans-serif] text-2xl tracking-[0.25em]"
             style={{
-              color: "#F5E9D2",
-              textShadow: "0 1px 2px rgba(31,17,56,0.65)",
+              color: "#51D4B4",
+              textShadow:
+                "0 1px 2px rgba(26,8,40,0.85), 0 0 8px rgba(81,212,180,0.35)",
             }}
           >
             MENÚ
