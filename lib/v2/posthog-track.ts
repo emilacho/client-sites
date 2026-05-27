@@ -42,6 +42,9 @@ export type FunnelEvent =
   | "push_subscribed"
   | "ruleta_spun"
   | "login_completed"
+  // R97.1 · Voice AI + Kushki Hybrid · funnel del botón Llamame
+  | "voice_order_initiate_submit"
+  | "voice_order_initiate_success"
 
 /** Pageview event · R96.135 · llamado por PageViewTracker en cada
  *  navegación · usePathname() watcher. PostHog canonical event name

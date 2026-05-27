@@ -22,6 +22,7 @@ import { CartDrawer } from "./CartDrawer"
 import { OverlayPanels, type OverlayKind } from "./OverlayPanels"
 import { MenuModal } from "./MenuModal"
 import { TrackOrderModal } from "./TrackOrderModal"
+import { VoiceOrderModal } from "./VoiceOrderModal"
 import RuletaModal from "./RuletaModal"
 import AccountModal from "./AccountModal"
 import CookieConsentBanner from "./CookieConsentBanner"
@@ -125,6 +126,8 @@ function LandingInner() {
   const [ruletaOpen, setRuletaOpen] = useState(false)
   // R96.113 · Account modal · botón usuario en TopBar abre login/perfil.
   const [accountOpen, setAccountOpen] = useState(false)
+  // R97.1 · VoiceOrder modal · botón LLAMAME bajo el MENU.
+  const [voiceOpen, setVoiceOpen] = useState(false)
   // Round 95 · OrderTracker state eliminado · pendiente nuevo
   // approach del usuario.
 
@@ -306,6 +309,81 @@ function LandingInner() {
             MENÚ
           </span>
         </button>
+
+        {/* R97.1 · botón LLAMAME · mismo wood plank style del MENU ·
+            abre VoiceOrderModal · cliente recibe llamada de Vapi · voz
+            IA toma pedido · termina por WhatsApp con ubicación. */}
+        <button
+          type="button"
+          onClick={() => setVoiceOpen(true)}
+          aria-label="Llamame · pedido por voz"
+          className="pointer-events-auto group relative inline-flex w-[200px] items-center justify-center px-5 py-3 transition-all hover:translate-y-[-1px] active:scale-[0.97]"
+          style={{
+            background:
+              "linear-gradient(180deg, #542D67 0%, #4B2855 50%, #38154B 100%)",
+            border: "2.5px solid #2D1135",
+            borderRadius: "6px 10px 6px 10px",
+            boxShadow:
+              "inset 0 1px 0 rgba(102,55,114,0.5), inset 0 -3px 0 rgba(26,8,40,0.6), 0 6px 14px rgba(45,17,53,0.5)",
+          }}
+        >
+          {/* Bolts/nails · matchea sign GLB · 4 esquinas */}
+          <span
+            aria-hidden
+            className="absolute left-2 top-1.5 h-1.5 w-1.5 rounded-full"
+            style={{
+              background: "#1A0828",
+              boxShadow: "inset 0 1px 0 rgba(102,55,114,0.4)",
+            }}
+          />
+          <span
+            aria-hidden
+            className="absolute right-2 top-1.5 h-1.5 w-1.5 rounded-full"
+            style={{
+              background: "#1A0828",
+              boxShadow: "inset 0 1px 0 rgba(102,55,114,0.4)",
+            }}
+          />
+          <span
+            aria-hidden
+            className="absolute bottom-1.5 left-2 h-1.5 w-1.5 rounded-full"
+            style={{
+              background: "#1A0828",
+              boxShadow: "inset 0 1px 0 rgba(102,55,114,0.4)",
+            }}
+          />
+          <span
+            aria-hidden
+            className="absolute bottom-1.5 right-2 h-1.5 w-1.5 rounded-full"
+            style={{
+              background: "#1A0828",
+              boxShadow: "inset 0 1px 0 rgba(102,55,114,0.4)",
+            }}
+          />
+          {/* Grain lines · purple claro semi-translucido */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-3 top-3 h-px"
+            style={{ background: "rgba(102,55,114,0.45)" }}
+          />
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-3 bottom-3 h-px"
+            style={{ background: "rgba(102,55,114,0.45)" }}
+          />
+          {/* Texto LLAMAME · Alfa Slab One · cyan-mint #51D4B4 */}
+          <span
+            className="font-[family-name:var(--font-alfa-slab),serif] text-xl tracking-[0.08em]"
+            style={{
+              color: "#51D4B4",
+              textShadow:
+                "0 1px 2px rgba(26,8,40,0.85), 0 0 8px rgba(81,212,180,0.35)",
+            }}
+          >
+            LLAMAME
+          </span>
+        </button>
+
         {easyOrder ? (
           <div
             className="pointer-events-auto flex max-w-full items-center gap-2 rounded-2xl border-2 px-3 py-2 shadow-lg backdrop-blur-sm"
@@ -455,6 +533,7 @@ function LandingInner() {
       <CartDrawer />
       <MenuModal open={menuOpen} onClose={() => setMenuOpen(false)} />
       <TrackOrderModal open={trackOpen} onClose={() => setTrackOpen(false)} />
+      <VoiceOrderModal open={voiceOpen} onClose={() => setVoiceOpen(false)} />
       <RuletaModal open={ruletaOpen} onClose={() => setRuletaOpen(false)} />
       <AccountModal open={accountOpen} onClose={() => setAccountOpen(false)} />
       <CookieConsentBanner />
