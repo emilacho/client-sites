@@ -7,6 +7,7 @@ import { verifyWebhookSignature } from "@/lib/courier/pedidosya-client"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { buildStagePayload, sendPushForOrder } from "@/lib/push-server"
 import { earnPerlas } from "@/lib/loyalty-server"
+import { haversineMeters, deriveDeliveryStatus } from "@/lib/geo"
 
 export const runtime = "nodejs"
 // PedidosYa retries non-2xx responses · keep this route fast.
@@ -111,7 +112,9 @@ export async function POST(request: Request) {
     // si VAPID env vars no set o no hay subs registradas.
     const { data: nfOrder } = await supabase
       .from("naufrago_orders")
-      .select("order_code, status, customer_phone, total_usd")
+      .select(
+        "order_code, status, customer_phone, total_usd, dropoff_lat, dropoff_lng",
+      )
       .eq("delivery_provider_order_id", event.orderId)
       .maybeSingle()
     if (nfOrder?.order_code) {
@@ -245,6 +248,68 @@ export async function POST(request: Request) {
         }),
         keepalive: true,
       }).catch(() => {})
+
+      // R96.155 · Geofencing rider→dropoff · si el rider tiene lat/lng
+      // en el payload y tenemos coords del dropoff · derivar el sub-status
+      // (OUT_FOR_DELIVERY · NEARING_DESTINATION · AT_DESTINATION) según
+      // la distancia. Cuando cambia el sub-status · dispatch WhatsApp
+      // template (📍 cerca · 🚪 llegó). Idempotente vía event log.
+      const riderLat =
+        typeof p?.rider_lat === "number"
+          ? (p.rider_lat as number)
+          : typeof riderRaw?.lat === "number"
+            ? (riderRaw.lat as number)
+            : null
+      const riderLng =
+        typeof p?.rider_lng === "number"
+          ? (p.rider_lng as number)
+          : typeof riderRaw?.lng === "number"
+            ? (riderRaw.lng as number)
+            : null
+      if (
+        event.status === "OUT_FOR_DELIVERY" &&
+        riderLat !== null &&
+        riderLng !== null &&
+        nfOrder.dropoff_lat !== null &&
+        nfOrder.dropoff_lng !== null
+      ) {
+        const distance = haversineMeters(
+          riderLat,
+          riderLng,
+          Number(nfOrder.dropoff_lat),
+          Number(nfOrder.dropoff_lng),
+        )
+        // Pre-fetch del current sub-status (si ya pasamos por NEARING)
+        const { data: currentRow } = await supabase
+          .from("naufrago_orders")
+          .select("delivery_substatus")
+          .eq("order_code", nfOrder.order_code)
+          .maybeSingle()
+        const currentSubStatus =
+          (currentRow?.delivery_substatus as
+            | "OUT_FOR_DELIVERY"
+            | "NEARING_DESTINATION"
+            | "AT_DESTINATION"
+            | null) ?? "OUT_FOR_DELIVERY"
+        const derivedSubStatus = deriveDeliveryStatus(distance, currentSubStatus)
+
+        if (derivedSubStatus !== currentSubStatus) {
+          // State transition · persist + WhatsApp dispatch
+          await supabase
+            .from("naufrago_orders")
+            .update({ delivery_substatus: derivedSubStatus })
+            .eq("order_code", nfOrder.order_code)
+          void fetch(`${origin}/api/notifications/order-status`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              orderCode: nfOrder.order_code,
+              newStatus: derivedSubStatus,
+            }),
+            keepalive: true,
+          }).catch(() => {})
+        }
+      }
     }
   } catch (err) {
     console.warn("[courier-webhook] supabase update failed", err)

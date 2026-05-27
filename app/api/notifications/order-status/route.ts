@@ -38,6 +38,11 @@ const STATUS_TEMPLATES: Record<string, (orderCode: string, trackingUrl: string, 
     `Tu pedido ${code} está listo · sale en minutos 🛵\n\n${url}`,
   OUT_FOR_DELIVERY: (code, url, eta) =>
     `Tu pedido ${code} salió hacia ti 🛵${eta ? ` · llega en ~${eta} min` : ""}\n\nSeguilo · ${url}`,
+  // R96.155 · 2 nuevos states derivados de geofencing rider→dropoff
+  NEARING_DESTINATION: (code) =>
+    `El motorizado está cerca 📍\n\nTu pedido ${code} casi llega · prepará el efectivo o el teléfono.`,
+  AT_DESTINATION: (code) =>
+    `🚪 El motorizado llegó · sal a recibir tu pedido ${code} 🌊`,
   DELIVERED: (code, url) =>
     `¡Llegó tu pedido ${code}! Buen provecho 🌊\n\nContanos cómo estuvo · ${url}`,
   CANCELLED: (code, url) =>
