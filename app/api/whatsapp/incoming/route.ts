@@ -2,15 +2,25 @@ import type { NextRequest } from "next/server"
 import { getSupabaseAdmin } from "@/lib/supabase"
 
 /**
- * POST /api/whatsapp/incoming · R96.139
+ * POST /api/whatsapp/incoming · R96.139 + R96.156
  *
- * Webhook Twilio · recibe mensaje inbound desde el WhatsApp del admin.
- * Parsea con regex flexible (substring match · sin tildes · case-insensitive)
- * los 5 sabores conocidos · actualiza naufrago_dynamic_options.juice_flavors
- * con SOLO los sabores disponibles · audit log a naufrago_juice_admin_log.
+ * Webhook Twilio · enrutamiento por (sender, estado) ·
  *
- * Twilio envía form-urlencoded · NO json · campos · From · To · Body · etc.
- * Auto-respuesta · TwiML XML con `<Response><Message>...</Message></Response>`.
+ *   1) Admin (Emilio) → flow jugos del día · parsea sabores + update
+ *      naufrago_dynamic_options.juice_flavors.
+ *
+ *   2) Cliente con order en PENDING_LOCATION → recibir pin (Twilio envía
+ *      Latitude + Longitude fields) → persistir dropoff_lat/lng → pedir
+ *      detalle extra → transition PENDING_LOCATION_DETAIL.
+ *
+ *   3) Cliente con order en PENDING_LOCATION_DETAIL → recibir texto →
+ *      persistir como dropoff_detail → transition CONFIRMED · cotizar
+ *      PedidosYa (downstream · webhook futuro).
+ *
+ *   4) Inbound desconocido (sin order pending) → respuesta default.
+ *
+ * Twilio envía form-urlencoded · NO json · campos · From · To · Body ·
+ * Latitude · Longitude · etc. Auto-respuesta vía TwiML XML.
  */
 
 export const runtime = "nodejs"
@@ -30,7 +40,7 @@ function normalize(s: string): string {
   return s
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "") // remove tildes
+    .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9\s]/g, " ")
 }
 
@@ -62,22 +72,43 @@ export async function POST(req: NextRequest) {
   const form = new URLSearchParams(formText)
   const fromRaw = form.get("From") ?? ""
   const body = form.get("Body") ?? ""
-
-  // Strip "whatsapp:+" prefix · get plain E.164 digits
+  const lat = form.get("Latitude")
+  const lng = form.get("Longitude")
   const fromClean = fromRaw.replace(/^whatsapp:\+/, "")
 
-  // Solo aceptar inbound del admin · ignorar resto (silent · no reply)
-  if (fromClean !== ADMIN_WA) {
-    return twimlResponse(
-      "Hola · este número es interno · escribinos a +" + "593997744288" + " para pedidos.",
-    )
+  // ─── 1) ADMIN · flow jugos del día ──────────────────────────────────
+  if (fromClean === ADMIN_WA) {
+    return handleAdminJuices(body, fromClean)
   }
 
+  // ─── 2 + 3) CLIENTE · order pending location/detail ────────────────
+  const supa = getSupabaseAdmin()
+  const { data: pendingOrder } = await supa
+    .from("naufrago_orders")
+    .select("id, order_code, status")
+    .eq("client_slug", CLIENT_SLUG)
+    .eq("customer_phone", fromClean)
+    .in("status", ["PENDING_LOCATION", "PENDING_LOCATION_DETAIL"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (pendingOrder?.status === "PENDING_LOCATION") {
+    return handleLocationShare(pendingOrder.order_code, lat, lng)
+  }
+  if (pendingOrder?.status === "PENDING_LOCATION_DETAIL") {
+    return handleDetailShare(pendingOrder.order_code, body)
+  }
+
+  // ─── 4) Inbound sin order pending · default ────────────────────────
+  return twimlResponse(
+    "Hola · este número es para coordinar pedidos · si querés pedir, escribinos a +593997744288 o entrá a naufrago.delivery",
+  )
+}
+
+async function handleAdminJuices(body: string, fromClean: string) {
   const parsed = parseSabores(body)
   const supa = getSupabaseAdmin()
-
-  // Audit log siempre · parsed_juices vacío si parser falla.
-  // Wrap en try porque la query builder no acepta .catch() directo.
   try {
     await supa.from("naufrago_juice_admin_log").insert({
       client_slug: CLIENT_SLUG,
@@ -88,7 +119,7 @@ export async function POST(req: NextRequest) {
       source: "whatsapp",
     })
   } catch {
-    // best-effort log · no romper flow
+    // best-effort
   }
 
   if (parsed.length === 0) {
@@ -101,29 +132,89 @@ export async function POST(req: NextRequest) {
       "Solo 5 sabores posibles · revisá tu mensaje y volvé a enviar",
     )
   }
-
-  // Update naufrago_dynamic_options.juice_flavors con solo los parseados
   const optionsToSave = SABORES_CATALOG.filter((s) =>
     parsed.includes(s.id),
   ).map((s) => ({ id: s.id, label: s.label }))
-
   const { error } = await supa
     .from("naufrago_dynamic_options")
-    .update({
-      options: optionsToSave,
-      updated_at: new Date().toISOString(),
-    })
+    .update({ options: optionsToSave, updated_at: new Date().toISOString() })
     .eq("client_slug", CLIENT_SLUG)
     .eq("key", "juice_flavors")
-
   if (error) {
-    return twimlResponse(
-      `⚠ Error guardando · ${error.message.slice(0, 100)} · intentá de nuevo`,
-    )
+    return twimlResponse(`⚠ Error guardando · intentá de nuevo`)
   }
-
   const labelList = optionsToSave.map((o) => o.label).join(" · ")
   return twimlResponse(
     `✅ Listo · jugos disponibles · ${labelList}\n\nClientes lo van a ver actualizado en el menú.`,
+  )
+}
+
+async function handleLocationShare(
+  orderCode: string,
+  lat: string | null,
+  lng: string | null,
+) {
+  // Twilio WhatsApp manda Latitude + Longitude como form fields cuando
+  // el cliente comparte una ubicación nativa. Si vienen vacíos · cliente
+  // mandó texto · pedir el pin explícito.
+  if (!lat || !lng) {
+    return twimlResponse(
+      "📍 Necesito el pin del mapa · NO texto · presioná 📎 (clip) → Ubicación → Enviar tu ubicación actual",
+    )
+  }
+  const latNum = Number(lat)
+  const lngNum = Number(lng)
+  if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
+    return twimlResponse(
+      "⚠ Ubicación inválida · reintentá compartiendo el pin del mapa",
+    )
+  }
+  const supa = getSupabaseAdmin()
+  await supa
+    .from("naufrago_orders")
+    .update({
+      dropoff_lat: latNum,
+      dropoff_lng: lngNum,
+      status: "PENDING_LOCATION_DETAIL",
+    })
+    .eq("order_code", orderCode)
+
+  return twimlResponse(
+    `📍 Ubicación recibida · pedido ${orderCode}\n\nAhora un detalle extra de la entrega · ejemplo ·\n  "entrar por la peatonal · timbre azul · 2do piso"\n  "casa esquina · portón verde"\n  "depto 3B · pedir al vigilante"\n\n(Si no hay nada especial · respondé "ok" o "sin detalle")`,
+  )
+}
+
+async function handleDetailShare(orderCode: string, body: string) {
+  const detail = body.trim().slice(0, 300)
+  if (!detail) {
+    return twimlResponse(
+      "Si no hay detalle especial · respondé 'ok' o 'sin detalle' para finalizar el pedido",
+    )
+  }
+  const supa = getSupabaseAdmin()
+  // Detalle opcional · si dice "ok" / "sin detalle" / "ninguno" persistimos null
+  const isEmpty = /^(ok|sin detalle|ninguno|nada|na|no)$/i.test(detail)
+  await supa
+    .from("naufrago_orders")
+    .update({
+      dropoff_detail: isEmpty ? null : detail,
+      status: "CONFIRMED",
+    })
+    .eq("order_code", orderCode)
+
+  // Dispatch flow downstream · cotizar PedidosYa + dispatch motorizado.
+  // Llamado fire-and-forget al endpoint courier/order que ya existe ·
+  // este se encarga de pedir cotización y disparar el delivery.
+  const origin =
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  void fetch(`${origin}/api/courier/order-from-confirmed`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ orderCode }),
+    keepalive: true,
+  }).catch(() => {})
+
+  return twimlResponse(
+    `✅ Pedido ${orderCode} confirmado\n\nEstamos cotizando el envío · te confirmamos en segundos · gracias por elegir Náufrago 🌊`,
   )
 }
