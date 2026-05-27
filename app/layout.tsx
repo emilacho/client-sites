@@ -6,6 +6,7 @@ import {
   Bebas_Neue,
   Homemade_Apple,
   Caveat,
+  Alfa_Slab_One,
 } from "next/font/google"
 import { cliente } from "@/cliente.config"
 import { restaurantSchema, localBusinessSchema } from "@/lib/structured-data"
@@ -53,6 +54,16 @@ const caveat = Caveat({
   weight: ["400", "700"],
   subsets: ["latin"],
   variable: "--font-caveat",
+  display: "swap",
+})
+// R96.154 · Alfa Slab One · matchea la tipografía baked en el sign GLB
+// del isla (slab serif heavy chunky · serifs prominentes · stems gruesos).
+// Usado por el botón MENU del stack izquierdo para coherencia visual con
+// el letrero NÁUFRAGO 3D.
+const alfaSlab = Alfa_Slab_One({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-alfa-slab",
   display: "swap",
 })
 
@@ -130,7 +141,7 @@ export default function RootLayout({
         <JsonLdScript data={[restaurantSchema(), localBusinessSchema()]} />
       </head>
       <body
-        className={`${inter.variable} ${displaySerif.variable} ${marker.variable} ${bebas.variable} ${handwritten.variable} ${caveat.variable} font-sans antialiased`}
+        className={`${inter.variable} ${displaySerif.variable} ${marker.variable} ${bebas.variable} ${handwritten.variable} ${caveat.variable} ${alfaSlab.variable} font-sans antialiased`}
       >
         <PageViewTracker />
         {children}

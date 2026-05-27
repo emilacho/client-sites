@@ -291,10 +291,12 @@ function LandingInner() {
             className="pointer-events-none absolute inset-x-3 bottom-3 h-px"
             style={{ background: "rgba(102,55,114,0.45)" }}
           />
-          {/* Texto MENÚ · cyan-mint #51D4B4 · matchea exacto el color
-              del texto "NÁUFRAGO" baked en el GLB original */}
+          {/* Texto MENÚ · Alfa Slab One (slab serif heavy chunky · matchea
+              la tipografía del sign 3D del isla · serifs prominentes +
+              stems gruesos) · cyan-mint #51D4B4 (color del texto baked
+              en el GLB original) */}
           <span
-            className="font-[family-name:var(--font-bebas),sans-serif] text-2xl tracking-[0.25em]"
+            className="font-[family-name:var(--font-alfa-slab),serif] text-xl tracking-[0.08em]"
             style={{
               color: "#51D4B4",
               textShadow:
