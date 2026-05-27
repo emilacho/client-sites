@@ -240,63 +240,63 @@ function LandingInner() {
           className="pointer-events-auto group relative inline-flex w-[200px] items-center justify-center px-5 py-3 transition-all hover:translate-y-[-1px] active:scale-[0.97]"
           style={{
             background:
-              "linear-gradient(180deg, #C99565 0%, #A8763E 50%, #8B5E2E 100%)",
-            border: "2.5px solid #3D2A15",
+              "linear-gradient(180deg, #4DD4D8 0%, #3D2466 100%)",
+            border: "2.5px solid #1F1138",
             borderRadius: "6px 10px 6px 10px",
             boxShadow:
-              "inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -3px 0 rgba(60,42,21,0.5), 0 6px 14px rgba(0,0,0,0.4)",
+              "inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -3px 0 rgba(31,17,56,0.55), 0 6px 14px rgba(61,36,102,0.45)",
           }}
         >
-          {/* Bolts/nails en las 4 esquinas · simulan tornillos del letrero */}
+          {/* Bolts/nails en las 4 esquinas · purple oscuro Náufrago canon */}
           <span
             aria-hidden
             className="absolute left-2 top-1.5 h-1.5 w-1.5 rounded-full"
             style={{
-              background: "#3D2A15",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2)",
+              background: "#1F1138",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.22)",
             }}
           />
           <span
             aria-hidden
             className="absolute right-2 top-1.5 h-1.5 w-1.5 rounded-full"
             style={{
-              background: "#3D2A15",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2)",
+              background: "#1F1138",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.22)",
             }}
           />
           <span
             aria-hidden
             className="absolute bottom-1.5 left-2 h-1.5 w-1.5 rounded-full"
             style={{
-              background: "#3D2A15",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2)",
+              background: "#1F1138",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.22)",
             }}
           />
           <span
             aria-hidden
             className="absolute bottom-1.5 right-2 h-1.5 w-1.5 rounded-full"
             style={{
-              background: "#3D2A15",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2)",
+              background: "#1F1138",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.22)",
             }}
           />
-          {/* Wood grain lines · sutil textura horizontal */}
+          {/* Grain lines · sand semi-translucido sobre el gradient */}
           <span
             aria-hidden
             className="pointer-events-none absolute inset-x-3 top-3 h-px"
-            style={{ background: "rgba(60,42,21,0.25)" }}
+            style={{ background: "rgba(245,233,210,0.28)" }}
           />
           <span
             aria-hidden
             className="pointer-events-none absolute inset-x-3 bottom-3 h-px"
-            style={{ background: "rgba(60,42,21,0.25)" }}
+            style={{ background: "rgba(245,233,210,0.28)" }}
           />
-          {/* Texto MENÚ · Bebas Neue uppercase tracking wide · sand color */}
+          {/* Texto MENÚ · Bebas Neue uppercase tracking wide · sand cream */}
           <span
             className="font-[family-name:var(--font-bebas),sans-serif] text-2xl tracking-[0.25em]"
             style={{
               color: "#F5E9D2",
-              textShadow: "0 1px 2px rgba(0,0,0,0.55)",
+              textShadow: "0 1px 2px rgba(31,17,56,0.65)",
             }}
           >
             MENÚ
