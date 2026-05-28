@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
 
     // 1) Buscar por auth_user_id (ya linkeado).
     let { data: customer } = await supa
-      .from("naufrago_customers")
+      .from("customers")
       .select(
         "id, name, email, whatsapp_e164, addresses, preferences, total_orders, total_spend_usd, first_order_at, last_order_at",
       )
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
     //    mismo email Google).
     if (!customer && authUser.email) {
       const { data: byEmail } = await supa
-        .from("naufrago_customers")
+        .from("customers")
         .select(
           "id, name, email, whatsapp_e164, addresses, preferences, total_orders, total_spend_usd, first_order_at, last_order_at",
         )
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
         .maybeSingle()
       if (byEmail) {
         await supa
-          .from("naufrago_customers")
+          .from("customers")
           .update({ auth_user_id: authUser.id })
           .eq("id", byEmail.id)
         customer = byEmail
@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
         (authUser.user_metadata?.name as string | undefined) ||
         null
       const { data: created } = await supa
-        .from("naufrago_customers")
+        .from("customers")
         .insert({
           client_slug: CLIENT_SLUG,
           auth_user_id: authUser.id,
@@ -99,7 +99,7 @@ export async function GET(req: NextRequest) {
     let spentTotal = 0
     if (customer?.whatsapp_e164) {
       const { data: balance } = await supa
-        .from("naufrago_loyalty_balance")
+        .from("loyalty_balance")
         .select("perlas, earned_total, spent_total")
         .eq("client_slug", CLIENT_SLUG)
         .eq("phone", customer.whatsapp_e164)

@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   try {
     const supa = getSupabaseAdmin()
     const { data, error } = await supa
-      .from("naufrago_easy_orders")
+      .from("easy_orders")
       .select(
         "nickname, cart_lines, dropoff, payment_method, delivery_provider, total_usd, source_order_code, updated_at",
       )

@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
   try {
     const supa = getSupabaseAdmin()
     const { error } = await supa
-      .from("naufrago_subscribers")
+      .from("subscribers")
       .upsert(
         {
           client_slug: CLIENT_SLUG,

@@ -112,7 +112,7 @@ export async function GET(
 
   const supabase = getSupabaseAdmin()
   const { data, error } = await supabase
-    .from("naufrago_orders")
+    .from("orders")
     .select(
       "id, order_code, status, customer_name, customer_phone, cart_lines, subtotal_usd, discount_code, discount_usd, delivery_fee_usd, total_usd, delivery_provider, delivery_provider_tracking_url, delivery_eta_minutes, rider_info, customer_notes, created_at, rider_picked_up_at, in_transit_at, delivered_at, cancelled_at, cancellation_reason, delivery_photo_url, delivery_photo_lat, delivery_photo_lng, delivery_photo_at",
     )

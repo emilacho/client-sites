@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   try {
     const supa = getSupabaseAdmin()
     const { data: customer } = await supa
-      .from("naufrago_customers")
+      .from("customers")
       .select("*")
       .eq("client_slug", CLIENT_SLUG)
       .eq("auth_user_id", authUser.id)
@@ -60,25 +60,25 @@ export async function POST(req: NextRequest) {
       const [orders, loyaltyBalance, loyaltyLedger, easyOrder, consents] =
         await Promise.all([
           supa
-            .from("naufrago_orders")
+            .from("orders")
             .select(
               "order_code, status, subtotal_usd, discount_code, discount_usd, delivery_fee_usd, total_usd, cart_lines, dropoff_address, dropoff_detail, payment_method, customer_notes, created_at, delivered_at",
             )
             .eq("client_slug", CLIENT_SLUG)
             .eq("customer_phone", customer.whatsapp_e164),
           supa
-            .from("naufrago_loyalty_balance")
+            .from("loyalty_balance")
             .select("perlas, earned_total, spent_total, updated_at")
             .eq("client_slug", CLIENT_SLUG)
             .eq("phone", customer.whatsapp_e164)
             .maybeSingle(),
           supa
-            .from("naufrago_loyalty_ledger")
+            .from("loyalty_ledger")
             .select("delta, reason, order_code, created_at")
             .eq("client_slug", CLIENT_SLUG)
             .eq("phone", customer.whatsapp_e164),
           supa
-            .from("naufrago_easy_orders")
+            .from("easy_orders")
             .select(
               "nickname, cart_lines, dropoff, payment_method, total_usd, source_order_code, updated_at",
             )
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
             .eq("whatsapp_e164", customer.whatsapp_e164)
             .maybeSingle(),
           supa
-            .from("naufrago_consent_log")
+            .from("consent_log")
             .select("consent_type, accepted, url, created_at")
             .eq("client_slug", CLIENT_SLUG)
             .eq("customer_id", customer.id),

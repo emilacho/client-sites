@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
   }
   const supa = getSupabaseAdmin()
   const { data } = await supa
-    .from("naufrago_customers")
+    .from("customers")
     .select("preferences")
     .eq("client_slug", CLIENT_SLUG)
     .eq("whatsapp_e164", whatsapp)
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       : null
   const supa = getSupabaseAdmin()
   const { error } = await supa
-    .from("naufrago_customers")
+    .from("customers")
     .update({ preferences: pref })
     .eq("client_slug", CLIENT_SLUG)
     .eq("whatsapp_e164", whatsapp)

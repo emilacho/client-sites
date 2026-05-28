@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
   try {
     const supa = getSupabaseAdmin()
     const { data: rows } = await supa
-      .from("naufrago_otp_codes")
+      .from("otp_codes")
       .select("id, code_hash, attempts, consumed_at, expires_at")
       .eq("client_slug", CLIENT_SLUG)
       .eq("phone_e164", phone)
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
 
     if (row.code_hash !== hashCode(codeRaw)) {
       await supa
-        .from("naufrago_otp_codes")
+        .from("otp_codes")
         .update({ attempts: (row.attempts ?? 0) + 1 })
         .eq("id", row.id)
       return Response.json({
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
     // Match · marca consumed_at.
     const authorizedAt = new Date().toISOString()
     await supa
-      .from("naufrago_otp_codes")
+      .from("otp_codes")
       .update({ consumed_at: authorizedAt })
       .eq("id", row.id)
 

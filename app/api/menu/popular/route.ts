@@ -64,7 +64,7 @@ export async function GET() {
     const supa = getSupabaseAdmin()
     const since = new Date(Date.now() - 30 * 86_400_000).toISOString()
     const { data: rows, error } = await supa
-      .from("naufrago_orders")
+      .from("orders")
       .select("cart_lines, created_at")
       .gte("created_at", since)
       .neq("status", "CANCELLED")

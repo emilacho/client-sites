@@ -49,7 +49,7 @@ export async function sendPushForOrder(
 
   const supa = getSupabaseAdmin()
   const { data: subs, error } = await supa
-    .from("naufrago_push_subscriptions")
+    .from("push_subscriptions")
     .select("id, endpoint, p256dh, auth")
     .eq("order_code", orderCode.toUpperCase())
     .eq("unsubscribed", false)
@@ -87,13 +87,13 @@ export async function sendPushForOrder(
 
   if (goneIds.length > 0) {
     await supa
-      .from("naufrago_push_subscriptions")
+      .from("push_subscriptions")
       .update({ unsubscribed: true })
       .in("id", goneIds)
   }
 
   await supa
-    .from("naufrago_push_subscriptions")
+    .from("push_subscriptions")
     .update({ last_sent_at: new Date().toISOString() })
     .eq("order_code", orderCode.toUpperCase())
     .eq("unsubscribed", false)

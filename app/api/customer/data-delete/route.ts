@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
   try {
     const supa = getSupabaseAdmin()
     const { data: customer } = await supa
-      .from("naufrago_customers")
+      .from("customers")
       .select("id")
       .eq("client_slug", CLIENT_SLUG)
       .eq("auth_user_id", authUser.id)
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
       return Response.json({ ok: false, error: "no_customer" }, { status: 404 })
     }
     const { error } = await supa
-      .from("naufrago_customers")
+      .from("customers")
       .update({
         deletion_requested_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Log el consent del delete (auditable).
-    await supa.from("naufrago_consent_log").insert({
+    await supa.from("consent_log").insert({
       client_slug: CLIENT_SLUG,
       customer_id: customer.id,
       consent_type: "delete_account_request",

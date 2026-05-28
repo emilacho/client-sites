@@ -40,7 +40,7 @@ async function resolveCustomerByAuth(
   if (!userRes?.user) return null
   const supa = getSupabaseAdmin()
   const { data } = await supa
-    .from("naufrago_customers")
+    .from("customers")
     .select("id, whatsapp_e164")
     .eq("client_slug", CLIENT_SLUG)
     .eq("auth_user_id", userRes.user.id)
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
     }
     const supa = getSupabaseAdmin()
     const { data } = await supa
-      .from("naufrago_customers")
+      .from("customers")
       .select("addresses")
       .eq("id", customer.id)
       .maybeSingle()
@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
   try {
     const supa = getSupabaseAdmin()
     const { data } = await supa
-      .from("naufrago_customers")
+      .from("customers")
       .select("addresses")
       .eq("client_slug", CLIENT_SLUG)
       .eq("whatsapp_e164", whatsapp)
@@ -157,7 +157,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const supa = getSupabaseAdmin()
     const { error } = await supa
-      .from("naufrago_customers")
+      .from("customers")
       .update({ addresses, updated_at: new Date().toISOString() })
       .eq("id", customer.id)
     if (error) {

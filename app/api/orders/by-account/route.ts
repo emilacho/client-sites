@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
 
     // Customer lookup by auth_user_id.
     const { data: customer } = await supa
-      .from("naufrago_customers")
+      .from("customers")
       .select("whatsapp_e164")
       .eq("client_slug", CLIENT_SLUG)
       .eq("auth_user_id", authUser.id)
@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
     let beforeCreatedAt: string | null = null
     if (before) {
       const { data: cursorRow } = await supa
-        .from("naufrago_orders")
+        .from("orders")
         .select("created_at")
         .eq("order_code", before)
         .maybeSingle()
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
 
     // Query orders · fetch limit + 1 para saber si hay más.
     let q = supa
-      .from("naufrago_orders")
+      .from("orders")
       .select(
         "order_code, status, total_usd, subtotal_usd, cart_lines, created_at, delivered_at",
       )

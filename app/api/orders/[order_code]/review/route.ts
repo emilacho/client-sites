@@ -51,7 +51,7 @@ export async function POST(
     const supa = getSupabaseAdmin()
     // Look up order_id by order_code + verify it's DELIVERED
     const { data: order, error: orderErr } = await supa
-      .from("naufrago_orders")
+      .from("orders")
       .select("id, status, client_slug")
       .eq("order_code", order_code.toUpperCase())
       .maybeSingle()
@@ -73,7 +73,7 @@ export async function POST(
     }
 
     const { error: upsertErr } = await supa
-      .from("naufrago_order_reviews")
+      .from("order_reviews")
       .upsert(
         {
           order_id: order.id,

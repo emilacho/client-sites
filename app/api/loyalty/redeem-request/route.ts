@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     const codeHash = hashCode(code)
     const expiresAt = new Date(Date.now() + TTL_MIN * 60_000).toISOString()
 
-    const { error: insertErr } = await supa.from("naufrago_otp_codes").insert({
+    const { error: insertErr } = await supa.from("otp_codes").insert({
       client_slug: CLIENT_SLUG,
       phone_e164: phone,
       purpose: PURPOSE,

@@ -111,7 +111,7 @@ export async function POST(request: Request) {
     // todas las subscriptions activas para ese order. Graceful no-op
     // si VAPID env vars no set o no hay subs registradas.
     const { data: nfOrder } = await supabase
-      .from("naufrago_orders")
+      .from("orders")
       .select(
         "order_code, status, customer_phone, total_usd, dropoff_lat, dropoff_lng",
       )
@@ -162,12 +162,12 @@ export async function POST(request: Request) {
               : null,
         }
         await supabase
-          .from("naufrago_drivers")
+          .from("drivers")
           .upsert(driverRow, { onConflict: "client_slug,phone" })
 
         // Re-read full driver row to get tenure
         const { data: driver } = await supabase
-          .from("naufrago_drivers")
+          .from("drivers")
           .select(
             "name, photo_url, rating, platform_tenure_months, plate, vehicle_type",
           )
@@ -215,7 +215,7 @@ export async function POST(request: Request) {
         orderUpdate.delivery_photo_at = new Date().toISOString()
       }
       await supabase
-        .from("naufrago_orders")
+        .from("orders")
         .update(orderUpdate)
         .eq("order_code", nfOrder.order_code)
       const payload = buildStagePayload(event.status, nfOrder.order_code)
@@ -281,7 +281,7 @@ export async function POST(request: Request) {
         )
         // Pre-fetch del current sub-status (si ya pasamos por NEARING)
         const { data: currentRow } = await supabase
-          .from("naufrago_orders")
+          .from("orders")
           .select("delivery_substatus")
           .eq("order_code", nfOrder.order_code)
           .maybeSingle()
@@ -296,7 +296,7 @@ export async function POST(request: Request) {
         if (derivedSubStatus !== currentSubStatus) {
           // State transition · persist + WhatsApp dispatch
           await supabase
-            .from("naufrago_orders")
+            .from("orders")
             .update({ delivery_substatus: derivedSubStatus })
             .eq("order_code", nfOrder.order_code)
           void fetch(`${origin}/api/notifications/order-status`, {

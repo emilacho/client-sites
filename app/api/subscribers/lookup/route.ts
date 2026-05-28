@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
   try {
     const supa = getSupabaseAdmin()
     const { data } = await supa
-      .from("naufrago_subscribers")
+      .from("subscribers")
       .select("opt_in_promos, opt_in_tracking")
       .eq("client_slug", CLIENT_SLUG)
       .eq("whatsapp_e164", whatsapp)

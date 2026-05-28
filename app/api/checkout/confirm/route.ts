@@ -67,7 +67,7 @@ export async function POST(request: Request) {
   const supabase = getSupabaseAdmin()
 
   const { data: inserted, error: insertErr } = await supabase
-    .from("naufrago_orders")
+    .from("orders")
     .insert({
       client_slug: cliente.slug,
       order_code: orderCode,
@@ -108,7 +108,7 @@ export async function POST(request: Request) {
   // return success for the order itself · the event log is for
   // observability, not for the order to exist.
   const { error: eventErr } = await supabase
-    .from("naufrago_order_events")
+    .from("order_events")
     .insert({
       order_id: inserted.id,
       event_type: "ORDER_CREATED",
@@ -140,7 +140,7 @@ export async function POST(request: Request) {
         const codeUpper = discount.code.toUpperCase()
         // Check existing use_count para bump correcto.
         const { data: existing } = await supabase
-          .from("naufrago_promo_usage")
+          .from("promo_usage")
           .select("use_count")
           .eq("client_slug", cliente.slug)
           .eq("whatsapp_e164", phone)
@@ -149,7 +149,7 @@ export async function POST(request: Request) {
           .maybeSingle()
         const nextUseCount = (existing?.use_count ?? 0) + 1
         await supabase
-          .from("naufrago_promo_usage")
+          .from("promo_usage")
           .upsert(
             {
               client_slug: cliente.slug,
@@ -165,14 +165,14 @@ export async function POST(request: Request) {
         // Sumar el subtotal al qualifying spend de TODAS las rows
         // del cliente · qualquier código que tenga acumulando.
         const { data: rows } = await supabase
-          .from("naufrago_promo_usage")
+          .from("promo_usage")
           .select("id, qualifying_spend_since_last_use")
           .eq("client_slug", cliente.slug)
           .eq("whatsapp_e164", phone)
         if (rows && rows.length > 0) {
           for (const row of rows) {
             await supabase
-              .from("naufrago_promo_usage")
+              .from("promo_usage")
               .update({
                 qualifying_spend_since_last_use:
                   Number(row.qualifying_spend_since_last_use ?? 0) + subtotalUsd,

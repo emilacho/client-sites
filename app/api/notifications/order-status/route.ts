@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
 
     // Fetch order para customer phone + eta + id.
     const { data: order } = await supa
-      .from("naufrago_orders")
+      .from("orders")
       .select("id, customer_phone, delivery_eta_minutes")
       .eq("order_code", orderCode)
       .maybeSingle()
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
 
     // Idempotency · check event log para mismo status.
     const { data: prevEvents } = await supa
-      .from("naufrago_order_events")
+      .from("order_events")
       .select("id")
       .eq("order_id", order.id)
       .eq("event_type", "WHATSAPP_STATUS_NOTIFIED")
@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
     const data = (await res.json()) as { sid?: string }
 
     // Audit · register event para idempotency futuro.
-    await supa.from("naufrago_order_events").insert({
+    await supa.from("order_events").insert({
       order_id: order.id,
       event_type: "WHATSAPP_STATUS_NOTIFIED",
       actor: "system",

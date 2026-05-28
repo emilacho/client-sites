@@ -118,8 +118,8 @@ export function useAccount(): {
     }
   }, [refresh])
 
-  // R96.119 · realtime sub al balance de perlas · si el cliente tiene
-  // whatsapp_e164 · subscribe a UPDATE en naufrago_loyalty_balance
+  // R96.119 + R97.2 · realtime sub al balance de perlas · si el cliente
+  // tiene whatsapp_e164 · subscribe a UPDATE en naufrago.loyalty_balance
   // filtered por phone · al recibir un cambio · refresh el account.
   // Útil para que el chip perlas se actualice al instante post-DELIVERED.
   useEffect(() => {
@@ -131,8 +131,8 @@ export function useAccount(): {
         "postgres_changes",
         {
           event: "*",
-          schema: "public",
-          table: "naufrago_loyalty_balance",
+          schema: "naufrago",
+          table: "loyalty_balance",
           filter: `phone=eq.${account.whatsapp}`,
         },
         () => {

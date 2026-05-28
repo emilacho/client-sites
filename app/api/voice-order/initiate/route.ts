@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
 
   // Insert primero · status INITIATING · para tener row aunque Vapi falle.
   const { data: inserted, error: insertErr } = await supa
-    .from("naufrago_voice_calls")
+    .from("voice_calls")
     .insert({
       client_slug: CLIENT_SLUG,
       customer_name: rawName.slice(0, 100),
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
   // confirmación de que lo van a llamar (UX no se rompe).
   if (!vapiApiKey || !vapiAssistantId || !vapiPhoneNumberId) {
     await supa
-      .from("naufrago_voice_calls")
+      .from("voice_calls")
       .update({ status: "PENDING_OPERATOR" })
       .eq("id", voiceCallId)
     return Response.json({
@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
 
     if (!vapiRes.ok) {
       await supa
-        .from("naufrago_voice_calls")
+        .from("voice_calls")
         .update({
           status: "FAILED",
           raw_initiate_response: vapiData,
@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
     }
 
     await supa
-      .from("naufrago_voice_calls")
+      .from("voice_calls")
       .update({
         status: "DIALING",
         vapi_call_id: vapiData.id ?? null,
@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (err) {
     await supa
-      .from("naufrago_voice_calls")
+      .from("voice_calls")
       .update({
         status: "FAILED",
         raw_initiate_response: {

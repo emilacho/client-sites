@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
   // ─── 2 + 3) CLIENTE · order pending location/detail ────────────────
   const supa = getSupabaseAdmin()
   const { data: pendingOrder } = await supa
-    .from("naufrago_orders")
+    .from("orders")
     .select("id, order_code, status")
     .eq("client_slug", CLIENT_SLUG)
     .eq("customer_phone", fromClean)
@@ -110,7 +110,7 @@ async function handleAdminJuices(body: string, fromClean: string) {
   const parsed = parseSabores(body)
   const supa = getSupabaseAdmin()
   try {
-    await supa.from("naufrago_juice_admin_log").insert({
+    await supa.from("juice_admin_log").insert({
       client_slug: CLIENT_SLUG,
       inbound_text: body.slice(0, 500),
       parsed_juices: parsed,
@@ -136,7 +136,7 @@ async function handleAdminJuices(body: string, fromClean: string) {
     parsed.includes(s.id),
   ).map((s) => ({ id: s.id, label: s.label }))
   const { error } = await supa
-    .from("naufrago_dynamic_options")
+    .from("dynamic_options")
     .update({ options: optionsToSave, updated_at: new Date().toISOString() })
     .eq("client_slug", CLIENT_SLUG)
     .eq("key", "juice_flavors")
@@ -171,7 +171,7 @@ async function handleLocationShare(
   }
   const supa = getSupabaseAdmin()
   await supa
-    .from("naufrago_orders")
+    .from("orders")
     .update({
       dropoff_lat: latNum,
       dropoff_lng: lngNum,
@@ -195,7 +195,7 @@ async function handleDetailShare(orderCode: string, body: string) {
   // Detalle opcional · si dice "ok" / "sin detalle" / "ninguno" persistimos null
   const isEmpty = /^(ok|sin detalle|ninguno|nada|na|no)$/i.test(detail)
   await supa
-    .from("naufrago_orders")
+    .from("orders")
     .update({
       dropoff_detail: isEmpty ? null : detail,
       status: "CONFIRMED",

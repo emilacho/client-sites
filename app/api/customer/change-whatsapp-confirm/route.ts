@@ -46,7 +46,7 @@ async function resolveCustomer(token: string): Promise<{ id: string; currentWhat
   if (!userRes?.user) return null
   const supa = getSupabaseAdmin()
   const { data } = await supa
-    .from("naufrago_customers")
+    .from("customers")
     .select("id, whatsapp_e164")
     .eq("client_slug", CLIENT_SLUG)
     .eq("auth_user_id", userRes.user.id)
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
 
     // 1) Validar OTP.
     const { data: rows } = await supa
-      .from("naufrago_otp_codes")
+      .from("otp_codes")
       .select("id, code_hash, attempts, consumed_at, expires_at")
       .eq("client_slug", CLIENT_SLUG)
       .eq("phone_e164", newPhone)
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
     }
     if (row.code_hash !== hashCode(codeRaw)) {
       await supa
-        .from("naufrago_otp_codes")
+        .from("otp_codes")
         .update({ attempts: (row.attempts ?? 0) + 1 })
         .eq("id", row.id)
       return Response.json({
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
       })
     }
     await supa
-      .from("naufrago_otp_codes")
+      .from("otp_codes")
       .update({ consumed_at: new Date().toISOString() })
       .eq("id", row.id)
 
@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
 
     // 2) Re-check conflict en transaction time.
     const { data: takenBy } = await supa
-      .from("naufrago_customers")
+      .from("customers")
       .select("id")
       .eq("client_slug", CLIENT_SLUG)
       .eq("whatsapp_e164", newPhone)
@@ -141,14 +141,14 @@ export async function POST(req: NextRequest) {
     // 3) Transferir loyalty balance (si old existe).
     if (old) {
       const { data: oldBalance } = await supa
-        .from("naufrago_loyalty_balance")
+        .from("loyalty_balance")
         .select("perlas, earned_total, spent_total")
         .eq("client_slug", CLIENT_SLUG)
         .eq("phone", old)
         .maybeSingle()
       if (oldBalance) {
         const { data: newBalance } = await supa
-          .from("naufrago_loyalty_balance")
+          .from("loyalty_balance")
           .select("perlas, earned_total, spent_total")
           .eq("client_slug", CLIENT_SLUG)
           .eq("phone", newPhone)
@@ -161,7 +161,7 @@ export async function POST(req: NextRequest) {
         const mergedSpent =
           Number(oldBalance.spent_total ?? 0) +
           Number(newBalance?.spent_total ?? 0)
-        await supa.from("naufrago_loyalty_balance").upsert(
+        await supa.from("loyalty_balance").upsert(
           {
             client_slug: CLIENT_SLUG,
             phone: newPhone,
@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
           { onConflict: "client_slug,phone" },
         )
         await supa
-          .from("naufrago_loyalty_balance")
+          .from("loyalty_balance")
           .delete()
           .eq("client_slug", CLIENT_SLUG)
           .eq("phone", old)
@@ -180,12 +180,12 @@ export async function POST(req: NextRequest) {
 
       // 4) Re-asignar orders + easy_orders.
       await supa
-        .from("naufrago_orders")
+        .from("orders")
         .update({ customer_phone: newPhone })
         .eq("client_slug", CLIENT_SLUG)
         .eq("customer_phone", old)
       await supa
-        .from("naufrago_easy_orders")
+        .from("easy_orders")
         .update({ whatsapp_e164: newPhone })
         .eq("client_slug", CLIENT_SLUG)
         .eq("whatsapp_e164", old)
@@ -193,7 +193,7 @@ export async function POST(req: NextRequest) {
 
     // 5) Finalmente · update customer.whatsapp_e164.
     const { error: custErr } = await supa
-      .from("naufrago_customers")
+      .from("customers")
       .update({
         whatsapp_e164: newPhone,
         updated_at: new Date().toISOString(),

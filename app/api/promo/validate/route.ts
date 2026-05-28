@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   try {
     const supa = getSupabaseAdmin()
     const { data: rows, error } = await supa
-      .from("naufrago_promo_usage")
+      .from("promo_usage")
       .select("last_used_at, qualifying_spend_since_last_use")
       .eq("client_slug", CLIENT_SLUG)
       .eq("whatsapp_e164", whatsapp)

@@ -93,7 +93,7 @@ export async function earnPerlas({
 
   // Idempotency check · si ya hay ledger entry con este reason · skip
   const { data: existing } = await supa
-    .from("naufrago_loyalty_ledger")
+    .from("loyalty_ledger")
     .select("id")
     .eq("client_slug", "naufrago")
     .eq("phone", ph)
@@ -103,7 +103,7 @@ export async function earnPerlas({
 
   // Upsert balance · si no existe row · crear con perlas=earned
   const { data: current } = await supa
-    .from("naufrago_loyalty_balance")
+    .from("loyalty_balance")
     .select("perlas, earned_total")
     .eq("client_slug", "naufrago")
     .eq("phone", ph)
@@ -112,7 +112,7 @@ export async function earnPerlas({
   const newPerlas = (current?.perlas ?? 0) + earned
   const newEarnedTotal = (current?.earned_total ?? 0) + earned
 
-  await supa.from("naufrago_loyalty_balance").upsert(
+  await supa.from("loyalty_balance").upsert(
     {
       client_slug: "naufrago",
       phone: ph,
@@ -123,7 +123,7 @@ export async function earnPerlas({
     { onConflict: "client_slug,phone" },
   )
 
-  await supa.from("naufrago_loyalty_ledger").insert({
+  await supa.from("loyalty_ledger").insert({
     client_slug: "naufrago",
     phone: ph,
     delta: earned,
@@ -149,7 +149,7 @@ export async function spendPerlas({
 
   const supa = getSupabaseAdmin()
   const { data: current } = await supa
-    .from("naufrago_loyalty_balance")
+    .from("loyalty_balance")
     .select("perlas, spent_total")
     .eq("client_slug", "naufrago")
     .eq("phone", ph)
@@ -160,12 +160,12 @@ export async function spendPerlas({
   const newSpentTotal = current.spent_total + amount
 
   await supa
-    .from("naufrago_loyalty_balance")
+    .from("loyalty_balance")
     .update({ perlas: newPerlas, spent_total: newSpentTotal })
     .eq("client_slug", "naufrago")
     .eq("phone", ph)
 
-  await supa.from("naufrago_loyalty_ledger").insert({
+  await supa.from("loyalty_ledger").insert({
     client_slug: "naufrago",
     phone: ph,
     delta: -amount,

@@ -44,7 +44,7 @@ async function resolveCustomer(token: string): Promise<{ id: string; currentWhat
   if (!userRes?.user) return null
   const supa = getSupabaseAdmin()
   const { data } = await supa
-    .from("naufrago_customers")
+    .from("customers")
     .select("id, whatsapp_e164")
     .eq("client_slug", CLIENT_SLUG)
     .eq("auth_user_id", userRes.user.id)
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
     const supa = getSupabaseAdmin()
     // Conflict check · el nuevo no debe pertenecer a otro customer.
     const { data: takenBy } = await supa
-      .from("naufrago_customers")
+      .from("customers")
       .select("id")
       .eq("client_slug", CLIENT_SLUG)
       .eq("whatsapp_e164", newPhone)
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
     const code = String(randomInt(0, 10000)).padStart(4, "0")
     const codeHash = hashCode(code)
     const expiresAt = new Date(Date.now() + TTL_MIN * 60_000).toISOString()
-    await supa.from("naufrago_otp_codes").insert({
+    await supa.from("otp_codes").insert({
       client_slug: CLIENT_SLUG,
       phone_e164: newPhone,
       purpose: PURPOSE,

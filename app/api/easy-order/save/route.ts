@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
 
     // 1) UPSERT customer · bump total_orders + total_spend_usd.
     const { data: existing } = await supa
-      .from("naufrago_customers")
+      .from("customers")
       .select("id, addresses, total_orders, total_spend_usd, first_order_at, name, email")
       .eq("client_slug", CLIENT_SLUG)
       .eq("whatsapp_e164", whatsapp)
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { data: upserted, error: upsertErr } = await supa
-      .from("naufrago_customers")
+      .from("customers")
       .upsert(upsertPayload, { onConflict: "client_slug,whatsapp_e164" })
       .select("id")
       .maybeSingle()
@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2) UPSERT easy_order · 1 por cliente · overwrite.
-    const { error: eoErr } = await supa.from("naufrago_easy_orders").upsert(
+    const { error: eoErr } = await supa.from("easy_orders").upsert(
       {
         client_slug: CLIENT_SLUG,
         customer_id: customerId,

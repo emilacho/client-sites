@@ -34,7 +34,7 @@ export async function GET(
   try {
     const supa = getSupabaseAdmin()
     const { data, error } = await supa
-      .from("naufrago_dynamic_options")
+      .from("dynamic_options")
       .select("label, options, updated_at")
       .eq("client_slug", "naufrago")
       .eq("key", key)

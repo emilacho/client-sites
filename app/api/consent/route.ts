@@ -43,7 +43,7 @@ async function resolveCustomerId(token: string | null): Promise<string | null> {
     if (!userRes?.user) return null
     const supa = getSupabaseAdmin()
     const { data } = await supa
-      .from("naufrago_customers")
+      .from("customers")
       .select("id")
       .eq("client_slug", CLIENT_SLUG)
       .eq("auth_user_id", userRes.user.id)
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const supa = getSupabaseAdmin()
-    const { error } = await supa.from("naufrago_consent_log").insert({
+    const { error } = await supa.from("consent_log").insert({
       client_slug: CLIENT_SLUG,
       customer_id: customerId,
       consent_type: consentType,

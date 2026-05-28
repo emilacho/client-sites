@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
 
     // Check cooldown · cualquier spin reciente bajo IP o fingerprint.
     let query = supa
-      .from("naufrago_ruleta_spins")
+      .from("ruleta_spins")
       .select("prize, spun_at")
       .eq("client_slug", CLIENT_SLUG)
       .gte("spun_at", cutoff)
@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
     // Pick + persist new spin.
     const { prize, index } = pickPrize()
     const { error: insertErr } = await supa
-      .from("naufrago_ruleta_spins")
+      .from("ruleta_spins")
       .insert({
         client_slug: CLIENT_SLUG,
         fingerprint,
