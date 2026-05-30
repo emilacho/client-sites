@@ -229,7 +229,7 @@ function SubStatusBanner({
 function Header({ orderCode }: { orderCode: string }) {
   return (
     <header className="mb-6 flex items-baseline justify-between">
-      <a
+      <Link
         href="/"
         className="flex items-baseline gap-2"
         title="Volver a la isla"
@@ -241,7 +241,7 @@ function Header({ orderCode }: { orderCode: string }) {
         >
           NÁUFRAGO
         </span>
-      </a>
+      </Link>
       <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-neutral-500">
         {orderCode}
       </span>
