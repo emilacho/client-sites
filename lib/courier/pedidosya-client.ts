@@ -161,6 +161,18 @@ export interface QuoteResult {
 export async function getDeliveryQuote(
   params: QuoteParams,
 ): Promise<QuoteResult> {
+  // R97.5 · MOCK MODE para smoke tests (Zermatt-Täsch · etc) ·
+  // bypassea el API real de PedidosYa y devuelve cotización ficticia ·
+  // pickup canónico del env aún se requiere (lat/lng para Haversine).
+  if (process.env.PEDIDOSYA_COURIER_MOCK === "true") {
+    return {
+      quoteToken: `MOCK-QUOTE-${Date.now()}`,
+      priceUsd: Number(process.env.PEDIDOSYA_COURIER_MOCK_PRICE ?? "5"),
+      etaMinutes: Number(process.env.PEDIDOSYA_COURIER_MOCK_ETA ?? "5"),
+      expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),
+      raw: { mock: true, params },
+    }
+  }
   // TODO(R74) · confirm estimates endpoint + payload field names.
   //   Conventional shape:
   //     POST /v3/estimates/orders
@@ -254,6 +266,18 @@ export interface CreateOrderResult {
 export async function createOrder(
   params: CreateOrderParams,
 ): Promise<CreateOrderResult> {
+  // R97.5 · MOCK MODE para smoke tests · NO dispatcha motorizado real ·
+  // devuelve datos sintéticos. El simulador externo (scripts/simulate-
+  // zermatt-tasch.mjs) toma el orderCode + avanza status + rider position.
+  if (process.env.PEDIDOSYA_COURIER_MOCK === "true") {
+    const mockOrderId = `MOCK-PYA-${Date.now()}`
+    return {
+      orderId: mockOrderId,
+      trackingUrl: `https://mock-tracker.naufrago.local/${mockOrderId}`,
+      status: "CREATED",
+      raw: { mock: true, params, mockOrderId },
+    }
+  }
   // TODO(R74) · confirm orders endpoint + payload shape.
   //   Conventional:
   //     POST /v3/orders

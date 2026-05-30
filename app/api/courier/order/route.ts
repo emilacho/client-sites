@@ -88,33 +88,106 @@ export async function POST(request: Request) {
   // Best-effort persist · don't block the customer on Supabase
   // errors. The webhook handler will create the row if it arrives
   // before this insert (idempotent on pedidosya_order_id).
+  // R97.2 · courier_orders vive en public schema (legacy R74) ·
+  // .schema("public") explícito porque el client default es naufrago.
+  const supabase = getSupabaseAdmin()
   try {
-    const supabase = getSupabaseAdmin()
-    await supabase.from("courier_orders").upsert(
-      {
+    await supabase
+      .schema("public")
+      .from("courier_orders")
+      .upsert(
+        {
+          client_slug: cliente.slug,
+          pedidosya_order_id: courierResult.orderId,
+          quote_token: quoteToken,
+          status: courierResult.status,
+          customer_name: customer.name,
+          customer_phone: customer.phone,
+          customer_email: customer.email || null,
+          dropoff_address: dropoff.street,
+          cart_lines: lines,
+          notes: notes || null,
+          tracking_url: courierResult.trackingUrl ?? null,
+          raw_create_response: courierResult.raw as object,
+        },
+        { onConflict: "pedidosya_order_id" },
+      )
+  } catch (err) {
+    // Swallow · log on the server but proceed with success response.
+    console.warn("[courier-order] courier_orders persist failed", err)
+  }
+
+  // R97.5 · ALSO insert into naufrago.orders (R96 canonical table)
+  // para que tracker /order/[code] + WhatsApp templates + geofencing
+  // funcionen. En MOCK MODE inicializamos en ACCEPTED + payment CAPTURED
+  // (simulando Kushki capture + courier dispatch). En real flow lo
+  // dejaríamos PENDING hasta que llegue confirmación PedidosYa real.
+  const mockMode = process.env.PEDIDOSYA_COURIER_MOCK === "true"
+  const cartTotalUsd = lines.reduce((s, l) => s + l.priceUsd * l.qty, 0)
+  const { generateOrderCode } = await import("@/lib/checkout/order-code")
+  const orderCode = generateOrderCode()
+  let naufragoOrderId: string | null = null
+  try {
+    const { data: inserted } = await supabase
+      .from("orders")
+      .insert({
         client_slug: cliente.slug,
-        pedidosya_order_id: courierResult.orderId,
-        quote_token: quoteToken,
-        status: courierResult.status,
+        order_code: orderCode,
+        status: mockMode ? "ACCEPTED" : "PENDING",
         customer_name: customer.name,
         customer_phone: customer.phone,
         customer_email: customer.email || null,
         dropoff_address: dropoff.street,
+        dropoff_detail: dropoff.detail || null,
+        dropoff_lat: dropoff.latitude ?? null,
+        dropoff_lng: dropoff.longitude ?? null,
+        dropoff_country_code: dropoff.countryCode ?? "EC",
         cart_lines: lines,
-        notes: notes || null,
-        tracking_url: courierResult.trackingUrl ?? null,
-        raw_create_response: courierResult.raw as object,
-      },
-      { onConflict: "pedidosya_order_id" },
-    )
+        subtotal_usd: cartTotalUsd,
+        delivery_fee_usd: 0,
+        total_usd: cartTotalUsd,
+        delivery_provider: "PEDIDOSYA_COURIER",
+        delivery_provider_order_id: courierResult.orderId,
+        delivery_provider_tracking_url: courierResult.trackingUrl ?? null,
+        delivery_quote_token: quoteToken,
+        payment_method: "CARD_DEBIT",
+        payment_status: mockMode ? "CAPTURED" : "PENDING",
+        payment_provider: mockMode ? "KUSHKI" : null,
+        customer_notes: notes || null,
+        accepted_at: mockMode ? new Date().toISOString() : null,
+        raw_dispatch_response: courierResult.raw as object,
+      })
+      .select("id, order_code")
+      .single()
+    if (inserted) {
+      naufragoOrderId = inserted.id
+      // Trigger WhatsApp template ACCEPTED para que el cliente
+      // reciba la primera notificación · idempotente via R96.110.
+      const origin =
+        process.env.NEXT_PUBLIC_APP_URL ?? "https://naufrago.delivery"
+      void fetch(`${origin}/api/notifications/order-status`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orderCode, newStatus: "ACCEPTED" }),
+        keepalive: true,
+      }).catch(() => {})
+      // Log event
+      await supabase.from("order_events").insert({
+        order_id: inserted.id,
+        event_type: "ORDER_CREATED",
+        actor: "system",
+        payload: { mock_mode: mockMode, total_usd: cartTotalUsd },
+      })
+    }
   } catch (err) {
-    // Swallow · log on the server but proceed with success response.
-    console.warn("[courier-order] supabase persist failed", err)
+    console.warn("[courier-order] naufrago.orders persist failed", err)
   }
 
   return NextResponse.json({
     ok: true,
     orderId: courierResult.orderId,
+    orderCode,
+    naufragoOrderId,
     trackingUrl: courierResult.trackingUrl,
     status: courierResult.status,
   })
