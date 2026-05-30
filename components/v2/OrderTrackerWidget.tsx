@@ -190,11 +190,15 @@ export function OrderTrackerWidget() {
     <AnimatePresence>
       <motion.div
         key={`tracker-widget-${code}`}
-        initial={{ opacity: 0, y: 30, scale: 0.96 }}
+        initial={{ opacity: 0, y: 60, scale: 0.5 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 20, scale: 0.96 }}
-        transition={{ duration: 0.25, ease: [0.2, 0.8, 0.2, 1] }}
-        className="pointer-events-auto fixed bottom-3 right-3 z-[55] w-[min(360px,calc(100vw-1.5rem))] overflow-hidden rounded-2xl shadow-2xl"
+        exit={{ opacity: 0, y: 30, scale: 0.9 }}
+        transition={{
+          duration: 0.45,
+          ease: [0.2, 1.4, 0.2, 1],
+          scale: { type: "spring", stiffness: 280, damping: 18 },
+        }}
+        className="pointer-events-auto fixed bottom-4 right-4 z-[55] w-[min(440px,calc(100vw-2rem))] overflow-hidden rounded-2xl shadow-2xl"
         style={{
           background: `linear-gradient(180deg, ${SAND} 0%, #F0E5C9 100%)`,
           border: `2px solid ${PURPLE}`,
@@ -204,33 +208,33 @@ export function OrderTrackerWidget() {
         aria-label="Tracker de pedido"
       >
         {/* Header · stage + dismiss */}
-        <div className="flex items-center justify-between px-4 py-3"
+        <div className="flex items-center justify-between px-5 py-4"
           style={{ background: PURPLE, color: "#FFFFFF" }}>
           <div className="flex items-center gap-3">
-            <span className="text-3xl" aria-hidden>{stageInfo.emoji}</span>
+            <span className="text-4xl leading-none" aria-hidden>{stageInfo.emoji}</span>
             <div className="flex flex-col leading-tight">
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] opacity-80">
+              <span className="font-mono text-[11px] uppercase tracking-[0.18em] opacity-80">
                 Pedido {code.slice(-6)}
               </span>
-              <span className="text-base font-bold">{stageInfo.label}</span>
+              <span className="text-lg font-bold">{stageInfo.label}</span>
             </div>
           </div>
           <button
             type="button"
             aria-label="Cerrar widget"
             onClick={handleDismiss}
-            className="rounded-full p-1.5 hover:bg-white/15"
+            className="rounded-full p-2 hover:bg-white/15"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Body · canoa progress + ETA + sub-status banner */}
-        <div className="space-y-3 px-4 py-3.5" style={{ color: PURPLE }}>
+        <div className="space-y-3.5 px-5 py-4" style={{ color: PURPLE }}>
           {/* Canoa progress bar · render desde stage 'received' en
               adelante · al inicio canoa parada al 0% · luego avanza */}
           {snap && (snap.stage === "received" || snap.stage === "preparing" || snap.stage === "ready" || snap.stage === "en_route") ? (
-            <div className="relative h-3 rounded-full" style={{ background: "rgba(61,36,102,0.15)" }}>
+            <div className="relative h-4 rounded-full" style={{ background: "rgba(61,36,102,0.15)" }}>
               <div
                 className="absolute left-0 top-0 h-full rounded-full transition-all duration-700"
                 style={{
@@ -240,9 +244,9 @@ export function OrderTrackerWidget() {
               />
               <span
                 aria-hidden
-                className="absolute -top-2 text-2xl transition-all duration-700"
+                className="absolute -top-3 text-3xl transition-all duration-700"
                 style={{
-                  left: `calc(${snap.canoa_pct}% - 14px)`,
+                  left: `calc(${snap.canoa_pct}% - 18px)`,
                   filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.3))",
                 }}
               >
@@ -250,24 +254,26 @@ export function OrderTrackerWidget() {
               </span>
             </div>
           ) : !snap ? (
-            <div className="flex items-center gap-2 text-sm" style={{ color: PURPLE }}>
-              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              <span className="font-semibold">Cargando estado…</span>
+            <div className="flex items-center gap-3 text-base" style={{ color: PURPLE }}>
+              <span className="inline-block h-5 w-5 animate-spin rounded-full border-[3px] border-current border-t-transparent" />
+              <span className="font-bold">Cargando estado…</span>
             </div>
           ) : null}
 
           {/* ETA + sub-status badge */}
-          <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center justify-between gap-2">
             {etaMin !== null && etaMin >= 0 ? (
-              <span>
-                <strong className="text-base font-bold">{etaMin === 0 ? "Llegando" : `${etaMin} min`}</strong>
+              <span className="text-xl font-bold">
+                {etaMin === 0 ? "Llegando" : `${etaMin} min`}
               </span>
             ) : snap ? (
-              <span className="text-xs opacity-60">Coordinando envío…</span>
+              <span className="text-sm font-medium opacity-70">
+                Coordinando envío…
+              </span>
             ) : null}
             {subStatusBadge ? (
               <span
-                className="rounded-full px-2.5 py-1 text-xs font-bold"
+                className="rounded-full px-3 py-1.5 text-sm font-bold"
                 style={{
                   background: subStatusBadge.emoji === "🚪" ? PURPLE : CYAN,
                   color: subStatusBadge.emoji === "🚪" ? "#FFFFFF" : PURPLE,
