@@ -38,6 +38,9 @@ export interface OrderSnapshot {
   ok: boolean
   order_code: string
   status: NaufragoOrderStatus
+  /** R97.5 · sub-status del delivery · NEARING_DESTINATION · AT_DESTINATION ·
+   *  surfacing del geofencing rider→dropoff R96.155. */
+  delivery_substatus: string | null
   stage: TrackerStageKey | "cancelled"
   stage_index: number
   canoa_pct: number
@@ -147,6 +150,24 @@ export function OrderTracker({ initial, orderCode }: Props) {
         />
         <Microcopy stage={stage} />
         <EtaBadge text={etaText} stage={stage} />
+        {/* R97.5 · sub-status banner · NEARING_DESTINATION · AT_DESTINATION ·
+            mensaje visual cuando el motorizado pasa thresholds Haversine */}
+        {snap.delivery_substatus === "NEARING_DESTINATION" ? (
+          <SubStatusBanner
+            emoji="📍"
+            title="El motorizado está cerca"
+            body="Tu pedido casi llega · prepará el efectivo o el teléfono."
+            tone="cyan"
+          />
+        ) : null}
+        {snap.delivery_substatus === "AT_DESTINATION" ? (
+          <SubStatusBanner
+            emoji="🚪"
+            title="¡Llegó! Sal a recibir"
+            body="El motorizado está afuera con tu pedido."
+            tone="purple"
+          />
+        ) : null}
         {stage === "en_route" && snap.rider_info ? (
           <RiderCard info={snap.rider_info} />
         ) : null}
@@ -165,6 +186,43 @@ export function OrderTracker({ initial, orderCode }: Props) {
         )}
       </div>
     </main>
+  )
+}
+
+// R97.5 · banner para sub-status NEARING_DESTINATION + AT_DESTINATION ·
+// surface del geofencing rider→dropoff R96.155.
+function SubStatusBanner({
+  emoji,
+  title,
+  body,
+  tone,
+}: {
+  emoji: string
+  title: string
+  body: string
+  tone: "cyan" | "purple"
+}) {
+  const bg = tone === "cyan" ? "rgba(77,212,216,0.10)" : "rgba(61,36,102,0.10)"
+  const border = tone === "cyan" ? "rgba(77,212,216,0.45)" : "rgba(61,36,102,0.45)"
+  const accent = tone === "cyan" ? CYAN : PURPLE
+  return (
+    <div
+      className="my-4 flex items-start gap-3 rounded-2xl border px-4 py-3"
+      style={{ background: bg, borderColor: border }}
+    >
+      <span className="text-2xl leading-none" aria-hidden>
+        {emoji}
+      </span>
+      <div className="flex-1">
+        <p
+          className="text-sm font-semibold"
+          style={{ color: accent }}
+        >
+          {title}
+        </p>
+        <p className="text-xs text-neutral-600">{body}</p>
+      </div>
+    </div>
   )
 }
 

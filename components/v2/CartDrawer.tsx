@@ -90,6 +90,15 @@ type ShippingState =
       etaMinutes: number
       expiresAt: string
     }
+  // R97.5 · payment mock form · cliente captura tarjeta (simulada · NO se
+  // tokeniza) · al click "Pagar" pasa a 'paying' → 'ordering' → 'success'
+  | {
+      kind: "payment"
+      quoteToken: string
+      priceUsd: number
+      etaMinutes: number
+    }
+  | { kind: "paying"; quoteToken: string; priceUsd: number; etaMinutes: number }
   | { kind: "ordering"; priceUsd: number; etaMinutes: number }
   | {
       kind: "success"
@@ -98,7 +107,7 @@ type ShippingState =
       status: string
       priceUsd: number
     }
-  | { kind: "error"; message: string; previous: "address" | "quoted" }
+  | { kind: "error"; message: string; previous: "address" | "quoted" | "payment" }
 
 export function CartDrawer() {
   const cart = useCart()
@@ -372,6 +381,8 @@ function CartFooter() {
 
   const shippingPrice =
     shipping.kind === "quoted" ||
+    shipping.kind === "payment" ||
+    shipping.kind === "paying" ||
     shipping.kind === "ordering" ||
     shipping.kind === "success"
       ? shipping.priceUsd
@@ -434,9 +445,28 @@ function CartFooter() {
     }
   }
 
-  async function confirmOrder() {
-    if (shipping.kind !== "quoted") return
-    const { quoteToken, priceUsd, etaMinutes } = shipping
+  async function confirmOrder(
+    quoteTokenArg?: string,
+    priceUsdArg?: number,
+    etaMinutesArg?: number,
+  ) {
+    // R97.5 · ahora confirmOrder se llama POST mock payment · args
+    // explícitos · pero soportamos también el flow viejo (quoted state
+    // directo · backward compat con call sites antiguos).
+    let quoteToken: string
+    let priceUsd: number
+    let etaMinutes: number
+    if (quoteTokenArg && typeof priceUsdArg === "number" && typeof etaMinutesArg === "number") {
+      quoteToken = quoteTokenArg
+      priceUsd = priceUsdArg
+      etaMinutes = etaMinutesArg
+    } else if (shipping.kind === "quoted") {
+      quoteToken = shipping.quoteToken
+      priceUsd = shipping.priceUsd
+      etaMinutes = shipping.etaMinutes
+    } else {
+      return
+    }
     setShipping({ kind: "ordering", priceUsd, etaMinutes })
     try {
       const res = await fetch("/api/courier/order", {
@@ -561,17 +591,27 @@ function CartFooter() {
         priceUsd,
       })
       cart.clear()
-      // R97.5 · auto-redirect al tracker · UX correcto · cliente NO debería
-      // tener que copiar el código + pegarlo en la TrackOrderModal · el
-      // tracker se abre solo y persiste hasta DELIVERED. El TrackOrderModal
-      // sigue siendo fallback para clientes que perdieron la pestaña.
+      // R97.5 · v2 · NO auto-redirect · activamos el widget flotante de
+      // tracker en la landing (OrderTrackerWidget.tsx) · cliente queda
+      // en la isla 3D pudiendo explorar mientras ve el pedido en una
+      // ventanita esquina inferior derecha. Click en "ver detalle" del
+      // widget abre /order/[code] full screen como fallback.
       const trackerCode = json.orderCode ?? json.orderId
       if (trackerCode && typeof window !== "undefined") {
-        // Pequeño delay (600ms) para que el cliente alcance a ver el
-        // success state visualmente · luego navega al tracker.
+        try {
+          window.localStorage.setItem("naufrago_active_order_code", trackerCode)
+        } catch {
+          // ignore quota
+        }
+        // Dispatch event para que el widget se monte inmediatamente
+        // (sin esperar al storage event que NO fire en mismo tab).
+        window.dispatchEvent(new CustomEvent("naufrago:order-active"))
+        // Cerrar cart drawer post-success · cliente vuelve a la isla
+        // donde el widget ya está visible. 1s delay para que vea
+        // brevemente el success state del cart.
         window.setTimeout(() => {
-          window.location.href = `/order/${trackerCode}`
-        }, 600)
+          cart.close()
+        }, 1200)
       }
     } catch (err) {
       setShipping({
@@ -608,9 +648,12 @@ function CartFooter() {
             <div className="flex items-baseline justify-between text-xs text-slate-300">
               <span>
                 Envío · PedidosYa
-                {shipping.kind === "quoted" || shipping.kind === "ordering" ? (
+                {shipping.kind === "quoted" ||
+                shipping.kind === "payment" ||
+                shipping.kind === "paying" ||
+                shipping.kind === "ordering" ? (
                   <span className="ml-1 text-slate-500">
-                    ({shipping.kind === "quoted" ? shipping.etaMinutes : "—"} min)
+                    ({"etaMinutes" in shipping ? shipping.etaMinutes : "—"} min)
                   </span>
                 ) : null}
               </span>
@@ -1006,18 +1049,54 @@ function CartFooter() {
             </button>
             <button
               type="button"
-              onClick={confirmOrder}
+              onClick={() => {
+                if (shipping.kind !== "quoted") return
+                setShipping({
+                  kind: "payment",
+                  quoteToken: shipping.quoteToken,
+                  priceUsd: shipping.priceUsd,
+                  etaMinutes: shipping.etaMinutes,
+                })
+              }}
               style={{
                 background:
-                  "linear-gradient(180deg, #F52F41 0%, #D92235 100%)",
-                boxShadow: "0 10px 24px -10px rgba(245,47,65,0.55)",
+                  "linear-gradient(180deg, #3D2466 0%, #1F1138 100%)",
+                boxShadow: "0 10px 24px -10px rgba(61,36,102,0.55)",
               }}
               className="flex items-center justify-center gap-2 rounded-full px-3 py-2.5 text-sm font-semibold text-white"
             >
-              <PedidosYaGlyph />
-              <span>Confirmar pedido</span>
+              <span>Continuar al pago</span>
             </button>
           </div>
+        </div>
+      ) : shipping.kind === "payment" ? (
+        <MockPaymentForm
+          priceUsd={shipping.priceUsd}
+          etaMinutes={shipping.etaMinutes}
+          totalUsd={total}
+          onCancel={() =>
+            setShipping({
+              kind: "quoted",
+              quoteToken: shipping.quoteToken,
+              priceUsd: shipping.priceUsd,
+              etaMinutes: shipping.etaMinutes,
+              expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(),
+            })
+          }
+          onPay={async () => {
+            if (shipping.kind !== "payment") return
+            const { quoteToken, priceUsd, etaMinutes } = shipping
+            setShipping({ kind: "paying", quoteToken, priceUsd, etaMinutes })
+            // Simulación · 1.5s de latencia "procesando pago"
+            await new Promise((r) => setTimeout(r, 1500))
+            // Después llamar al confirmOrder con los datos del quote
+            await confirmOrder(quoteToken, priceUsd, etaMinutes)
+          }}
+        />
+      ) : shipping.kind === "paying" ? (
+        <div className="flex items-center justify-center gap-2 py-3 text-sm text-cyan-200">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Procesando pago…
         </div>
       ) : shipping.kind === "ordering" ? (
         <div className="flex items-center justify-center gap-2 py-3 text-sm text-cyan-200">
@@ -1183,6 +1262,151 @@ function EmptyState() {
         Toca el <strong className="text-cyan-300">cofre</strong> en la isla
         para reclamar tu descuento, luego explorá el menú.
       </p>
+    </div>
+  )
+}
+
+/* R97.5 · MockPaymentForm · formulario fake estilo Kushki · captura
+ *  número de tarjeta + vencimiento + CVV (TODO no se valida ni se
+ *  tokeniza) · al click Pagar · onPay se dispara. Cuando Kushki real
+ *  esté integrado · este componente se reemplaza por su iframe/SDK. */
+function MockPaymentForm({
+  priceUsd,
+  etaMinutes,
+  totalUsd,
+  onCancel,
+  onPay,
+}: {
+  priceUsd: number
+  etaMinutes: number
+  totalUsd: number
+  onCancel: () => void
+  onPay: () => void | Promise<void>
+}) {
+  const [cardNumber, setCardNumber] = useState("")
+  const [expiry, setExpiry] = useState("")
+  const [cvv, setCvv] = useState("")
+  const [holder, setHolder] = useState("")
+
+  const canPay =
+    cardNumber.replace(/\s/g, "").length >= 12 &&
+    /^\d{2}\/\d{2}$/.test(expiry) &&
+    cvv.length >= 3 &&
+    holder.trim().length >= 2
+
+  function formatCard(raw: string): string {
+    const digits = raw.replace(/\D/g, "").slice(0, 16)
+    return digits.replace(/(.{4})/g, "$1 ").trim()
+  }
+  function formatExpiry(raw: string): string {
+    const digits = raw.replace(/\D/g, "").slice(0, 4)
+    if (digits.length <= 2) return digits
+    return digits.slice(0, 2) + "/" + digits.slice(2)
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between rounded-2xl border border-slate-700 bg-slate-900/50 px-3 py-2">
+        <span className="text-xs text-slate-400">Total a pagar</span>
+        <span className="font-mono text-sm font-semibold text-cyan-300">
+          ${totalUsd.toFixed(2)}
+        </span>
+      </div>
+      <div className="rounded-2xl border-2 border-slate-700 bg-slate-900/30 px-4 py-3">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">
+            Pago seguro · Kushki
+          </span>
+          <span className="text-[10px] text-slate-500">
+            🔒 mock · sin cargo real
+          </span>
+        </div>
+        <div className="space-y-2">
+          <label className="block">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">
+              Número de tarjeta
+            </span>
+            <input
+              type="text"
+              value={cardNumber}
+              onChange={(e) => setCardNumber(formatCard(e.target.value))}
+              placeholder="4242 4242 4242 4242"
+              className="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-2 font-mono text-sm tracking-wider text-slate-100 placeholder:text-slate-600"
+              inputMode="numeric"
+            />
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">
+                Vencimiento
+              </span>
+              <input
+                type="text"
+                value={expiry}
+                onChange={(e) => setExpiry(formatExpiry(e.target.value))}
+                placeholder="MM/AA"
+                className="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-2 font-mono text-sm text-slate-100 placeholder:text-slate-600"
+                inputMode="numeric"
+              />
+            </label>
+            <label className="block">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">
+                CVV
+              </span>
+              <input
+                type="text"
+                value={cvv}
+                onChange={(e) =>
+                  setCvv(e.target.value.replace(/\D/g, "").slice(0, 4))
+                }
+                placeholder="123"
+                className="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-2 font-mono text-sm text-slate-100 placeholder:text-slate-600"
+                inputMode="numeric"
+              />
+            </label>
+          </div>
+          <label className="block">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">
+              Titular
+            </span>
+            <input
+              type="text"
+              value={holder}
+              onChange={(e) => setHolder(e.target.value.toUpperCase())}
+              placeholder="NOMBRE APELLIDO"
+              className="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-2 text-sm tracking-wide text-slate-100 placeholder:text-slate-600"
+            />
+          </label>
+        </div>
+      </div>
+      <p className="text-[10px] text-slate-500">
+        Envío PedidosYa · ${priceUsd.toFixed(2)} · ETA {etaMinutes} min
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-full border border-slate-700 px-3 py-2.5 text-sm font-medium text-slate-200"
+        >
+          Volver
+        </button>
+        <button
+          type="button"
+          onClick={onPay}
+          disabled={!canPay}
+          style={{
+            background: canPay
+              ? "linear-gradient(180deg, #3D2466 0%, #1F1138 100%)"
+              : "rgba(60,60,60,0.5)",
+            boxShadow: canPay
+              ? "0 10px 24px -10px rgba(61,36,102,0.55)"
+              : "none",
+          }}
+          className="flex items-center justify-center gap-2 rounded-full px-3 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed"
+        >
+          🔒 Pagar ${totalUsd.toFixed(2)}
+        </button>
+      </div>
     </div>
   )
 }

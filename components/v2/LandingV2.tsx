@@ -25,6 +25,7 @@ import { TrackOrderModal } from "./TrackOrderModal"
 import { VoiceOrderModal } from "./VoiceOrderModal"
 import RuletaModal from "./RuletaModal"
 import AccountModal from "./AccountModal"
+import { OrderTrackerWidget } from "./OrderTrackerWidget"
 import CookieConsentBanner from "./CookieConsentBanner"
 import SiteFooter from "./SiteFooter"
 // Round 85 · TreasureRewardModal (R82 castaway SVG modal) retired ·
@@ -536,6 +537,7 @@ function LandingInner() {
       <VoiceOrderModal open={voiceOpen} onClose={() => setVoiceOpen(false)} />
       <RuletaModal open={ruletaOpen} onClose={() => setRuletaOpen(false)} />
       <AccountModal open={accountOpen} onClose={() => setAccountOpen(false)} />
+      <OrderTrackerWidget />
       <CookieConsentBanner />
       <SiteFooter />
       <OverlayPanels active={overlay} onClose={() => setOverlay(null)} />
