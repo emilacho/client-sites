@@ -152,8 +152,11 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
     const geocoder = new g.Geocoder()
     geocoderRef.current = geocoder
 
+    // R97.5 · multi-country autocomplete · permite que cliente piloto
+     // Náufrago (Olón) + smoke test Zermatt encuentren su dirección.
+     // Para nuevos clientes en otros países · sumar el ISO 2-letter code.
     const autocomplete = new g.places.Autocomplete(inputRef.current, {
-      componentRestrictions: { country: "ec" },
+      componentRestrictions: { country: ["ec", "ch"] },
       fields: ["formatted_address", "geometry", "name"],
       types: ["geocode", "establishment"],
     })
