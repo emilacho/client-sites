@@ -229,12 +229,19 @@ function SubStatusBanner({
 function Header({ orderCode }: { orderCode: string }) {
   return (
     <header className="mb-6 flex items-baseline justify-between">
-      <span
-        className="font-[family-name:var(--font-bebas)] text-2xl tracking-wider"
-        style={{ color: PURPLE }}
+      <a
+        href="/"
+        className="flex items-baseline gap-2"
+        title="Volver a la isla"
       >
-        NÁUFRAGO
-      </span>
+        <span aria-hidden className="text-base">←</span>
+        <span
+          className="font-[family-name:var(--font-bebas)] text-2xl tracking-wider"
+          style={{ color: PURPLE }}
+        >
+          NÁUFRAGO
+        </span>
+      </a>
       <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-neutral-500">
         {orderCode}
       </span>

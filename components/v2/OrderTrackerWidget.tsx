@@ -20,7 +20,7 @@
  */
 import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, ChevronUp } from "lucide-react"
+import { X } from "lucide-react"
 
 const LS_KEY = "naufrago_active_order_code"
 const POLL_MS = 5_000
@@ -158,9 +158,6 @@ export function OrderTrackerWidget() {
     snap.delivery_eta_minutes ??
     null
 
-  const handleExpand = () => {
-    window.location.href = `/order/${code}`
-  }
   const handleDismiss = () => {
     try {
       window.localStorage.removeItem(LS_KEY)
@@ -259,20 +256,11 @@ export function OrderTrackerWidget() {
             ) : null}
           </div>
 
-          {/* Expand button */}
-          <button
-            type="button"
-            onClick={handleExpand}
-            className="flex w-full items-center justify-center gap-1 rounded-full py-1.5 text-[11px] font-semibold transition-colors"
-            style={{
-              border: `1px solid ${PURPLE}`,
-              color: PURPLE,
-              background: "transparent",
-            }}
-          >
-            <ChevronUp className="h-3 w-3" />
-            Ver detalle del pedido
-          </button>
+          {/* R97.5 v4 · Expand button ELIMINADO · UX feedback Emilio ·
+              el botón llevaba a /order/[code] full screen · cliente lo
+              tocaba creyendo que era "más info" · perdía la isla · ahora
+              el widget ES el tracker · todo se ve aquí · pedido completo
+              info ya visible (stage + canoa + ETA + sub-status badges). */}
         </div>
       </motion.div>
     </AnimatePresence>
