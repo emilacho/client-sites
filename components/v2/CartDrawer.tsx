@@ -607,15 +607,18 @@ function CartFooter() {
       // ventanita esquina inferior derecha. Click en "ver detalle" del
       // widget abre /order/[code] full screen como fallback.
       const trackerCode = json.orderCode ?? json.orderId
+      console.log(`[cart] confirmOrder success · trackerCode=${trackerCode}`, json)
       if (trackerCode && typeof window !== "undefined") {
         try {
           window.localStorage.setItem("naufrago_active_order_code", trackerCode)
-        } catch {
-          // ignore quota
+          console.log(`[cart] localStorage set · ${trackerCode}`)
+        } catch (err) {
+          console.warn("[cart] localStorage set failed", err)
         }
         // Dispatch event para que el widget se monte inmediatamente
         // (sin esperar al storage event que NO fire en mismo tab).
         window.dispatchEvent(new CustomEvent("naufrago:order-active"))
+        console.log("[cart] event naufrago:order-active dispatched")
         // R97.5 v3 · cerrar cart drawer rápido (350ms) · cliente debe
         // ver el widget en la landing · NO confundir la pantalla del
         // cart drawer con un tracker full-screen. Si tarda demasiado ·

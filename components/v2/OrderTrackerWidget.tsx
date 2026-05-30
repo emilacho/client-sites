@@ -63,22 +63,28 @@ export function OrderTrackerWidget() {
 
   // Mount · read active order from localStorage + listen to event
   useEffect(() => {
+    console.log("[widget] mount · checking localStorage")
     function syncCode() {
       try {
         const stored = window.localStorage.getItem(LS_KEY)
+        console.log(`[widget] sync · stored=${stored} code=${code}`)
         if (stored && stored !== code) {
+          console.log(`[widget] setCode(${stored})`)
           setCode(stored)
           setDismissed(false)
           setSnap(null)
         } else if (!stored && code) {
           setCode(null)
         }
-      } catch {
-        // ignore quota
+      } catch (err) {
+        console.warn("[widget] sync error", err)
       }
     }
     syncCode()
-    const handler = () => syncCode()
+    const handler = () => {
+      console.log("[widget] event received · re-sync")
+      syncCode()
+    }
     window.addEventListener("naufrago:order-active", handler)
     window.addEventListener("storage", handler)
     return () => {
@@ -90,15 +96,20 @@ export function OrderTrackerWidget() {
   // Polling de status
   useEffect(() => {
     if (!code || dismissed) return
+    console.log(`[widget] polling started code=${code}`)
     let cancelled = false
     async function tick() {
       try {
         const res = await fetch(`/api/orders/${encodeURIComponent(code!)}`, {
           cache: "no-store",
         })
-        if (!res.ok) return
+        if (!res.ok) {
+          console.warn(`[widget] poll HTTP ${res.status}`)
+          return
+        }
         const data = (await res.json()) as TrackerSnapshot
         if (cancelled) return
+        console.log(`[widget] poll ok · status=${data.status} stage=${data.stage}`)
         setSnap(data)
         if (data.status === "DELIVERED" || data.status === "CANCELLED") {
           // Auto-dismiss en 30s · cliente puede cerrar antes manual
@@ -128,7 +139,11 @@ export function OrderTrackerWidget() {
     }
   }, [code, dismissed, autoDismissTimer])
 
-  if (!code || dismissed || !snap) return null
+  if (!code || dismissed || !snap) {
+    console.log(`[widget] render null · code=${code} dismissed=${dismissed} snap=${!!snap}`)
+    return null
+  }
+  console.log(`[widget] rendering · code=${code} status=${snap.status}`)
 
   const stageInfo =
     STAGE_LABEL[snap.stage] ?? { label: snap.status, emoji: "📦" }
