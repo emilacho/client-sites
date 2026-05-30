@@ -427,7 +427,17 @@ function CartFooter() {
       })
       const json = await res.json()
       if (!res.ok || !json.ok) {
-        throw new Error(json.detail || json.error || "quote_failed")
+        // R97.5 · mejor mensaje · si hay issues array · concatenar
+        // los campos fallidos para que el cliente sepa qué corregir.
+        let msg = json.detail || json.error || "quote_failed"
+        if (Array.isArray(json.issues) && json.issues.length > 0) {
+          msg = json.issues
+            .map((i: { path: string; message: string }) =>
+              `${i.path}: ${i.message}`,
+            )
+            .join(" · ")
+        }
+        throw new Error(msg)
       }
       setShipping({
         kind: "quoted",

@@ -306,7 +306,20 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
         ref={inputRef}
         type="text"
         defaultValue={streetLocal}
-        onChange={(e) => setStreetLocal(e.target.value)}
+        onChange={(e) => {
+          // R97.5 · propagar al parent SIEMPRE · antes solo se propagaba
+          // post-autocomplete place_changed · si el cliente typeaba sin
+          // elegir suggestion · form.street quedaba vacío y la quote
+          // fallaba con validation_failed (street min(1) constraint).
+          // Ahora propagamos texto plano · lat/lng se preservan si ya
+          // los tenía (autocomplete previo · marker drag · geolocation).
+          setStreetLocal(e.target.value)
+          onChange({
+            street: e.target.value,
+            lat: lastLat,
+            lng: lastLng,
+          })
+        }}
         placeholder="Buscá tu dirección…"
         className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none"
         autoComplete="off"
