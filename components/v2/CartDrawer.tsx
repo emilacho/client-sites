@@ -1081,6 +1081,13 @@ function CartFooter() {
           </div>
         </div>
       ) : shipping.kind === "payment" ? (
+        // R97.5 v3 · scrollable container · form más largo · max-h
+        // 65vh deja espacio para header + footer · overscroll contained
+        // para evitar pull-to-refresh accidental en mobile.
+        <div
+          className="-mx-5 max-h-[65vh] overflow-y-auto px-5 pb-1"
+          style={{ overscrollBehavior: "contain" }}
+        >
         <MockPaymentForm
           priceUsd={shipping.priceUsd}
           etaMinutes={shipping.etaMinutes}
@@ -1104,6 +1111,7 @@ function CartFooter() {
             await confirmOrder(quoteToken, priceUsd, etaMinutes)
           }}
         />
+        </div>
       ) : shipping.kind === "paying" ? (
         <div className="flex items-center justify-center gap-2 py-3 text-sm text-cyan-200">
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -1380,12 +1388,12 @@ function MockPaymentForm({
   const discount = cart.discountUsd
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3
-          className="font-[family-name:var(--font-bebas),sans-serif] text-2xl tracking-wider"
-          style={{ color: "#3D2466" }}
+          className="font-[family-name:var(--font-bebas),sans-serif] text-xl tracking-wider"
+          style={{ color: "#FFFFFF" }}
         >
           PAGO
         </h3>
@@ -1483,7 +1491,7 @@ function MockPaymentForm({
       {/* Card form OR cash message */}
       {method === "card" ? (
         <div
-          className="space-y-2.5 rounded-2xl border-2 px-3 py-3"
+          className="space-y-2 rounded-2xl border-2 px-2.5 py-2.5"
           style={{
             background: "linear-gradient(180deg, rgba(61,36,102,0.20) 0%, rgba(31,17,56,0.30) 100%)",
             borderColor: "rgba(77,212,216,0.30)",
@@ -1512,7 +1520,7 @@ function MockPaymentForm({
                 value={cardNumber}
                 onChange={(e) => setCardNumber(formatCard(e.target.value))}
                 placeholder="1234 5678 9012 3456"
-                className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2.5 pr-14 font-mono text-base tracking-wider text-slate-100 placeholder:text-slate-600 focus:border-cyan-500 focus:outline-none"
+                className="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-2 pr-14 font-mono text-sm tracking-wider text-slate-100 placeholder:text-slate-600 focus:border-cyan-500 focus:outline-none"
                 inputMode="numeric"
                 autoComplete="cc-number"
               />
@@ -1533,7 +1541,7 @@ function MockPaymentForm({
                 value={expiry}
                 onChange={(e) => setExpiry(formatExpiry(e.target.value))}
                 placeholder="MM/AA"
-                className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2.5 font-mono text-base text-slate-100 placeholder:text-slate-600 focus:border-cyan-500 focus:outline-none"
+                className="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-2 font-mono text-sm text-slate-100 placeholder:text-slate-600 focus:border-cyan-500 focus:outline-none"
                 inputMode="numeric"
                 autoComplete="cc-exp"
               />
@@ -1558,7 +1566,7 @@ function MockPaymentForm({
                   setCvv(e.target.value.replace(/\D/g, "").slice(0, cvvLen))
                 }
                 placeholder={brand === "amex" ? "4 dígitos" : "3 dígitos"}
-                className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2.5 font-mono text-base text-slate-100 placeholder:text-slate-600 focus:border-cyan-500 focus:outline-none"
+                className="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-2 font-mono text-sm text-slate-100 placeholder:text-slate-600 focus:border-cyan-500 focus:outline-none"
                 inputMode="numeric"
                 autoComplete="cc-csc"
                 maxLength={cvvLen}
@@ -1584,7 +1592,7 @@ function MockPaymentForm({
               value={holder}
               onChange={(e) => setHolder(e.target.value.toUpperCase())}
               placeholder="COMO APARECE EN LA TARJETA"
-              className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm tracking-wide text-slate-100 placeholder:text-slate-600 focus:border-cyan-500 focus:outline-none"
+              className="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-2 text-sm tracking-wide text-slate-100 placeholder:text-slate-600 focus:border-cyan-500 focus:outline-none"
               autoComplete="cc-name"
             />
           </label>
