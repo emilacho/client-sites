@@ -43,6 +43,7 @@ interface TrackerSnapshot {
 }
 
 const STAGE_LABEL: Record<string, { label: string; emoji: string }> = {
+  received: { label: "Pedido recibido", emoji: "✅" },
   accepted: { label: "Confirmado", emoji: "✅" },
   preparing: { label: "En cocina", emoji: "🍳" },
   ready: { label: "Listo", emoji: "🛵" },
@@ -81,8 +82,19 @@ export function OrderTrackerWidget() {
       }
     }
     syncCode()
-    const handler = () => {
+    // R97.5 v5 · handler con type narrowing para extraer orderCode
+    // del CustomEvent detail · evita race con localStorage timing.
+    const handler = (e: Event) => {
       console.log("[widget] event received · re-sync")
+      const ce = e as CustomEvent<{ orderCode?: string }>
+      const fromDetail = ce.detail?.orderCode
+      if (fromDetail && fromDetail !== code) {
+        console.log(`[widget] setCode from event detail · ${fromDetail}`)
+        setCode(fromDetail)
+        setDismissed(false)
+        setSnap(null)
+        return
+      }
       syncCode()
     }
     window.addEventListener("naufrago:order-active", handler)
@@ -139,23 +151,28 @@ export function OrderTrackerWidget() {
     }
   }, [code, dismissed, autoDismissTimer])
 
-  if (!code || dismissed || !snap) {
-    console.log(`[widget] render null · code=${code} dismissed=${dismissed} snap=${!!snap}`)
+  // R97.5 v5 · si NO hay code ni dismissed · NULL (no hay pedido activo)
+  if (!code || dismissed) {
+    console.log(`[widget] render null · no active order`)
     return null
   }
-  console.log(`[widget] rendering · code=${code} status=${snap.status}`)
+  // R97.5 v5 · loading state · widget aparece INMEDIATAMENTE post-event
+  // aunque snap aún no cargó · NO esperar al primer poll · da feedback
+  // visual inmediato al cliente que el pedido fue creado.
+  console.log(`[widget] rendering · code=${code} status=${snap?.status ?? "LOADING"}`)
 
-  const stageInfo =
-    STAGE_LABEL[snap.stage] ?? { label: snap.status, emoji: "📦" }
+  const stageInfo = snap
+    ? (STAGE_LABEL[snap.stage] ?? { label: snap.status, emoji: "📦" })
+    : { label: "Confirmado", emoji: "✅" }
   const subStatusBadge =
-    snap.delivery_substatus === "NEARING_DESTINATION"
+    snap?.delivery_substatus === "NEARING_DESTINATION"
       ? { emoji: "📍", text: "Está cerca" }
-      : snap.delivery_substatus === "AT_DESTINATION"
+      : snap?.delivery_substatus === "AT_DESTINATION"
         ? { emoji: "🚪", text: "Llegó · sal a recibir" }
         : null
   const etaMin =
-    snap.rider_info?.eta_min ??
-    snap.delivery_eta_minutes ??
+    snap?.rider_info?.eta_min ??
+    snap?.delivery_eta_minutes ??
     null
 
   const handleDismiss = () => {
@@ -210,8 +227,9 @@ export function OrderTrackerWidget() {
 
         {/* Body · canoa progress + ETA + sub-status banner */}
         <div className="space-y-2 px-3 py-2.5" style={{ color: PURPLE }}>
-          {/* Canoa progress bar */}
-          {snap.stage === "en_route" || snap.stage === "preparing" || snap.stage === "ready" ? (
+          {/* Canoa progress bar · render desde stage 'received' en
+              adelante · al inicio canoa parada al 0% · luego avanza */}
+          {snap && (snap.stage === "received" || snap.stage === "preparing" || snap.stage === "ready" || snap.stage === "en_route") ? (
             <div className="relative h-2 rounded-full" style={{ background: "rgba(61,36,102,0.15)" }}>
               <div
                 className="absolute left-0 top-0 h-full rounded-full transition-all duration-700"
@@ -230,6 +248,11 @@ export function OrderTrackerWidget() {
               >
                 🛶
               </span>
+            </div>
+          ) : !snap ? (
+            <div className="flex items-center gap-2 text-[11px]" style={{ color: PURPLE }}>
+              <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              <span>Cargando estado…</span>
             </div>
           ) : null}
 

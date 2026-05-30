@@ -615,10 +615,14 @@ function CartFooter() {
         } catch (err) {
           console.warn("[cart] localStorage set failed", err)
         }
-        // Dispatch event para que el widget se monte inmediatamente
-        // (sin esperar al storage event que NO fire en mismo tab).
-        window.dispatchEvent(new CustomEvent("naufrago:order-active"))
-        console.log("[cart] event naufrago:order-active dispatched")
+        // Dispatch event con orderCode en detail · widget lo usa
+        // directo sin esperar localStorage timing (defensa contra race).
+        window.dispatchEvent(
+          new CustomEvent("naufrago:order-active", {
+            detail: { orderCode: trackerCode },
+          }),
+        )
+        console.log("[cart] event naufrago:order-active dispatched · detail=", trackerCode)
         // R97.5 v3 · cerrar cart drawer rápido (350ms) · cliente debe
         // ver el widget en la landing · NO confundir la pantalla del
         // cart drawer con un tracker full-screen. Si tarda demasiado ·
