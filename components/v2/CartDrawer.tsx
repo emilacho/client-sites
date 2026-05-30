@@ -561,6 +561,18 @@ function CartFooter() {
         priceUsd,
       })
       cart.clear()
+      // R97.5 · auto-redirect al tracker · UX correcto · cliente NO debería
+      // tener que copiar el código + pegarlo en la TrackOrderModal · el
+      // tracker se abre solo y persiste hasta DELIVERED. El TrackOrderModal
+      // sigue siendo fallback para clientes que perdieron la pestaña.
+      const trackerCode = json.orderCode ?? json.orderId
+      if (trackerCode && typeof window !== "undefined") {
+        // Pequeño delay (600ms) para que el cliente alcance a ver el
+        // success state visualmente · luego navega al tracker.
+        window.setTimeout(() => {
+          window.location.href = `/order/${trackerCode}`
+        }, 600)
+      }
     } catch (err) {
       setShipping({
         kind: "error",
