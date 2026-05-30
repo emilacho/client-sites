@@ -116,7 +116,8 @@ export function OrderTracker({ initial, orderCode }: Props) {
       } catch {
         // network blip · keep last good snapshot · next poll retries
       }
-    }, 30_000)
+      // R97.5 · polling 5s durante smoke E2E · revertir post-smoke a 30s
+    }, 5_000)
     return () => clearInterval(id)
   }, [orderCode, snap.status])
 
