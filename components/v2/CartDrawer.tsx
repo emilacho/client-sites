@@ -616,12 +616,13 @@ function CartFooter() {
         // Dispatch event para que el widget se monte inmediatamente
         // (sin esperar al storage event que NO fire en mismo tab).
         window.dispatchEvent(new CustomEvent("naufrago:order-active"))
-        // Cerrar cart drawer post-success · cliente vuelve a la isla
-        // donde el widget ya está visible. 1s delay para que vea
-        // brevemente el success state del cart.
+        // R97.5 v3 · cerrar cart drawer rápido (350ms) · cliente debe
+        // ver el widget en la landing · NO confundir la pantalla del
+        // cart drawer con un tracker full-screen. Si tarda demasiado ·
+        // el cliente cree que el widget no funciona.
         window.setTimeout(() => {
           cart.close()
-        }, 1200)
+        }, 350)
       }
     } catch (err) {
       setShipping({
@@ -1114,21 +1115,14 @@ function CartFooter() {
           Confirmando pedido…
         </div>
       ) : shipping.kind === "success" ? (
-        <div className="space-y-2 text-sm">
-          <div className="font-semibold text-emerald-300">¡Pedido confirmado!</div>
-          <div className="text-xs text-slate-300">
-            ID · <code className="font-mono">{shipping.orderId}</code>
-          </div>
-          {shipping.trackingUrl ? (
-            <a
-              href={shipping.trackingUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-3 py-2.5 text-center text-sm font-semibold text-white"
-            >
-              Seguir el envío
-            </a>
-          ) : null}
+        <div className="space-y-1.5 text-sm">
+          <div className="text-center text-2xl">🎉</div>
+          <div className="text-center font-semibold text-emerald-300">¡Pedido confirmado!</div>
+          <p className="text-center text-[11px] text-slate-400">
+            Tu pedido aparece abajo a la derecha de la isla 🌊
+            <br />
+            podés explorar mientras lo cocinamos.
+          </p>
         </div>
       ) : shipping.kind === "error" ? (
         <div className="space-y-2 text-sm">

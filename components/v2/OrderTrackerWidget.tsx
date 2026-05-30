@@ -165,7 +165,7 @@ export function OrderTrackerWidget() {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 20, scale: 0.96 }}
         transition={{ duration: 0.25, ease: [0.2, 0.8, 0.2, 1] }}
-        className="pointer-events-auto fixed bottom-3 right-3 z-30 w-[280px] overflow-hidden rounded-2xl shadow-2xl"
+        className="pointer-events-auto fixed bottom-3 right-3 z-[55] w-[280px] overflow-hidden rounded-2xl shadow-2xl"
         style={{
           background: `linear-gradient(180deg, ${SAND} 0%, #F0E5C9 100%)`,
           border: `2px solid ${PURPLE}`,
