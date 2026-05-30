@@ -48,7 +48,10 @@ const contactSchema = z.object({
 })
 
 const cartLineSchema = z.object({
-  id: z.string().min(1).max(80),
+  // R97.5 · max 200 (era 80) · ids compuestos por menu_item_id +
+  // customizations excedían 80 con 5+ modificadores · ej Encebollado
+  // Náufrago con 7 toggles · ~115 chars. 200 da margen para 12+ mods.
+  id: z.string().min(1).max(200),
   name: z.string().min(1).max(200),
   priceUsd: z.number().min(0).max(10_000),
   qty: z.number().int().min(1).max(99),
@@ -170,7 +173,9 @@ export type NaufragoOrderEventType =
 // Re-used address / contact / cart shapes from the R74 block above.
 // Tighter validation per the new flow's needs.
 const naufragoCartLineSchema = z.object({
-  id: z.string().min(1).max(80),
+  // R97.5 · max 200 (era 80) · idem cartLineSchema · ids compuestos
+  // por menu_item_id + customizations excedían 80 con 5+ modificadores.
+  id: z.string().min(1).max(200),
   name: z.string().min(1).max(200),
   priceUsd: z.number().min(0).max(10_000),
   qty: z.number().int().min(1).max(99),
