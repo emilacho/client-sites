@@ -328,7 +328,7 @@ function LandingInner() {
         <div className="pointer-events-auto grid w-[200px] grid-cols-2 gap-2">
           {[
             { label: "Pesca\ndel día", icon: "🐟", onClick: () => setStoriesOpen(true), aria: "Pesca del día · stories visuales" },
-            { label: "Combo\npara 2", icon: "🍱", onClick: () => setCombosOpen(true), aria: "Combos pre-armados" },
+            { label: "Combos\nNáufrago", icon: "🍱", onClick: () => setCombosOpen(true), aria: "Combos Náufrago" },
             { label: "Reservar\nhora", icon: "⏰", onClick: () => setScheduleOpen(true), aria: "Pedir para un horario específico" },
             { label: "Náufrago\nClub", icon: "✦", onClick: () => setClubOpen(true), aria: "Suscripción Náufrago Club" },
           ].map((b) => (
