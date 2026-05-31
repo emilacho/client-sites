@@ -1,16 +1,15 @@
 "use client"
 /**
- * ScheduleModal · R97.8.5 · "Reservar para una hora"
+ * ScheduleModal · R97.8.6 · "Reservar para una hora"
  *
- * Cliente elige fecha + hora CUSTOM con input datetime-local nativo ·
- * browser muestra su propio picker (calendario + reloj con keyboard
- * support). Plus 3 quick presets para selección rápida.
+ * Cliente elige día + hora · 7 quick presets (30m · 1h · 2h · 3h · 4h · 5h · 6h)
+ * + selector día (Hoy / Mañana / Pasado) + reloj nativo time picker en
+ * múltiplos de 15 min · sin año en el display (solo ruido visual).
  *
- * Validación · debe ser futura (+30min mínimo · cocina prep time) ·
- * debe estar dentro de horario 11:00-22:00 (cocina abierta).
+ * Spanish común · no voseo · "elige" en lugar de "elegí" etc.
  *
- * Persiste en localStorage 'naufrago_schedule_target' · cart drawer
- * respeta esta hora cuando dispatcha el pedido.
+ * Validación · debe ser futura (+30min) · debe estar dentro horario
+ * 11:00-22:00. Persiste en localStorage 'naufrago_schedule_target'.
  */
 import { useEffect, useMemo, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
@@ -29,21 +28,33 @@ interface ScheduleTarget {
   storedAt: string
 }
 
-function fmtDateTimeLocal(d: Date): string {
-  // input type=datetime-local · format YYYY-MM-DDTHH:MM (sin segundos ni zona)
-  const pad = (n: number) => n.toString().padStart(2, "0")
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+function pad(n: number): string {
+  return n.toString().padStart(2, "0")
+}
+
+function fmtTimeHHMM(d: Date): string {
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 function fmtPretty(d: Date): string {
-  return d.toLocaleString("es-EC", {
+  // Sin año · solo día semana + día mes + hora · español común
+  return d.toLocaleString("es-ES", {
     weekday: "long",
     day: "2-digit",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-  })
+  }).replace(/\.\s/g, " ").replace(/\.$/, "")
+}
+
+function fmtDayLabel(d: Date): string {
+  // "lunes 14 may" · sin año
+  return d.toLocaleDateString("es-ES", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+  }).replace(/\.$/, "")
 }
 
 function validateTarget(d: Date | null): { ok: boolean; error?: string } {
@@ -60,7 +71,7 @@ function validateTarget(d: Date | null): { ok: boolean; error?: string } {
   if (h < KITCHEN_OPEN_H || h >= KITCHEN_CLOSE_H) {
     return {
       ok: false,
-      error: `Cocina abierta ${KITCHEN_OPEN_H}:00 - ${KITCHEN_CLOSE_H}:00 · elegí otra hora`,
+      error: `Cocina abierta ${KITCHEN_OPEN_H}:00 - ${KITCHEN_CLOSE_H}:00 · elige otra hora`,
     }
   }
   return { ok: true }
@@ -72,11 +83,14 @@ export interface ScheduleModalProps {
 }
 
 export function ScheduleModal({ open, onClose }: ScheduleModalProps) {
-  const [value, setValue] = useState<string>("")
+  // Estado separado · dayDate (00:00:00 del día seleccionado) + timeStr "HH:MM"
+  const [dayDate, setDayDate] = useState<Date | null>(null)
+  const [timeStr, setTimeStr] = useState<string>("")
   const [success, setSuccess] = useState(false)
 
-  // Defaults · próximos 30 min · +1h · +2h
+  // 7 quick presets · 30m · 1h · 2h · 3h · 4h · 5h · 6h
   const presets = useMemo(() => {
+    if (!open) return []
     const now = new Date()
     const make = (mins: number) => {
       const d = new Date(now.getTime() + mins * 60_000)
@@ -91,30 +105,59 @@ export function ScheduleModal({ open, onClose }: ScheduleModalProps) {
       return d
     }
     return [
-      { label: "En 30 min", date: make(30) },
-      { label: "En 1 hora", date: make(60) },
-      { label: "En 2 horas", date: make(120) },
+      { label: "30 min", date: make(30) },
+      { label: "1 hora", date: make(60) },
+      { label: "2 horas", date: make(120) },
+      { label: "3 horas", date: make(180) },
+      { label: "4 horas", date: make(240) },
+      { label: "5 horas", date: make(300) },
+      { label: "6 horas", date: make(360) },
     ]
-  }, [open]) // recompute on open
+  }, [open])
+
+  // 3 day options · Hoy / Mañana / Pasado
+  const dayOptions = useMemo(() => {
+    if (!open) return []
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return [
+      { label: "Hoy", date: new Date(today) },
+      { label: "Mañana", date: new Date(today.getTime() + 24 * 60 * 60_000) },
+      {
+        label: "Pasado",
+        date: new Date(today.getTime() + 2 * 24 * 60 * 60_000),
+      },
+    ]
+  }, [open])
 
   useEffect(() => {
     if (!open) return
     setSuccess(false)
-    // Pre-fill con localStorage si existe · sino default a presets[1] (en 1h)
+    // Pre-fill desde localStorage si existe
     try {
       const stored = window.localStorage.getItem(LS_KEY)
       if (stored) {
         const parsed = JSON.parse(stored) as ScheduleTarget
         const d = new Date(parsed.targetIso)
         if (!isNaN(d.getTime()) && d > new Date()) {
-          setValue(fmtDateTimeLocal(d))
+          const day = new Date(d)
+          day.setHours(0, 0, 0, 0)
+          setDayDate(day)
+          setTimeStr(fmtTimeHHMM(d))
           return
         }
       }
     } catch {
       // ignore
     }
-    setValue(fmtDateTimeLocal(presets[1].date))
+    // Default · usar preset "1 hora"
+    if (presets.length > 0) {
+      const pre = presets[1].date
+      const day = new Date(pre)
+      day.setHours(0, 0, 0, 0)
+      setDayDate(day)
+      setTimeStr(fmtTimeHHMM(pre))
+    }
   }, [open, presets])
 
   useEffect(() => {
@@ -127,18 +170,53 @@ export function ScheduleModal({ open, onClose }: ScheduleModalProps) {
 
   if (!open) return null
 
-  const parsedDate = value ? new Date(value) : null
-  const validation = validateTarget(parsedDate)
+  // Build composite date from day + timeStr
+  const composite: Date | null = (() => {
+    if (!dayDate || !timeStr) return null
+    const [h, m] = timeStr.split(":").map((s) => parseInt(s, 10))
+    if (isNaN(h) || isNaN(m)) return null
+    const d = new Date(dayDate)
+    d.setHours(h, m, 0, 0)
+    return d
+  })()
+
+  const validation = validateTarget(composite)
 
   function handlePresetClick(date: Date) {
-    setValue(fmtDateTimeLocal(date))
+    const day = new Date(date)
+    day.setHours(0, 0, 0, 0)
+    setDayDate(day)
+    setTimeStr(fmtTimeHHMM(date))
+  }
+
+  function handleDayClick(date: Date) {
+    setDayDate(date)
+  }
+
+  function handleTimeChange(value: string) {
+    // El input type=time con step=900 ya restringe a múltiplos de 15
+    // pero el browser puede dejar pasar otros valores via keyboard ·
+    // round forzado por si acaso.
+    if (!value) {
+      setTimeStr("")
+      return
+    }
+    const [h, m] = value.split(":").map((s) => parseInt(s, 10))
+    if (isNaN(h) || isNaN(m)) {
+      setTimeStr(value)
+      return
+    }
+    const rounded = Math.round(m / 15) * 15
+    const finalM = rounded === 60 ? 0 : rounded
+    const finalH = rounded === 60 ? (h + 1) % 24 : h
+    setTimeStr(`${pad(finalH)}:${pad(finalM)}`)
   }
 
   function handleSave() {
-    if (!validation.ok || !parsedDate) return
+    if (!validation.ok || !composite) return
     try {
       const payload: ScheduleTarget = {
-        targetIso: parsedDate.toISOString(),
+        targetIso: composite.toISOString(),
         storedAt: new Date().toISOString(),
       }
       window.localStorage.setItem(LS_KEY, JSON.stringify(payload))
@@ -155,15 +233,19 @@ export function ScheduleModal({ open, onClose }: ScheduleModalProps) {
     } catch {
       // ignore
     }
-    setValue("")
+    setDayDate(null)
+    setTimeStr("")
   }
 
-  // Bounds para el input · solo hoy + mañana + pasado · dentro de horario
-  const todayStart = new Date()
-  todayStart.setHours(0, 0, 0, 0)
-  const minBound = new Date(Date.now() + MIN_LEAD_MINUTES * 60_000)
-  const maxBound = new Date(todayStart.getTime() + 3 * 24 * 60 * 60_000)
-  maxBound.setHours(KITCHEN_CLOSE_H, 0, 0, 0)
+  // Compare day to dayOptions for selection state
+  function isSameDay(a: Date | null, b: Date) {
+    if (!a) return false
+    return (
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth() === b.getMonth() &&
+      a.getDate() === b.getDate()
+    )
+  }
 
   return (
     <AnimatePresence>
@@ -198,11 +280,11 @@ export function ScheduleModal({ open, onClose }: ScheduleModalProps) {
                 className="mt-1 font-[family-name:var(--font-bebas),sans-serif] text-3xl tracking-wider"
                 style={{ color: "#FFFFFF" }}
               >
-                ELEGÍ TU HORA
+                ELIGE TU HORA
               </h2>
               <p className="mt-1 text-[11px] text-slate-400">
-                Cocina abierta {KITCHEN_OPEN_H}:00 - {KITCHEN_CLOSE_H}:00 · mínimo +
-                {MIN_LEAD_MINUTES} min desde ahora.
+                Cocina abierta {KITCHEN_OPEN_H}:00 - {KITCHEN_CLOSE_H}:00 ·
+                mínimo +{MIN_LEAD_MINUTES} min desde ahora.
               </p>
             </div>
             <button
@@ -231,7 +313,7 @@ export function ScheduleModal({ open, onClose }: ScheduleModalProps) {
                 RESERVADO
               </p>
               <p className="text-sm capitalize text-slate-200">
-                {parsedDate ? fmtPretty(parsedDate) : ""}
+                {composite ? fmtPretty(composite) : ""}
               </p>
               <p className="text-[11px] text-slate-500">
                 Al hacer el pedido vamos a respetar esta hora.
@@ -239,33 +321,61 @@ export function ScheduleModal({ open, onClose }: ScheduleModalProps) {
             </div>
           ) : (
             <>
-              {/* Quick presets · 3 botones rápidos */}
+              {/* 7 quick presets · pills compactos en flex-wrap */}
               <div className="mb-3">
                 <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.18em] text-slate-400">
-                  Quick · una mano
+                  Pedir en
                 </span>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {presets.map((p) => {
-                    const isSelected = value === fmtDateTimeLocal(p.date)
+                    const day = new Date(p.date)
+                    day.setHours(0, 0, 0, 0)
+                    const isSelected =
+                      isSameDay(dayDate, day) && timeStr === fmtTimeHHMM(p.date)
                     return (
                       <button
                         key={p.label}
                         type="button"
                         onClick={() => handlePresetClick(p.date)}
                         className={[
-                          "rounded-xl border-2 px-2 py-2 text-xs transition-all",
+                          "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all",
                           isSelected
                             ? "border-cyan-400 bg-cyan-500/15 text-cyan-100"
                             : "border-slate-700 bg-slate-900 text-slate-300 hover:border-slate-600",
                         ].join(" ")}
                       >
-                        <span className="block font-semibold">{p.label}</span>
-                        <span className="text-[10px] opacity-60">
-                          {p.date.toLocaleTimeString("es-EC", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            hour12: false,
-                          })}
+                        {p.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Day selector · 3 pills */}
+              <div className="mb-3">
+                <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.18em] text-slate-400">
+                  O elige día y hora
+                </span>
+                <div className="grid grid-cols-3 gap-2">
+                  {dayOptions.map((d) => {
+                    const isSelected = isSameDay(dayDate, d.date)
+                    return (
+                      <button
+                        key={d.label}
+                        type="button"
+                        onClick={() => handleDayClick(d.date)}
+                        className={[
+                          "rounded-xl border-2 px-2 py-2 transition-all",
+                          isSelected
+                            ? "border-cyan-400 bg-cyan-500/15 text-cyan-100"
+                            : "border-slate-700 bg-slate-900 text-slate-300 hover:border-slate-600",
+                        ].join(" ")}
+                      >
+                        <span className="block text-xs font-semibold">
+                          {d.label}
+                        </span>
+                        <span className="block text-[10px] capitalize opacity-60">
+                          {fmtDayLabel(d.date)}
                         </span>
                       </button>
                     )
@@ -273,11 +383,11 @@ export function ScheduleModal({ open, onClose }: ScheduleModalProps) {
                 </div>
               </div>
 
-              {/* Custom datetime-local picker · reloj nativo del browser */}
+              {/* Time input · solo hora · step 15 min */}
               <div className="mb-3">
                 <label className="block">
                   <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.18em] text-slate-400">
-                    O elegí hora exacta
+                    Hora · múltiplos de 15 min
                   </span>
                   <div className="relative">
                     <Clock
@@ -285,15 +395,15 @@ export function ScheduleModal({ open, onClose }: ScheduleModalProps) {
                       aria-hidden
                     />
                     <input
-                      type="datetime-local"
-                      value={value}
-                      onChange={(e) => setValue(e.target.value)}
-                      min={fmtDateTimeLocal(minBound)}
-                      max={fmtDateTimeLocal(maxBound)}
-                      step={300}
+                      type="time"
+                      value={timeStr}
+                      onChange={(e) => handleTimeChange(e.target.value)}
+                      step={900}
+                      min={`${pad(KITCHEN_OPEN_H)}:00`}
+                      max={`${pad(KITCHEN_CLOSE_H - 1)}:45`}
                       className={[
                         "w-full rounded-xl border-2 bg-slate-900 px-3 py-3 pl-10 text-base text-slate-100 transition-colors focus:outline-none",
-                        validation.ok || !parsedDate
+                        validation.ok || !composite
                           ? "border-slate-700 focus:border-cyan-500"
                           : "border-rose-500 focus:border-rose-400",
                       ].join(" ")}
@@ -301,15 +411,15 @@ export function ScheduleModal({ open, onClose }: ScheduleModalProps) {
                     />
                   </div>
                 </label>
-                {parsedDate && validation.ok ? (
+                {composite && validation.ok ? (
                   <p
                     className="mt-1.5 flex items-center gap-1.5 text-[11px] capitalize"
                     style={{ color: CYAN }}
                   >
                     <Check className="h-3 w-3" />
-                    Llega · {fmtPretty(parsedDate)}
+                    Llega · {fmtPretty(composite)}
                   </p>
-                ) : parsedDate && !validation.ok ? (
+                ) : composite && !validation.ok ? (
                   <p className="mt-1.5 text-[11px] text-rose-400">
                     {validation.error}
                   </p>
