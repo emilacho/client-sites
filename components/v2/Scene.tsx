@@ -126,7 +126,14 @@ export function Scene({
   // "necesito que eso solo salga si se le da click al pergamino".
   const cart = useCart()
   const handleClaimDiscount = useCallback(() => {
-    cart.applyCode("SurfBollado")
+    // R97.9 · skipServer · pergamino aplica el descuento local sin pedir
+    // WhatsApp · /api/checkout/confirm re-valida server-side al checkout
+    // (cliente ya entregó WhatsApp en el form del cart). Evita fricción
+    // UX de pedir WhatsApp en el 3D scene click.
+    void cart.applyCode("SurfBollado", undefined, { skipServer: true })
+    // Abrir el cart drawer para mostrar al cliente que el descuento
+    // efectivamente se sumó · es el feedback visual del click.
+    cart.open()
   }, [cart])
   // Suppress unused warnings · these props are wired into the
   // PergaminoPropModel below.

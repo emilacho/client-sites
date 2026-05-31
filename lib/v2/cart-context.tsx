@@ -84,6 +84,7 @@ interface CartCtx {
   applyCode: (
     code: string,
     whatsapp?: string,
+    opts?: { skipServer?: boolean },
   ) => Promise<
     | { ok: true }
     | {
@@ -240,6 +241,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     async (
       code: string,
       whatsapp?: string,
+      opts?: { skipServer?: boolean },
     ): Promise<
       | { ok: true }
       | {
@@ -259,6 +261,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const key = trimmed.toUpperCase()
       const entry = DISCOUNT_CODES[key]
       if (!entry) return { ok: false, reason: "unknown_code" }
+
+      // R97.9 · skipServer bypass · usado por pergamino (3D scene click) ·
+      // aplica el discount local sin server validation (no tiene WhatsApp
+      // del cliente en ese momento) · validación full se ejecuta en
+      // /api/checkout/confirm cuando cliente entrega WhatsApp en el form.
+      if (opts?.skipServer) {
+        setDiscount({ code: trimmed, percent: entry.percent, label: entry.label })
+        return { ok: true }
+      }
 
       // R96.105 · validate server-side · regla 24h + $25.
       try {
