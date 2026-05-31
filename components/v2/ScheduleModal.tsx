@@ -383,34 +383,63 @@ export function ScheduleModal({ open, onClose }: ScheduleModalProps) {
                 </div>
               </div>
 
-              {/* Time input · solo hora · step 15 min */}
+              {/* Time picker · 2 selects · hora 11-21 · minuto 00/15/30/45 */}
               <div className="mb-3">
-                <label className="block">
-                  <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.18em] text-slate-400">
-                    Hora · múltiplos de 15 min
-                  </span>
-                  <div className="relative">
-                    <Clock
-                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-400"
-                      aria-hidden
-                    />
-                    <input
-                      type="time"
-                      value={timeStr}
-                      onChange={(e) => handleTimeChange(e.target.value)}
-                      step={900}
-                      min={`${pad(KITCHEN_OPEN_H)}:00`}
-                      max={`${pad(KITCHEN_CLOSE_H - 1)}:45`}
-                      className={[
-                        "w-full rounded-xl border-2 bg-slate-900 px-3 py-3 pl-10 text-base text-slate-100 transition-colors focus:outline-none",
-                        validation.ok || !composite
-                          ? "border-slate-700 focus:border-cyan-500"
-                          : "border-rose-500 focus:border-rose-400",
-                      ].join(" ")}
-                      style={{ colorScheme: "dark" }}
-                    />
-                  </div>
-                </label>
+                <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.18em] text-slate-400">
+                  Hora exacta
+                </span>
+                <div className="flex items-center gap-2">
+                  <Clock
+                    className="h-5 w-5 text-cyan-400"
+                    aria-hidden
+                  />
+                  <select
+                    value={(timeStr || ":").split(":")[0] || ""}
+                    onChange={(e) =>
+                      handleTimeChange(
+                        `${e.target.value || pad(KITCHEN_OPEN_H)}:${(timeStr || "00:00").split(":")[1] || "00"}`,
+                      )
+                    }
+                    className={[
+                      "flex-1 rounded-xl border-2 bg-slate-900 px-3 py-3 text-base font-semibold text-slate-100 transition-colors focus:outline-none",
+                      validation.ok || !composite
+                        ? "border-slate-700 focus:border-cyan-500"
+                        : "border-rose-500 focus:border-rose-400",
+                    ].join(" ")}
+                    aria-label="Hora"
+                  >
+                    {Array.from(
+                      { length: KITCHEN_CLOSE_H - KITCHEN_OPEN_H },
+                      (_, i) => KITCHEN_OPEN_H + i,
+                    ).map((h) => (
+                      <option key={h} value={pad(h)}>
+                        {pad(h)}h
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-2xl text-slate-500">:</span>
+                  <select
+                    value={(timeStr || ":").split(":")[1] || ""}
+                    onChange={(e) =>
+                      handleTimeChange(
+                        `${(timeStr || "00:00").split(":")[0] || pad(KITCHEN_OPEN_H)}:${e.target.value || "00"}`,
+                      )
+                    }
+                    className={[
+                      "flex-1 rounded-xl border-2 bg-slate-900 px-3 py-3 text-base font-semibold text-slate-100 transition-colors focus:outline-none",
+                      validation.ok || !composite
+                        ? "border-slate-700 focus:border-cyan-500"
+                        : "border-rose-500 focus:border-rose-400",
+                    ].join(" ")}
+                    aria-label="Minutos"
+                  >
+                    {["00", "15", "30", "45"].map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 {composite && validation.ok ? (
                   <p
                     className="mt-1.5 flex items-center gap-1.5 text-[11px] capitalize"
