@@ -25,7 +25,6 @@ import { useEffect, useState } from "react"
 import { Loader2 } from "lucide-react"
 import { useCart } from "@/lib/v2/cart-context"
 
-const PURPLE = "#3D2466"
 const PURPLE_DARK = "#1F1138"
 const CYAN = "#4DD4D8"
 const CYAN_DARK = "#2BA8AC"
@@ -313,20 +312,71 @@ function GooglePayButton({
   )
 }
 
-// ─── Method tab ─────────────────────────────────────────────────────
+// ─── Icons SVG · check verde + lock · reemplazan emojis ✅ 🔒 ───────
+function CheckIcon({ size = 32 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="11" fill="#10B981" />
+      <path
+        d="M7 12.5l3.5 3.5L17 9"
+        stroke="#FFFFFF"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </svg>
+  )
+}
+
+function LockIcon({ size = 14, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <path
+        d="M5 9V6.5a5 5 0 0 1 10 0V9M4 9h12v9H4z"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="10" cy="13.5" r="1.4" fill={color} />
+    </svg>
+  )
+}
+
+function CashIconLarge() {
+  return (
+    <svg width="44" height="32" viewBox="0 0 44 32" fill="none">
+      <rect x="2" y="4" width="40" height="24" rx="3" fill="#16A34A" stroke="#15803D" strokeWidth="1.5" />
+      <rect x="5" y="7" width="34" height="18" rx="1.5" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="0.8" />
+      <circle cx="22" cy="16" r="6" fill="none" stroke="#FFFFFF" strokeWidth="1.2" />
+      <text
+        x="22"
+        y="20"
+        textAnchor="middle"
+        fontFamily="Arial Black, sans-serif"
+        fontSize="11"
+        fontWeight="900"
+        fill="#FFFFFF"
+      >
+        $
+      </text>
+    </svg>
+  )
+}
+
+// ─── Method tab · brand logo node + label ───────────────────────────
 function MethodTab({
   active,
   disabled,
-  emoji,
+  logo,
   label,
-  badge,
   onClick,
 }: {
   active: boolean
   disabled?: boolean
-  emoji: string
+  logo: React.ReactNode
   label: string
-  badge?: string
   onClick: () => void
 }) {
   return (
@@ -335,7 +385,7 @@ function MethodTab({
       onClick={onClick}
       disabled={disabled}
       className={[
-        "relative flex flex-col items-center justify-center gap-1 rounded-xl border-2 px-2 py-2 text-[11px] font-semibold transition-all",
+        "relative flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 px-2 py-2.5 text-[11px] font-semibold transition-all",
         active
           ? "border-[#4DD4D8] bg-[rgba(77,212,216,0.10)] text-cyan-200"
           : disabled
@@ -343,19 +393,106 @@ function MethodTab({
             : "border-slate-700 bg-slate-950 text-slate-400 hover:border-slate-600",
       ].join(" ")}
     >
-      <span className="text-lg leading-none" aria-hidden>
-        {emoji}
-      </span>
+      <span className="flex h-7 items-center justify-center">{logo}</span>
       <span className="leading-tight">{label}</span>
-      {badge ? (
-        <span
-          className="absolute -top-1.5 right-1 rounded-full px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-wider"
-          style={{ background: "#F5E9D2", color: PURPLE }}
-        >
-          {badge}
-        </span>
-      ) : null}
     </button>
+  )
+}
+
+// ─── Tab logos · cada método con su brand mark ──────────────────────
+
+// Tarjeta tab · 3 mini cards stacked (Visa/MC/Amex)
+function CardsStackLogo() {
+  return (
+    <div className="flex items-center gap-0.5">
+      <BrandChip brand="visa" small />
+      <BrandChip brand="mastercard" small />
+    </div>
+  )
+}
+
+// Efectivo · icono $ minimalista · NO emoji (Emilio aprobó genérico aquí)
+function CashLogo() {
+  return (
+    <svg width="28" height="22" viewBox="0 0 32 24" fill="none">
+      <rect
+        x="2"
+        y="4"
+        width="28"
+        height="16"
+        rx="2"
+        fill="#16A34A"
+        stroke="#15803D"
+        strokeWidth="1"
+      />
+      <circle cx="16" cy="12" r="4.5" fill="none" stroke="#FFFFFF" strokeWidth="1" />
+      <text
+        x="16"
+        y="15"
+        textAnchor="middle"
+        fontFamily="Arial Black, sans-serif"
+        fontSize="8"
+        fontWeight="900"
+        fill="#FFFFFF"
+      >
+        $
+      </text>
+    </svg>
+  )
+}
+
+// Apple Pay tab · Apple SVG + Pay text · compacto
+function ApplePayTabLogo() {
+  return (
+    <div
+      className="flex h-6 items-center justify-center gap-0.5 rounded px-1.5"
+      style={{ background: "#000000", color: "#FFFFFF" }}
+    >
+      <svg width="11" height="13" viewBox="0 0 17 21" fill="currentColor">
+        <path d="M14.0833 11.0166C14.0667 8.9166 15.7167 7.875 15.7917 7.825C14.7833 6.35 13.2083 6.1416 12.65 6.125C11.325 5.9833 10.05 6.9166 9.375 6.9166C8.6833 6.9166 7.6417 6.1416 6.525 6.1666C5.075 6.1833 3.725 7.025 2.9833 8.325C1.475 10.9416 2.6083 14.825 4.075 16.95C4.8083 17.9833 5.6667 19.1416 6.7917 19.1C7.8917 19.0583 8.3 18.4 9.625 18.4C10.95 18.4 11.325 19.1 12.475 19.075C13.6583 19.05 14.4 18.0333 15.1083 17C15.9583 15.825 16.3083 14.675 16.325 14.625C16.3 14.6166 14.1 13.7666 14.0833 11.0166ZM11.95 4.75C12.5333 4.0416 12.9333 3.05 12.8 2.0666C11.975 2.1 10.95 2.625 10.3417 3.3166C9.8 3.9333 9.3083 4.9666 9.45 5.925C10.3833 5.9916 11.35 5.45 11.95 4.75Z" />
+      </svg>
+      <span
+        className="text-[10px] font-semibold"
+        style={{ fontFamily: "-apple-system, BlinkMacSystemFont, system-ui, sans-serif" }}
+      >
+        Pay
+      </span>
+    </div>
+  )
+}
+
+// Google Pay tab · G multicolor + Pay text · white background
+function GooglePayTabLogo() {
+  return (
+    <div
+      className="flex h-6 items-center justify-center gap-0.5 rounded border px-1.5"
+      style={{ background: "#FFFFFF", borderColor: "#DADCE0", color: "#3C4043" }}
+    >
+      <svg width="12" height="12" viewBox="0 0 48 48">
+        <path
+          fill="#4285F4"
+          d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+        />
+        <path
+          fill="#34A853"
+          d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+        />
+        <path
+          fill="#FBBC05"
+          d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+        />
+        <path
+          fill="#EA4335"
+          d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+        />
+      </svg>
+      <span
+        className="text-[10px] font-medium"
+        style={{ fontFamily: "Roboto, system-ui, sans-serif" }}
+      >
+        Pay
+      </span>
+    </div>
   )
 }
 
@@ -632,7 +769,9 @@ function DeUnaForm({
     >
       {confirmed ? (
         <>
-          <span className="text-3xl">✅</span>
+          <div className="flex justify-center">
+            <CheckIcon size={36} />
+          </div>
           <p className="text-sm font-semibold text-emerald-300">
             Pago DeUna confirmado
           </p>
@@ -754,8 +893,10 @@ function PayPhoneForm({
           </button>
         </>
       ) : (
-        <div className="text-center">
-          <span className="text-3xl">✅</span>
+        <div className="space-y-1 text-center">
+          <div className="flex justify-center">
+            <CheckIcon size={36} />
+          </div>
           <p className="mt-1 text-sm font-semibold text-emerald-300">
             PayPhone confirmado
           </p>
@@ -796,8 +937,10 @@ function DigitalWalletForm({
       }}
     >
       {confirmed ? (
-        <div className="text-center">
-          <span className="text-3xl">✅</span>
+        <div className="space-y-1 text-center">
+          <div className="flex justify-center">
+            <CheckIcon size={36} />
+          </div>
           <p className="mt-1 text-sm font-semibold text-emerald-300">
             {kind === "apple" ? "Apple Pay" : "Google Pay"} confirmado
           </p>
@@ -838,7 +981,9 @@ function CashForm({ totalUsd }: { totalUsd: number }) {
         borderColor: "rgba(77,212,216,0.30)",
       }}
     >
-      <span className="text-3xl">💵</span>
+      <div className="flex justify-center">
+        <CashIconLarge />
+      </div>
       <p className="text-sm font-semibold" style={{ color: SAND }}>
         Pago en efectivo al motorizado
       </p>
@@ -1044,37 +1189,37 @@ export function PaymentForm({
         <div className="grid grid-cols-3 gap-2">
           <MethodTab
             active={method === "card"}
-            emoji="💳"
+            logo={<CardsStackLogo />}
             label="Tarjeta"
             onClick={() => setMethod("card")}
           />
           <MethodTab
             active={method === "cash"}
-            emoji="💵"
+            logo={<CashLogo />}
             label="Efectivo"
             onClick={() => setMethod("cash")}
           />
           <MethodTab
             active={method === "deuna"}
-            emoji="🟣"
+            logo={<DeUnaLogo small />}
             label="DeUna"
             onClick={() => setMethod("deuna")}
           />
           <MethodTab
             active={method === "payphone"}
-            emoji="📱"
+            logo={<PayPhoneLogo small />}
             label="PayPhone"
             onClick={() => setMethod("payphone")}
           />
           <MethodTab
             active={method === "apple_pay"}
-            emoji="🍎"
+            logo={<ApplePayTabLogo />}
             label="Apple Pay"
             onClick={() => setMethod("apple_pay")}
           />
           <MethodTab
             active={method === "google_pay"}
-            emoji="G"
+            logo={<GooglePayTabLogo />}
             label="Google Pay"
             onClick={() => setMethod("google_pay")}
           />
@@ -1163,7 +1308,7 @@ export function PaymentForm({
       {/* Trust line · padlock + SSL + PCI + logos */}
       <div className="space-y-1.5 rounded-xl border border-slate-800 bg-slate-900/30 px-3 py-2">
         <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-400">
-          <span>🔒</span>
+          <LockIcon size={12} color="#94A3B8" />
           <span>Pago seguro · SSL 256-bit · PCI DSS compliant</span>
         </div>
         <div className="flex items-center justify-center gap-1.5">
@@ -1200,7 +1345,10 @@ export function PaymentForm({
             Procesando...
           </>
         ) : (
-          <>🔒 Pagar ${totalUsd.toFixed(2)}</>
+          <>
+            <LockIcon size={16} color={canPay && !submitting ? PURPLE_DARK : "rgba(255,255,255,0.4)"} />
+            <span>Pagar ${totalUsd.toFixed(2)}</span>
+          </>
         )}
       </button>
     </div>
