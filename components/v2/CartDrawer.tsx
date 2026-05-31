@@ -404,6 +404,26 @@ function CartFooter() {
 
   async function requestQuote(e: React.FormEvent) {
     e.preventDefault()
+    // R97.5 v8 · client-side validation antes de pegar al API · evita
+    // round-trip + el mensaje genérico validation_failed.
+    const errors: string[] = []
+    if (!form.street || form.street.trim().length === 0) {
+      errors.push("Falta la dirección · escribí o pinchá el mapa")
+    }
+    if (!form.name || form.name.trim().length === 0) {
+      errors.push("Falta tu nombre")
+    }
+    if (!form.phone || form.phone.trim().length < 6) {
+      errors.push("Falta WhatsApp · mínimo 6 dígitos")
+    }
+    if (errors.length > 0) {
+      setShipping({
+        kind: "error",
+        message: errors.join(" · "),
+        previous: "address",
+      })
+      return
+    }
     setShipping({ kind: "quoting" })
     try {
       const res = await fetch("/api/courier/quote", {
