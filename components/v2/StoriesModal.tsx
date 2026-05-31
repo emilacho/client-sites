@@ -58,7 +58,7 @@ const DISHES: DishStory[] = [
   {
     itemId: "ceviche-naufrago",
     name: "Ceviche Náufrago",
-    imageUrl: null,
+    imageUrl: "/stories/ceviche-naufrago.jpg",
     emoji: "🐟",
     poetic:
       "Pescado curtido en leche de tigre · aguacate cremoso · salsa de maní de la abuela.",
@@ -67,7 +67,7 @@ const DISHES: DishStory[] = [
   {
     itemId: "ceviche-mixto",
     name: "Ceviche Mixto",
-    imageUrl: null,
+    imageUrl: "/stories/ceviche-mixto.jpg",
     emoji: "🦐",
     poetic: "Camarón y pescado curtidos · maridaje del mar a tu mesa de playa.",
     priceUsd: 9,
