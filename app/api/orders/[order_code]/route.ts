@@ -63,6 +63,7 @@ interface OrderRow {
   delivery_provider_tracking_url: string | null
   delivery_eta_minutes: number | null
   rider_info: RiderInfoShape | null
+  payment_method: string | null
   customer_notes: string | null
   created_at: string
   rider_picked_up_at: string | null
@@ -121,7 +122,7 @@ export async function GET(
   const { data, error } = await supabase
     .from("orders")
     .select(
-      "id, order_code, status, delivery_substatus, customer_name, customer_phone, cart_lines, subtotal_usd, discount_code, discount_usd, delivery_fee_usd, total_usd, delivery_provider, delivery_provider_tracking_url, delivery_eta_minutes, rider_info, customer_notes, created_at, accepted_at, preparing_at, ready_at, rider_picked_up_at, in_transit_at, delivered_at, cancelled_at, cancellation_reason, delivery_photo_url, delivery_photo_lat, delivery_photo_lng, delivery_photo_at",
+      "id, order_code, status, delivery_substatus, customer_name, customer_phone, cart_lines, subtotal_usd, discount_code, discount_usd, delivery_fee_usd, total_usd, delivery_provider, delivery_provider_tracking_url, delivery_eta_minutes, rider_info, payment_method, customer_notes, created_at, accepted_at, preparing_at, ready_at, rider_picked_up_at, in_transit_at, delivered_at, cancelled_at, cancellation_reason, delivery_photo_url, delivery_photo_lat, delivery_photo_lng, delivery_photo_at",
     )
     .eq("order_code", order_code.toUpperCase())
     .maybeSingle()
@@ -160,6 +161,7 @@ export async function GET(
     delivery_provider: row.delivery_provider,
     delivery_eta_minutes: row.delivery_eta_minutes,
     rider_info: row.rider_info,
+    payment_method: row.payment_method,
     customer_notes: row.customer_notes,
     created_at: row.created_at,
     accepted_at: row.accepted_at,

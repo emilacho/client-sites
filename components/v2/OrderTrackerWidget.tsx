@@ -16,7 +16,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { X, ChevronDown, ChevronUp, Phone, Clock } from "lucide-react"
 
 const LS_KEY = "naufrago_active_order_code"
-const POLL_MS = 5_000
+const POLL_MS = 3_000
 const MICROCOPY_ROTATE_MS = 9_000
 
 interface CartLine {
@@ -56,6 +56,7 @@ interface TrackerSnapshot {
     total_distance_m?: number
     eta_min?: number
   } | null
+  payment_method?: string | null
 }
 
 // ── Tokens canon Náufrago ───────────────────────────────────────────
@@ -318,9 +319,21 @@ export function OrderTrackerWidget() {
   const activeIdx = snap?.stage_index ?? 1
   const currentStage =
     STAGES.find((s) => s.idx === activeIdx) ?? STAGES[0]
+  // R97.7.4 · sub-status text conditional según payment_method ·
+  // cash flows reciben "prepará el efectivo" · card/digital recibe "está
+  // por llegar". Para AT_DESTINATION mensaje es igual (cliente sale igual).
+  const isCashPayment =
+    snap?.payment_method === "CASH_ON_DELIVERY" ||
+    snap?.payment_method === "WHATSAPP_MANUAL"
   const subStatusBadge =
     snap?.delivery_substatus === "NEARING_DESTINATION"
-      ? { emoji: "📍", text: "Cerca · prepará el efectivo", tone: "cyan" as const }
+      ? {
+          emoji: "📍",
+          text: isCashPayment
+            ? "Cerca · prepará el efectivo"
+            : "Cerca · está por llegar",
+          tone: "cyan" as const,
+        }
       : snap?.delivery_substatus === "AT_DESTINATION"
         ? { emoji: "🚪", text: "¡Llegó! Sal a recibir", tone: "purple" as const }
         : null
@@ -618,27 +631,29 @@ export function OrderTrackerWidget() {
                 </text>
               </g>
 
-              {/* Canoa · rotated to follow path + rocking */}
+              {/* Canoa · R97.7.4 refactor · 2 SVG groups anidados ·
+                  outer maneja position translate (slow transition 700ms
+                  per poll tick) · inner maneja rocking rotation (sin
+                  transition · continuous via rAF · NO bloquea el outer
+                  transition que es lo que da la sensación de avance) */}
               {showCanoa ? (
                 <g
                   style={{
-                    transform: `translate(${canoaPos.x - MAP_W / 2}px, ${canoaPos.y - MAP_H / 2}px) rotate(${canoaAngle + canoaRock}deg)`,
+                    transform: `translate(${canoaPos.x - MAP_W / 2}px, ${canoaPos.y - MAP_H / 2}px)`,
                     transformOrigin: `${MAP_W / 2}px ${MAP_H / 2}px`,
                     transition: "transform 700ms cubic-bezier(0.4, 0, 0.2, 1)",
                   }}
-                  filter="url(#canoaShadow)"
                 >
-                  <text
-                    x={MAP_W / 2}
-                    y={MAP_H / 2 + 10}
-                    textAnchor="middle"
-                    fontSize="30"
-                  >
-                    🛶
-                  </text>
-                  {/* Wake · 3 little ripple dots behind the canoa */}
+                  {/* Wake · solo durante en_route · sin rocking, rota
+                      con el tangente solo (apunta opuesto a la canoa) */}
                   {snap?.stage === "en_route" ? (
-                    <g opacity="0.4">
+                    <g
+                      opacity="0.4"
+                      style={{
+                        transform: `rotate(${canoaAngle}deg)`,
+                        transformOrigin: `${MAP_W / 2}px ${MAP_H / 2}px`,
+                      }}
+                    >
                       {[8, 16, 24].map((d, i) => (
                         <circle
                           key={i}
@@ -650,6 +665,25 @@ export function OrderTrackerWidget() {
                       ))}
                     </g>
                   ) : null}
+                  {/* Canoa rotada + rocking ambient · grupo inner sin
+                      transition · el rocking actualiza continuamente
+                      sin romper el outer transition de posición */}
+                  <g
+                    style={{
+                      transform: `rotate(${canoaAngle + canoaRock}deg)`,
+                      transformOrigin: `${MAP_W / 2}px ${MAP_H / 2}px`,
+                    }}
+                    filter="url(#canoaShadow)"
+                  >
+                    <text
+                      x={MAP_W / 2}
+                      y={MAP_H / 2 + 10}
+                      textAnchor="middle"
+                      fontSize="30"
+                    >
+                      🛶
+                    </text>
+                  </g>
                 </g>
               ) : null}
 
