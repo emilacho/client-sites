@@ -169,7 +169,7 @@ export function StoriesModal({ open, onClose }: StoriesModalProps) {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-2">
             <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/75">
-              {idx + 1} de {DISHES.length} · Pesca del día
+              {idx + 1} de {DISHES.length} · Fotos del menú
             </span>
             <button
               type="button"
@@ -203,7 +203,7 @@ export function StoriesModal({ open, onClose }: StoriesModalProps) {
                   {current.emoji}
                 </span>
                 <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-purple-900/60">
-                  Foto en camino · pesca pendiente
+                  Foto en camino
                 </span>
               </div>
             )}
