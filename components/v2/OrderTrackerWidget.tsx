@@ -69,10 +69,11 @@ const INK = "#3D2466"
 const RED_PIRATE = "#D92235"
 
 // ── Stages canon · 4 etapas pattern Domino's adaptado ──────────────
+// R97.7.2 · labels descriptivos (era 1 palabra · ahora frase completa)
 const STAGES = [
-  { idx: 1, key: "received", label: "Anclado", emoji: "⚓" },
-  { idx: 2, key: "preparing", label: "Zarpando", emoji: "🍳" },
-  { idx: 3, key: "en_route", label: "Navegando", emoji: "🛶" },
+  { idx: 1, key: "received", label: "Pedido recibido", emoji: "⚓" },
+  { idx: 2, key: "preparing", label: "Preparando tu pedido", emoji: "🍳" },
+  { idx: 3, key: "en_route", label: "Zarpando a tu destino", emoji: "🛶" },
   { idx: 4, key: "delivered", label: "¡Llegó!", emoji: "🌊" },
 ] as const
 
@@ -443,10 +444,14 @@ export function OrderTrackerWidget() {
                     </div>
                     <span
                       className={[
-                        "text-[10px] font-semibold leading-tight",
+                        "text-center text-[9px] font-semibold leading-[1.15] tracking-tight",
                         isActive ? "" : isPast ? "opacity-80" : "opacity-50",
                       ].join(" ")}
-                      style={{ color: isActive ? CYAN : "#FFFFFF" }}
+                      style={{
+                        color: isActive ? CYAN : "#FFFFFF",
+                        textWrap: "balance",
+                        maxWidth: "85px",
+                      }}
                     >
                       {stage.label}
                     </span>
