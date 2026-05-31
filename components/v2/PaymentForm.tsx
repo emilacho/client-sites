@@ -74,23 +74,14 @@ function formatExpiry(raw: string): string {
   return digits.slice(0, 2) + "/" + digits.slice(2)
 }
 
-// ─── Brand chip · text-pill style ───────────────────────────────────
+// ─── Brand logos SVG · inline · brand-accurate ──────────────────────
 function BrandChip({ brand, small }: { brand: CardBrand; small?: boolean }) {
-  const palette: Record<
-    Exclude<CardBrand, "unknown">,
-    { bg: string; fg: string; label: string }
-  > = {
-    visa: { bg: "#1A1F71", fg: "#FFFFFF", label: "VISA" },
-    mastercard: { bg: "#FFFFFF", fg: "#EB001B", label: "MC" },
-    amex: { bg: "#006FCF", fg: "#FFFFFF", label: "AMEX" },
-    discover: { bg: "#FF6000", fg: "#FFFFFF", label: "DISC" },
-  }
   if (brand === "unknown") {
     return (
       <span
         className={[
           "flex items-center justify-center rounded text-[9px]",
-          small ? "h-5 w-8" : "h-6 w-10",
+          small ? "h-5 w-9" : "h-6 w-11",
         ].join(" ")}
         style={{
           background: "rgba(255,255,255,0.08)",
@@ -101,46 +92,224 @@ function BrandChip({ brand, small }: { brand: CardBrand; small?: boolean }) {
       </span>
     )
   }
-  const c = palette[brand]
-  return (
-    <span
-      className={[
-        "flex items-center justify-center rounded font-extrabold tracking-wider",
-        small ? "h-5 w-8 text-[8px]" : "h-6 w-10 text-[10px]",
-      ].join(" ")}
-      style={{ background: c.bg, color: c.fg }}
-    >
-      {c.label}
-    </span>
-  )
+  const h = small ? 20 : 24
+  const w = small ? 36 : 44
+  if (brand === "visa") {
+    return (
+      <span
+        className="flex items-center justify-center rounded bg-white px-1"
+        style={{ width: w, height: h }}
+      >
+        <svg viewBox="0 0 60 20" width={w - 6} height={h - 6}>
+          <text
+            x="30"
+            y="15"
+            textAnchor="middle"
+            fontFamily="Arial Black, sans-serif"
+            fontWeight="900"
+            fontSize="14"
+            fontStyle="italic"
+            fill="#1A1F71"
+            letterSpacing="0.5"
+          >
+            VISA
+          </text>
+        </svg>
+      </span>
+    )
+  }
+  if (brand === "mastercard") {
+    return (
+      <span
+        className="flex items-center justify-center rounded bg-white px-1"
+        style={{ width: w, height: h }}
+      >
+        <svg viewBox="0 0 40 24" width={w - 6} height={h - 4}>
+          <circle cx="14" cy="12" r="9" fill="#EB001B" />
+          <circle cx="26" cy="12" r="9" fill="#F79E1B" />
+          <path
+            d="M20 5.5 A 9 9 0 0 1 20 18.5 A 9 9 0 0 1 20 5.5 Z"
+            fill="#FF5F00"
+          />
+        </svg>
+      </span>
+    )
+  }
+  if (brand === "amex") {
+    return (
+      <span
+        className="flex items-center justify-center rounded px-1"
+        style={{ width: w, height: h, background: "#006FCF" }}
+      >
+        <svg viewBox="0 0 60 20" width={w - 6} height={h - 6}>
+          <text
+            x="30"
+            y="14"
+            textAnchor="middle"
+            fontFamily="Arial Black, sans-serif"
+            fontWeight="900"
+            fontSize="11"
+            fill="#FFFFFF"
+            letterSpacing="-0.5"
+          >
+            AMEX
+          </text>
+        </svg>
+      </span>
+    )
+  }
+  if (brand === "discover") {
+    return (
+      <span
+        className="flex items-center justify-center rounded bg-white px-1"
+        style={{ width: w, height: h }}
+      >
+        <svg viewBox="0 0 60 20" width={w - 6} height={h - 6}>
+          <text
+            x="30"
+            y="14"
+            textAnchor="middle"
+            fontFamily="Arial Black, sans-serif"
+            fontWeight="900"
+            fontSize="9"
+            fill="#000000"
+            letterSpacing="-0.3"
+          >
+            DISCOVER
+          </text>
+          <circle cx="50" cy="13" r="3" fill="#FF6000" />
+        </svg>
+      </span>
+    )
+  }
+  return null
 }
 
-// ─── DeUna y PayPhone logos · estilo brand ──────────────────────────
+// ─── DeUna logo · branding Banco Pichincha ──────────────────────────
 function DeUnaLogo({ small }: { small?: boolean }) {
+  const w = small ? 44 : 56
+  const h = small ? 20 : 24
   return (
     <span
-      className={[
-        "flex items-center justify-center rounded font-extrabold",
-        small ? "h-5 w-12 text-[8px]" : "h-6 w-14 text-[10px]",
-      ].join(" ")}
-      style={{ background: "#7B1FA2", color: "#FFFFFF" }}
+      className="flex items-center justify-center rounded"
+      style={{ width: w, height: h, background: "#FFFFFF" }}
     >
-      DeUna
+      <svg viewBox="0 0 60 20" width={w - 6} height={h - 6}>
+        <text
+          x="30"
+          y="15"
+          textAnchor="middle"
+          fontFamily="system-ui, -apple-system, sans-serif"
+          fontWeight="800"
+          fontSize="14"
+          letterSpacing="-0.5"
+        >
+          <tspan fill="#7B1FA2">De</tspan>
+          <tspan fill="#FFC107">Una</tspan>
+        </text>
+      </svg>
     </span>
   )
 }
 
+// ─── PayPhone logo · branding ecuatoriano ───────────────────────────
 function PayPhoneLogo({ small }: { small?: boolean }) {
+  const w = small ? 56 : 68
+  const h = small ? 20 : 24
   return (
     <span
-      className={[
-        "flex items-center justify-center rounded font-extrabold",
-        small ? "h-5 w-14 text-[8px]" : "h-6 w-16 text-[10px]",
-      ].join(" ")}
-      style={{ background: "#00BAF2", color: "#FFFFFF" }}
+      className="flex items-center justify-center rounded"
+      style={{ width: w, height: h, background: "#FFFFFF" }}
     >
-      PayPhone
+      <svg viewBox="0 0 100 20" width={w - 6} height={h - 6}>
+        <text
+          x="50"
+          y="14"
+          textAnchor="middle"
+          fontFamily="system-ui, -apple-system, sans-serif"
+          fontWeight="800"
+          fontSize="13"
+          fill="#0E2A5C"
+          letterSpacing="-0.3"
+        >
+          PayPhone
+        </text>
+      </svg>
     </span>
+  )
+}
+
+// ─── Apple Pay button · brand-accurate · black rounded ──────────────
+function ApplePayButton({
+  onClick,
+  disabled,
+}: {
+  onClick: () => void
+  disabled?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="flex w-full items-center justify-center gap-2 rounded-full px-4 py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+      style={{
+        background: "#000000",
+        color: "#FFFFFF",
+        fontFamily:
+          "-apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+      }}
+    >
+      <svg width="20" height="24" viewBox="0 0 17 21" fill="currentColor">
+        <path d="M14.0833 11.0166C14.0667 8.9166 15.7167 7.875 15.7917 7.825C14.7833 6.35 13.2083 6.1416 12.65 6.125C11.325 5.9833 10.05 6.9166 9.375 6.9166C8.6833 6.9166 7.6417 6.1416 6.525 6.1666C5.075 6.1833 3.725 7.025 2.9833 8.325C1.475 10.9416 2.6083 14.825 4.075 16.95C4.8083 17.9833 5.6667 19.1416 6.7917 19.1C7.8917 19.0583 8.3 18.4 9.625 18.4C10.95 18.4 11.325 19.1 12.475 19.075C13.6583 19.05 14.4 18.0333 15.1083 17C15.9583 15.825 16.3083 14.675 16.325 14.625C16.3 14.6166 14.1 13.7666 14.0833 11.0166ZM11.95 4.75C12.5333 4.0416 12.9333 3.05 12.8 2.0666C11.975 2.1 10.95 2.625 10.3417 3.3166C9.8 3.9333 9.3083 4.9666 9.45 5.925C10.3833 5.9916 11.35 5.45 11.95 4.75Z" />
+      </svg>
+      <span className="text-base">Pay</span>
+    </button>
+  )
+}
+
+// ─── Google Pay button · brand-accurate · white o black ─────────────
+function GooglePayButton({
+  onClick,
+  disabled,
+}: {
+  onClick: () => void
+  disabled?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="flex w-full items-center justify-center gap-1 rounded-full border-2 px-4 py-3 font-medium disabled:cursor-not-allowed disabled:opacity-50"
+      style={{
+        background: "#FFFFFF",
+        borderColor: "#DADCE0",
+        color: "#3C4043",
+        fontFamily: "Roboto, system-ui, sans-serif",
+      }}
+    >
+      {/* G logo multicolor · simplificado */}
+      <svg width="26" height="26" viewBox="0 0 48 48">
+        <path
+          fill="#4285F4"
+          d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+        />
+        <path
+          fill="#34A853"
+          d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+        />
+        <path
+          fill="#FBBC05"
+          d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+        />
+        <path
+          fill="#EA4335"
+          d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+        />
+      </svg>
+      <span className="text-base">Pay</span>
+    </button>
   )
 }
 
@@ -599,23 +768,62 @@ function PayPhoneForm({
   )
 }
 
-// ─── Apple Pay / Google Pay placeholders (deshabilitados) ───────────
-function DigitalWalletPlaceholder({ kind }: { kind: "apple" | "google" }) {
-  const label = kind === "apple" ? "Apple Pay" : "Google Pay"
-  const icon = kind === "apple" ? "🍎" : "G"
+// ─── Apple Pay / Google Pay form · botones oficiales styled ─────────
+// Hoy click → mock validating · cuando Kushki esté wireado · el click
+// invoca el SDK real (ApplePaySession para iOS · google.payments.api
+// para Android) que abre el sheet nativo del wallet del cliente.
+function DigitalWalletForm({
+  kind,
+  confirmed,
+  validating,
+  onTrigger,
+}: {
+  kind: "apple" | "google"
+  confirmed: boolean
+  validating: boolean
+  onTrigger: () => void
+}) {
   return (
-    <div className="space-y-2 rounded-xl border-2 border-dashed border-slate-700 bg-slate-900/30 px-4 py-6 text-center">
-      <span className="text-4xl">{icon}</span>
-      <p className="text-sm font-semibold text-slate-300">{label}</p>
-      <p className="text-[11px] text-slate-500">
-        Próximamente · requiere integración Kushki real con el SDK del wallet
-      </p>
-      <div
-        className="mx-auto flex h-10 w-32 items-center justify-center rounded-full text-xs font-bold opacity-50"
-        style={{ background: "#000000", color: "#FFFFFF" }}
-      >
-        {icon} Pay
-      </div>
+    <div
+      className="space-y-3 rounded-xl border-2 px-4 py-4"
+      style={{
+        background:
+          kind === "apple"
+            ? "linear-gradient(180deg, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.45) 100%)"
+            : "linear-gradient(180deg, rgba(66,133,244,0.10) 0%, rgba(52,168,83,0.15) 100%)",
+        borderColor:
+          kind === "apple" ? "rgba(255,255,255,0.30)" : "rgba(66,133,244,0.40)",
+      }}
+    >
+      {confirmed ? (
+        <div className="text-center">
+          <span className="text-3xl">✅</span>
+          <p className="mt-1 text-sm font-semibold text-emerald-300">
+            {kind === "apple" ? "Apple Pay" : "Google Pay"} confirmado
+          </p>
+          <p className="text-[11px] text-slate-400">
+            Procesando · click Pagar para finalizar
+          </p>
+        </div>
+      ) : validating ? (
+        <div className="flex items-center justify-center gap-2 py-3 text-sm text-slate-300">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Validando con tu wallet...
+        </div>
+      ) : (
+        <>
+          <p className="text-center text-[11px] text-slate-300">
+            {kind === "apple"
+              ? "Confirmá con Touch ID / Face ID en tu iPhone"
+              : "Selecciona tu tarjeta guardada en Google Pay"}
+          </p>
+          {kind === "apple" ? (
+            <ApplePayButton onClick={onTrigger} />
+          ) : (
+            <GooglePayButton onClick={onTrigger} />
+          )}
+        </>
+      )}
     </div>
   )
 }
@@ -683,6 +891,12 @@ export function PaymentForm({
   const [payphonePhone, setPayphonePhone] = useState("")
   const [payphoneOtp, setPayphoneOtp] = useState("")
 
+  // ── Apple Pay / Google Pay state ──────────────────────────────────
+  const [walletValidating, setWalletValidating] = useState(false)
+  const [walletConfirmed, setWalletConfirmed] = useState<
+    "apple" | "google" | null
+  >(null)
+
   // ── Email receipt ─────────────────────────────────────────────────
   const [emailReceipt, setEmailReceipt] = useState(false)
   const [emailReceiptAddress, setEmailReceiptAddress] = useState("")
@@ -722,8 +936,9 @@ export function PaymentForm({
     method === "cash" ||
     cardValid ||
     (method === "deuna" && deunaConfirmed) ||
-    (method === "payphone" && payphoneStep === "ready")
-  // apple_pay/google_pay están disabled placeholders · canPay no aplica
+    (method === "payphone" && payphoneStep === "ready") ||
+    (method === "apple_pay" && walletConfirmed === "apple") ||
+    (method === "google_pay" && walletConfirmed === "google")
 
   // ── Handlers ──────────────────────────────────────────────────────
   function handleSendPayphoneOtp() {
@@ -735,6 +950,17 @@ export function PaymentForm({
   function handleConfirmPayphoneOtp() {
     if (payphoneOtp.length < 4) return
     setPayphoneStep("ready")
+  }
+
+  // Apple/Google Pay trigger · mock por ahora · cuando esté Kushki
+  // wireado invoca el SDK real del wallet (ApplePaySession / google.payments)
+  function handleWalletTrigger(kind: "apple" | "google") {
+    if (walletValidating || walletConfirmed) return
+    setWalletValidating(true)
+    window.setTimeout(() => {
+      setWalletValidating(false)
+      setWalletConfirmed(kind)
+    }, 1500)
   }
 
   function handlePay() {
@@ -844,16 +1070,12 @@ export function PaymentForm({
             active={method === "apple_pay"}
             emoji="🍎"
             label="Apple Pay"
-            badge="pronto"
-            disabled
             onClick={() => setMethod("apple_pay")}
           />
           <MethodTab
             active={method === "google_pay"}
             emoji="G"
             label="Google Pay"
-            badge="pronto"
-            disabled
             onClick={() => setMethod("google_pay")}
           />
         </div>
@@ -895,8 +1117,15 @@ export function PaymentForm({
           onConfirmOtp={handleConfirmPayphoneOtp}
         />
       ) : isDigitalWallet ? (
-        <DigitalWalletPlaceholder
+        <DigitalWalletForm
           kind={method === "apple_pay" ? "apple" : "google"}
+          confirmed={
+            walletConfirmed === (method === "apple_pay" ? "apple" : "google")
+          }
+          validating={walletValidating}
+          onTrigger={() =>
+            handleWalletTrigger(method === "apple_pay" ? "apple" : "google")
+          }
         />
       ) : null}
 
