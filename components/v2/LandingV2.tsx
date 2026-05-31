@@ -495,20 +495,8 @@ function LandingInner() {
               strict. Drop-shadow kept (dark halo helps the indigo
               text read over the bright sand / water in the scene
               background). */}
-          <span
-            className="mb-3 inline-flex items-center gap-2 rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em]"
-            style={{
-              borderColor: "rgba(77, 212, 216, 0.4)",
-              background: "rgba(77, 212, 216, 0.10)",
-              color: "#4DD4D8",
-            }}
-          >
-            <span
-              className="h-1 w-1 rounded-full"
-              style={{ background: "#4DD4D8" }}
-            />
-            Olón · ghost kitchen
-          </span>
+          {/* R97.8.11 · chip 'Olón · ghost kitchen' removido · info
+              ahora vive solo en el TopBar centrado · evita duplicación */}
           <h1
             className="font-display text-2xl font-semibold leading-tight tracking-tight drop-shadow-[0_4px_20px_rgba(0,0,0,0.7)] md:text-3xl lg:text-4xl"
             style={{ color: "#3D2466" }}
