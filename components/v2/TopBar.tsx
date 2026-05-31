@@ -41,9 +41,9 @@ export function TopBar({ onOpenAccount }: TopBarProps = {}) {
   return (
     <header className="pointer-events-none fixed inset-x-0 top-0 z-30 px-3 pt-3 md:px-6 md:pt-4">
       <div className="pointer-events-auto mx-auto grid max-w-6xl grid-cols-[1fr_auto_1fr] items-center rounded-full border border-slate-800/80 bg-slate-950/65 px-4 py-2 backdrop-blur-xl md:px-5">
-        {/* Spacer izquierdo · balancea el peso visual de los icons del lado derecho · keeps brand bloque centrado */}
-        <div aria-hidden />
-        <div className="flex min-w-0 items-center justify-center gap-2.5">
+        {/* Left column · detección de ubicación · ANIMATED · queda en su
+            posición original (no se centra · solo el subtítulo se centra) */}
+        <div className="flex min-w-0 items-center gap-2.5 pr-3">
           <AnimatePresence mode="wait" initial={false}>
             {variant === "location" ? (
               <motion.div
@@ -101,10 +101,12 @@ export function TopBar({ onOpenAccount }: TopBarProps = {}) {
               </motion.div>
             )}
           </AnimatePresence>
-          <span className="hidden truncate font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-200/80 md:inline">
-            · ghost kitchen Guayaquil · restaurante Olón, Sta Elena
-          </span>
         </div>
+        {/* Center column · subtítulo del ghost kitchen · CENTRADO · solo
+            visible en desktop (md+) · mobile lo oculta para ahorrar espacio */}
+        <span className="hidden truncate font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-200/80 md:inline">
+          ghost kitchen Guayaquil · restaurante Olón, Sta Elena
+        </span>
         {/* Right column · icons cluster · justify-end mantiene anclados a la derecha */}
         <div className="flex items-center justify-end gap-0">
         {/* R96.13 · open/closed badge · pulsing dot + texto compact */}
