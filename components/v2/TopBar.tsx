@@ -100,7 +100,7 @@ export function TopBar({ onOpenAccount }: TopBarProps = {}) {
             )}
           </AnimatePresence>
           <span className="hidden truncate font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-200/80 md:inline">
-            · ghost kitchen Olón
+            · ghost kitchen Guayaquil · restaurante Olón · Sta Elena
           </span>
         </div>
         {/* R96.13 · open/closed badge · pulsing dot + texto compact */}

@@ -257,7 +257,7 @@ export function StoriesModal({ open, onClose }: StoriesModalProps) {
               }}
               className="flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm font-bold shadow-lg"
             >
-              ✦ Sumar al carrito ·{" "}
+              ✦ Agregar a la Canoa ·{" "}
               <span className="font-mono">${current.priceUsd.toFixed(2)}</span>
             </button>
 
