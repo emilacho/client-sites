@@ -22,7 +22,14 @@ import { CartDrawer } from "./CartDrawer"
 import { OverlayPanels, type OverlayKind } from "./OverlayPanels"
 import { MenuModal } from "./MenuModal"
 import { TrackOrderModal } from "./TrackOrderModal"
-import { VoiceOrderModal } from "./VoiceOrderModal"
+// R97.8 · LLAMAME button + VoiceOrderModal removidos del UI ·
+// código se mantiene en repo para revival futuro si re-activamos
+// la línea de voz IA · ver feat/voice-ai-* branches en gitlog.
+// import { VoiceOrderModal } from "./VoiceOrderModal"
+import { StoriesModal } from "./StoriesModal"
+import { CombosModal } from "./CombosModal"
+import { ScheduleModal } from "./ScheduleModal"
+import { ClubModal } from "./ClubModal"
 import RuletaModal from "./RuletaModal"
 import AccountModal from "./AccountModal"
 import { OrderTrackerWidget } from "./OrderTrackerWidget"
@@ -127,8 +134,11 @@ function LandingInner() {
   const [ruletaOpen, setRuletaOpen] = useState(false)
   // R96.113 · Account modal · botón usuario en TopBar abre login/perfil.
   const [accountOpen, setAccountOpen] = useState(false)
-  // R97.1 · VoiceOrder modal · botón LLAMAME bajo el MENU.
-  const [voiceOpen, setVoiceOpen] = useState(false)
+  // R97.8 · 4 modals nuevos · reemplazan LLAMAME (voice IA pausado)
+  const [storiesOpen, setStoriesOpen] = useState(false)
+  const [combosOpen, setCombosOpen] = useState(false)
+  const [scheduleOpen, setScheduleOpen] = useState(false)
+  const [clubOpen, setClubOpen] = useState(false)
   // Round 95 · OrderTracker state eliminado · pendiente nuevo
   // approach del usuario.
 
@@ -311,79 +321,65 @@ function LandingInner() {
           </span>
         </button>
 
-        {/* R97.1 · botón LLAMAME · mismo wood plank style del MENU ·
-            abre VoiceOrderModal · cliente recibe llamada de Vapi · voz
-            IA toma pedido · termina por WhatsApp con ubicación. */}
-        <button
-          type="button"
-          onClick={() => setVoiceOpen(true)}
-          aria-label="Llamame · pedido por voz"
-          className="pointer-events-auto group relative inline-flex w-[200px] items-center justify-center px-5 py-3 transition-all hover:translate-y-[-1px] active:scale-[0.97]"
-          style={{
-            background:
-              "linear-gradient(180deg, #542D67 0%, #4B2855 50%, #38154B 100%)",
-            border: "2.5px solid #2D1135",
-            borderRadius: "6px 10px 6px 10px",
-            boxShadow:
-              "inset 0 1px 0 rgba(102,55,114,0.5), inset 0 -3px 0 rgba(26,8,40,0.6), 0 6px 14px rgba(45,17,53,0.5)",
-          }}
-        >
-          {/* Bolts/nails · matchea sign GLB · 4 esquinas */}
-          <span
-            aria-hidden
-            className="absolute left-2 top-1.5 h-1.5 w-1.5 rounded-full"
-            style={{
-              background: "#1A0828",
-              boxShadow: "inset 0 1px 0 rgba(102,55,114,0.4)",
-            }}
-          />
-          <span
-            aria-hidden
-            className="absolute right-2 top-1.5 h-1.5 w-1.5 rounded-full"
-            style={{
-              background: "#1A0828",
-              boxShadow: "inset 0 1px 0 rgba(102,55,114,0.4)",
-            }}
-          />
-          <span
-            aria-hidden
-            className="absolute bottom-1.5 left-2 h-1.5 w-1.5 rounded-full"
-            style={{
-              background: "#1A0828",
-              boxShadow: "inset 0 1px 0 rgba(102,55,114,0.4)",
-            }}
-          />
-          <span
-            aria-hidden
-            className="absolute bottom-1.5 right-2 h-1.5 w-1.5 rounded-full"
-            style={{
-              background: "#1A0828",
-              boxShadow: "inset 0 1px 0 rgba(102,55,114,0.4)",
-            }}
-          />
-          {/* Grain lines · purple claro semi-translucido */}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-x-3 top-3 h-px"
-            style={{ background: "rgba(102,55,114,0.45)" }}
-          />
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-x-3 bottom-3 h-px"
-            style={{ background: "rgba(102,55,114,0.45)" }}
-          />
-          {/* Texto LLAMAME · Alfa Slab One · cyan-mint #51D4B4 */}
-          <span
-            className="font-[family-name:var(--font-alfa-slab),serif] text-xl tracking-[0.08em]"
-            style={{
-              color: "#51D4B4",
-              textShadow:
-                "0 1px 2px rgba(26,8,40,0.85), 0 0 8px rgba(81,212,180,0.35)",
-            }}
-          >
-            LLAMAME
-          </span>
-        </button>
+        {/* R97.8 · 2x2 grid de wood-plank buttons · reemplaza LLAMAME ·
+            Pesca del día · Combo para 2 · Reservar hora · Náufrago Club ·
+            cada uno mismo styling wood plank purple gradient · texto Alfa
+            Slab cyan-mint glow · solo más chicos (~96px wide · text-sm) */}
+        <div className="pointer-events-auto grid w-[200px] grid-cols-2 gap-2">
+          {[
+            { label: "Pesca\ndel día", icon: "🐟", onClick: () => setStoriesOpen(true), aria: "Pesca del día · stories visuales" },
+            { label: "Combo\npara 2", icon: "🍱", onClick: () => setCombosOpen(true), aria: "Combos pre-armados" },
+            { label: "Reservar\nhora", icon: "⏰", onClick: () => setScheduleOpen(true), aria: "Pedir para un horario específico" },
+            { label: "Náufrago\nClub", icon: "✦", onClick: () => setClubOpen(true), aria: "Suscripción Náufrago Club" },
+          ].map((b) => (
+            <button
+              key={b.aria}
+              type="button"
+              onClick={b.onClick}
+              aria-label={b.aria}
+              className="group relative inline-flex h-[62px] flex-col items-center justify-center px-2 py-1.5 transition-all hover:translate-y-[-1px] active:scale-[0.97]"
+              style={{
+                background:
+                  "linear-gradient(180deg, #542D67 0%, #4B2855 50%, #38154B 100%)",
+                border: "2px solid #2D1135",
+                borderRadius: "5px 8px 5px 8px",
+                boxShadow:
+                  "inset 0 1px 0 rgba(102,55,114,0.5), inset 0 -2px 0 rgba(26,8,40,0.6), 0 4px 10px rgba(45,17,53,0.5)",
+              }}
+            >
+              {/* Bolts esquinas · más chicos */}
+              {[
+                ["left-1 top-1", "rounded-tl"],
+                ["right-1 top-1", "rounded-tr"],
+                ["left-1 bottom-1", "rounded-bl"],
+                ["right-1 bottom-1", "rounded-br"],
+              ].map(([pos]) => (
+                <span
+                  key={pos}
+                  aria-hidden
+                  className={`absolute h-1 w-1 rounded-full ${pos}`}
+                  style={{
+                    background: "#1A0828",
+                    boxShadow: "inset 0 1px 0 rgba(102,55,114,0.4)",
+                  }}
+                />
+              ))}
+              <span className="text-sm leading-none" aria-hidden>
+                {b.icon}
+              </span>
+              <span
+                className="mt-0.5 whitespace-pre-line text-center font-[family-name:var(--font-alfa-slab),serif] text-[10px] leading-[1.1] tracking-[0.06em]"
+                style={{
+                  color: "#51D4B4",
+                  textShadow:
+                    "0 1px 1.5px rgba(26,8,40,0.85), 0 0 6px rgba(81,212,180,0.35)",
+                }}
+              >
+                {b.label}
+              </span>
+            </button>
+          ))}
+        </div>
 
         {easyOrder ? (
           <div
@@ -534,7 +530,11 @@ function LandingInner() {
       <CartDrawer />
       <MenuModal open={menuOpen} onClose={() => setMenuOpen(false)} />
       <TrackOrderModal open={trackOpen} onClose={() => setTrackOpen(false)} />
-      <VoiceOrderModal open={voiceOpen} onClose={() => setVoiceOpen(false)} />
+      {/* R97.8 · 4 modals nuevos · reemplazan VoiceOrderModal */}
+      <StoriesModal open={storiesOpen} onClose={() => setStoriesOpen(false)} />
+      <CombosModal open={combosOpen} onClose={() => setCombosOpen(false)} />
+      <ScheduleModal open={scheduleOpen} onClose={() => setScheduleOpen(false)} />
+      <ClubModal open={clubOpen} onClose={() => setClubOpen(false)} />
       <RuletaModal open={ruletaOpen} onClose={() => setRuletaOpen(false)} />
       <AccountModal open={accountOpen} onClose={() => setAccountOpen(false)} />
       <OrderTrackerWidget />
