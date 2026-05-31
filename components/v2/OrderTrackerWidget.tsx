@@ -1,27 +1,30 @@
 "use client"
 /**
- * OrderTrackerWidget · R97.6 · "El Mapa del Tesoro"
+ * OrderTrackerWidget · R97.7 · "El Mapa del Tesoro" v9
  *
- * Rediseño completo · combina pattern Domino's Pizza Tracker (4 stages
- * dots + iconic moving icon) con tema Náufrago (canoa navegando un
- * pergamino · mapa stylized parchment).
- *
- * Estructura ·
- *  - Header purple gradient · order code + 4 stage dots progress
- *  - Body parchment sand bg · mini-mapa SVG con canoa GPS-driven
- *  - Footer · ETA grande + sub-status badge + driver card collapsable
- *
- * GPS data flow · canoa_pct viene del API · computado desde rider_info
- * .distance_remaining_m / total_distance_m · API recibe estos campos
- * del simulator (mock mode) o del webhook PedidosYa (real mode). El
- * widget solo es presentation · 100% reactive a esos datos.
+ * 7 features iterativas sobre v8 ·
+ *   1) Microcopy storytelling náutico rotatorio per stage
+ *   2) Canoa rotada siguiendo tangente del Bezier + rocking motion
+ *   3) Stage transition celebration · pop overlay con nuevo emoji + label
+ *   4) Rider card enriched · avatar inicial + stars + plate + call button
+ *   5) Ambient map motion · waves shift · mountain breath · canoa rocking
+ *   6) Order summary collapsable · cart_lines compact + expand
+ *   7) Timeline timestamps overlay · cada lifecycle event con hora
  */
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, ChevronDown } from "lucide-react"
+import { X, ChevronDown, ChevronUp, Phone, Clock } from "lucide-react"
 
 const LS_KEY = "naufrago_active_order_code"
 const POLL_MS = 5_000
+const MICROCOPY_ROTATE_MS = 9_000
+
+interface CartLine {
+  id: string
+  name: string
+  priceUsd: number
+  qty: number
+}
 
 interface TrackerSnapshot {
   ok: boolean
@@ -32,18 +35,29 @@ interface TrackerSnapshot {
   stage_index: number
   canoa_pct: number
   delivery_eta_minutes: number | null
+  cart_lines: CartLine[]
+  subtotal_usd: number
+  total_usd: number
+  created_at: string | null
+  accepted_at: string | null
+  preparing_at: string | null
+  ready_at: string | null
+  rider_picked_up_at: string | null
+  delivered_at: string | null
   rider_info: {
     name?: string
     plate?: string
     phone?: string
     vehicleType?: string
+    rating?: number
+    tenure_months?: number
     distance_remaining_m?: number
     total_distance_m?: number
     eta_min?: number
   } | null
 }
 
-// ── Tokens visuales canon Náufrago ──────────────────────────────────
+// ── Tokens canon Náufrago ───────────────────────────────────────────
 const PURPLE = "#3D2466"
 const PURPLE_DARK = "#1F1138"
 const CYAN = "#4DD4D8"
@@ -52,9 +66,9 @@ const SAND = "#F5E9D2"
 const SAND_DARK = "#E8D9B5"
 const PARCHMENT = "#F0E2BB"
 const INK = "#3D2466"
+const RED_PIRATE = "#D92235"
 
-// 4 stages canon · pattern Domino's adaptado con identidad Náufrago.
-// stage_index del API · 1=received · 2=preparing · 3=en_route · 4=delivered
+// ── Stages canon · 4 etapas pattern Domino's adaptado ──────────────
 const STAGES = [
   { idx: 1, key: "received", label: "Anclado", emoji: "⚓" },
   { idx: 2, key: "preparing", label: "Zarpando", emoji: "🍳" },
@@ -62,19 +76,45 @@ const STAGES = [
   { idx: 4, key: "delivered", label: "¡Llegó!", emoji: "🌊" },
 ] as const
 
-// ── SVG map geometry ──────────────────────────────────────────────
-// Pickup (Täsch) en esquina sup-izq · Dropoff (cliente) en esquina inf-der
-// Curva quadratic Bezier · control point arriba-centro · ruta arqueada
-const MAP_W = 380
-const MAP_H = 200
-const PICKUP_X = 50
-const PICKUP_Y = 50
-const DROPOFF_X = 330
-const DROPOFF_Y = 155
-const CTRL_X = 200
-const CTRL_Y = 30
+// ── Microcopy storytelling · 3-4 frases por stage · pick random ────
+const STAGE_COPY: Record<string, string[]> = {
+  received: [
+    "Los cocineros recibieron tu carta",
+    "Náufrago en la cocina · armando provisiones",
+    "Tu pedido subió a bordo",
+    "La cocina aceptó tu encomienda",
+  ],
+  preparing: [
+    "Marco está cocinando con cariño 🍳",
+    "El pescado se sella en la sartén",
+    "La vela se infla · cargamos provisiones",
+    "Aroma a mar · tu plato está naciendo",
+  ],
+  en_route: [
+    "Vela inflada · vamos a 5 nudos",
+    "Marco rema firme hacia tu isla",
+    "Cruzando el río · rumbo a tu costa",
+    "Brisa a favor · la canoa avanza",
+  ],
+  delivered: [
+    "¡Llegó tu tesoro · náufrago!",
+    "Disfrutalo bien caliente 🌊",
+    "Buen provecho · marinero",
+    "Hasta tu próxima travesía",
+  ],
+}
 
-/** Quadratic Bezier point at t ∈ [0,1] · B(t) = (1-t)²P0 + 2(1-t)tP1 + t²P2 */
+// ── Geometría del mapa SVG ─────────────────────────────────────────
+const MAP_W = 380
+const MAP_H = 220
+const PICKUP_X = 50
+const PICKUP_Y = 60
+const DROPOFF_X = 330
+const DROPOFF_Y = 170
+const CTRL_X = 200
+const CTRL_Y = 40
+
+/** Quadratic Bezier point at t ∈ [0,1] */
 function bezierAt(t: number) {
   const u = 1 - t
   const x = u * u * PICKUP_X + 2 * u * t * CTRL_X + t * t * DROPOFF_X
@@ -82,14 +122,64 @@ function bezierAt(t: number) {
   return { x, y }
 }
 
+/** Bezier tangent at t · derivative · for canoa rotation */
+function bezierTangent(t: number) {
+  const dx = 2 * (1 - t) * (CTRL_X - PICKUP_X) + 2 * t * (DROPOFF_X - CTRL_X)
+  const dy = 2 * (1 - t) * (CTRL_Y - PICKUP_Y) + 2 * t * (DROPOFF_Y - CTRL_Y)
+  return Math.atan2(dy, dx) * (180 / Math.PI)
+}
+
+function formatTime(ts: string | null): string {
+  if (!ts) return "—"
+  try {
+    return new Date(ts).toLocaleTimeString("es-EC", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
+  } catch {
+    return "—"
+  }
+}
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
 export function OrderTrackerWidget() {
   const [code, setCode] = useState<string | null>(null)
   const [snap, setSnap] = useState<TrackerSnapshot | null>(null)
   const [dismissed, setDismissed] = useState(false)
   const [driverOpen, setDriverOpen] = useState(false)
+  const [orderOpen, setOrderOpen] = useState(false)
+  const [timelineOpen, setTimelineOpen] = useState(false)
   const [autoDismissTimer, setAutoDismissTimer] = useState<number | null>(null)
 
-  // ── Mount · read active order from localStorage + listen events ─
+  // ── Stage transition celebration ─────────────────────────────────
+  const prevStageRef = useRef<string | null>(null)
+  const [celebrating, setCelebrating] = useState<{
+    emoji: string
+    label: string
+    copy: string
+  } | null>(null)
+
+  // ── Microcopy rotator ────────────────────────────────────────────
+  const [microcopy, setMicrocopy] = useState<string>("")
+
+  // ── Ambient motion · single rAF loop ─────────────────────────────
+  const [now, setNow] = useState(0)
+  useEffect(() => {
+    let raf = 0
+    const start = performance.now()
+    const tick = () => {
+      setNow((performance.now() - start) / 1000)
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
+  // ── Sync code from localStorage + event ──────────────────────────
   useEffect(() => {
     function syncCode() {
       try {
@@ -102,7 +192,7 @@ export function OrderTrackerWidget() {
           setCode(null)
         }
       } catch {
-        // ignore quota
+        // ignore
       }
     }
     syncCode()
@@ -149,7 +239,7 @@ export function OrderTrackerWidget() {
               setCode(null)
               setSnap(null)
               setDismissed(false)
-            }, 30_000)
+            }, 45_000)
             setAutoDismissTimer(id)
           }
         }
@@ -164,6 +254,44 @@ export function OrderTrackerWidget() {
       window.clearInterval(id)
     }
   }, [code, dismissed, autoDismissTimer])
+
+  // ── Stage transition detection · trigger celebration ─────────────
+  useEffect(() => {
+    if (!snap) return undefined
+    const currStage = snap.stage
+    const prevStage = prevStageRef.current
+    let cleanup: (() => void) | undefined = undefined
+    if (prevStage && prevStage !== currStage) {
+      const stageDef = STAGES.find((s) => s.key === currStage)
+      if (stageDef) {
+        const copyArr = STAGE_COPY[currStage] ?? []
+        setCelebrating({
+          emoji: stageDef.emoji,
+          label: stageDef.label,
+          copy: pickRandom(copyArr) ?? "",
+        })
+        const id = window.setTimeout(() => setCelebrating(null), 2200)
+        cleanup = () => window.clearTimeout(id)
+      }
+    }
+    prevStageRef.current = currStage
+    return cleanup
+  }, [snap])
+
+  // ── Microcopy rotator · pick new on stage change + every 9s ──────
+  useEffect(() => {
+    if (!snap) return
+    const arr = STAGE_COPY[snap.stage] ?? []
+    if (arr.length === 0) {
+      setMicrocopy("")
+      return
+    }
+    setMicrocopy(pickRandom(arr))
+    const id = window.setInterval(() => {
+      setMicrocopy(pickRandom(arr))
+    }, MICROCOPY_ROTATE_MS)
+    return () => window.clearInterval(id)
+  }, [snap?.stage])
 
   if (!code || dismissed) return null
 
@@ -184,11 +312,18 @@ export function OrderTrackerWidget() {
   const canoaPct = Math.max(0, Math.min(100, snap?.canoa_pct ?? 0))
   const canoaT = canoaPct / 100
   const canoaPos = bezierAt(canoaT)
+  const canoaAngle = bezierTangent(canoaT)
+  // Rocking motion · ±3° sine wave
+  const canoaRock = Math.sin(now * 1.8) * 3
+  // Wave shift · subtle horizontal motion 0-4px over 8s loop
+  const waveShift = Math.sin(now * 0.4) * 2
+  // Mountain breath · scale 1.0 → 1.025 over 4s loop
+  const mtnBreath = 1 + (Math.sin(now * 0.5) + 1) * 0.012
 
-  // Sub-status pulses
   const isNearing = snap?.delivery_substatus === "NEARING_DESTINATION"
   const isAt = snap?.delivery_substatus === "AT_DESTINATION"
   const isDelivered = snap?.stage === "delivered"
+  const showCanoa = snap?.stage === "en_route" || isDelivered || isNearing || isAt
 
   const handleDismiss = () => {
     try {
@@ -200,6 +335,10 @@ export function OrderTrackerWidget() {
     setCode(null)
     setSnap(null)
   }
+
+  const rider = snap?.rider_info
+  const riderInitial = rider?.name?.charAt(0).toUpperCase() ?? "?"
+  const riderStars = Math.round(rider?.rating ?? 0)
 
   return (
     <AnimatePresence>
@@ -213,7 +352,7 @@ export function OrderTrackerWidget() {
           ease: [0.2, 1.4, 0.2, 1],
           scale: { type: "spring", stiffness: 240, damping: 16 },
         }}
-        className="pointer-events-auto fixed bottom-4 right-4 z-[55] w-[min(460px,calc(100vw-2rem))] overflow-hidden rounded-3xl shadow-2xl"
+        className="pointer-events-auto fixed bottom-4 right-4 z-[55] w-[min(480px,calc(100vw-2rem))] overflow-hidden rounded-3xl shadow-2xl"
         style={{
           background: SAND,
           border: `3px solid ${PURPLE}`,
@@ -223,7 +362,7 @@ export function OrderTrackerWidget() {
         role="region"
         aria-label="Tracker de pedido Náufrago"
       >
-        {/* ─── HEADER · stages dots progress · purple gradient ─── */}
+        {/* ═══════ HEADER · stages dots + microcopy ═══════ */}
         <div
           className="relative px-5 pt-3 pb-4"
           style={{
@@ -231,11 +370,20 @@ export function OrderTrackerWidget() {
             color: "#FFFFFF",
           }}
         >
-          {/* top row · order code + close */}
           <div className="mb-3 flex items-center justify-between">
-            <span className="font-mono text-[10px] uppercase tracking-[0.22em] opacity-75">
-              ✦ Pedido NF-{code.slice(-6)}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[10px] uppercase tracking-[0.22em] opacity-75">
+                ✦ Pedido NF-{code.slice(-6)}
+              </span>
+              <button
+                type="button"
+                onClick={() => setTimelineOpen((v) => !v)}
+                aria-label="Ver historial"
+                className="rounded-full p-1 opacity-60 transition-opacity hover:opacity-100"
+              >
+                <Clock className="h-3 w-3" />
+              </button>
+            </div>
             <button
               type="button"
               onClick={handleDismiss}
@@ -246,7 +394,7 @@ export function OrderTrackerWidget() {
             </button>
           </div>
 
-          {/* 4 stages dots · pattern Domino's */}
+          {/* 4 stages dots */}
           <div className="flex items-center justify-between gap-1">
             {STAGES.map((stage, i) => {
               const isPast = stage.idx < activeIdx
@@ -257,7 +405,7 @@ export function OrderTrackerWidget() {
                 <div key={stage.key} className="flex flex-1 items-center">
                   <div className="flex flex-1 flex-col items-center gap-1">
                     <div
-                      className="relative flex h-9 w-9 items-center justify-center rounded-full text-lg transition-all"
+                      className="relative flex h-9 w-9 items-center justify-center rounded-full text-lg transition-all duration-500"
                       style={{
                         background: dotColor,
                         boxShadow: isActive
@@ -271,10 +419,7 @@ export function OrderTrackerWidget() {
                         <span
                           aria-hidden
                           className="absolute inset-0 rounded-full animate-ping"
-                          style={{
-                            background: CYAN,
-                            opacity: 0.35,
-                          }}
+                          style={{ background: CYAN, opacity: 0.35 }}
                         />
                       ) : null}
                     </div>
@@ -290,7 +435,7 @@ export function OrderTrackerWidget() {
                   </div>
                   {i < STAGES.length - 1 ? (
                     <div
-                      className="h-0.5 flex-1 transition-colors"
+                      className="h-0.5 flex-1 transition-colors duration-500"
                       style={{
                         background:
                           stage.idx < activeIdx ? CYAN : "rgba(255,255,255,0.18)",
@@ -301,9 +446,25 @@ export function OrderTrackerWidget() {
               )
             })}
           </div>
+
+          {/* Microcopy storytelling · rotates every 9s · per stage */}
+          <AnimatePresence mode="wait">
+            {microcopy ? (
+              <motion.p
+                key={microcopy}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.4 }}
+                className="mt-3 text-center font-[family-name:var(--font-handwritten),cursive] text-base italic opacity-90"
+              >
+                &ldquo;{microcopy}&rdquo;
+              </motion.p>
+            ) : null}
+          </AnimatePresence>
         </div>
 
-        {/* ─── MAP SECTION · pergamino themed ─── */}
+        {/* ═══════ MAP SECTION · pergamino ═══════ */}
         <div className="relative px-4 pt-4 pb-2">
           <div className="mb-1.5 flex items-baseline justify-between">
             <span
@@ -320,7 +481,6 @@ export function OrderTrackerWidget() {
             </span>
           </div>
 
-          {/* SVG mini-map · 380x200 viewBox */}
           <div
             className="relative overflow-hidden rounded-2xl border-2"
             style={{
@@ -333,46 +493,34 @@ export function OrderTrackerWidget() {
               viewBox={`0 0 ${MAP_W} ${MAP_H}`}
               className="block h-auto w-full"
               role="img"
-              aria-label="Mapa del recorrido del motorizado"
+              aria-label="Mapa del recorrido"
             >
-              {/* Parchment grain texture (subtle dots) */}
               <defs>
-                <pattern
-                  id="grain"
-                  width="20"
-                  height="20"
-                  patternUnits="userSpaceOnUse"
-                >
-                  <circle
-                    cx="10"
-                    cy="10"
-                    r="0.6"
-                    fill="rgba(61,36,102,0.07)"
-                  />
+                <pattern id="grain" width="20" height="20" patternUnits="userSpaceOnUse">
+                  <circle cx="10" cy="10" r="0.6" fill="rgba(61,36,102,0.07)" />
                 </pattern>
                 <linearGradient id="routeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor={CYAN} stopOpacity="0.8" />
                   <stop offset="100%" stopColor={PURPLE} stopOpacity="0.8" />
                 </linearGradient>
-                {/* Drop shadow for canoa */}
                 <filter id="canoaShadow" x="-50%" y="-50%" width="200%" height="200%">
                   <feDropShadow dx="0" dy="2" stdDeviation="1.5" floodColor="#3D2466" floodOpacity="0.35" />
                 </filter>
               </defs>
               <rect width={MAP_W} height={MAP_H} fill="url(#grain)" />
 
-              {/* Wavy sea decorative lines (parchment ocean) */}
-              {[35, 75, 115, 155].map((y) => (
+              {/* Wavy sea decorative lines · ambient shift */}
+              {[45, 90, 135, 180].map((y, idx) => (
                 <path
                   key={`wave-${y}`}
-                  d={`M 0 ${y} Q 30 ${y - 3}, 60 ${y} T 120 ${y} T 180 ${y} T 240 ${y} T 300 ${y} T 380 ${y}`}
-                  stroke="rgba(61,36,102,0.08)"
+                  d={`M ${-10 + waveShift * (idx % 2 === 0 ? 1 : -1)} ${y} Q 30 ${y - 3}, 60 ${y} T 120 ${y} T 180 ${y} T 240 ${y} T 300 ${y} T 380 ${y} T 440 ${y}`}
+                  stroke="rgba(61,36,102,0.10)"
                   strokeWidth="0.8"
                   fill="none"
                 />
               ))}
 
-              {/* Route · dashed curve from pickup to dropoff */}
+              {/* Route · dashed curve */}
               <path
                 d={`M ${PICKUP_X} ${PICKUP_Y} Q ${CTRL_X} ${CTRL_Y}, ${DROPOFF_X} ${DROPOFF_Y}`}
                 stroke="url(#routeGrad)"
@@ -382,40 +530,24 @@ export function OrderTrackerWidget() {
                 strokeLinecap="round"
               />
 
-              {/* Pickup marker · Täsch · mountain emoji + label */}
+              {/* Pickup · Täsch · with mountain breath */}
               <g>
-                <circle
-                  cx={PICKUP_X}
-                  cy={PICKUP_Y}
-                  r="14"
-                  fill={SAND}
-                  stroke={PURPLE}
-                  strokeWidth="2"
-                />
-                <text
-                  x={PICKUP_X}
-                  y={PICKUP_Y + 7}
-                  textAnchor="middle"
-                  fontSize="20"
-                >
-                  🏔
-                </text>
-                <text
-                  x={PICKUP_X}
-                  y={PICKUP_Y + 32}
-                  textAnchor="middle"
-                  fontSize="10"
-                  fontWeight="700"
-                  fill={PURPLE}
-                  fontFamily="ui-monospace, Menlo, monospace"
-                >
+                <g style={{
+                  transform: `scale(${mtnBreath})`,
+                  transformOrigin: `${PICKUP_X}px ${PICKUP_Y}px`,
+                  transition: "transform 0.2s linear",
+                }}>
+                  <circle cx={PICKUP_X} cy={PICKUP_Y} r="16" fill={SAND} stroke={PURPLE} strokeWidth="2" />
+                  <text x={PICKUP_X} y={PICKUP_Y + 7} textAnchor="middle" fontSize="22">🏔</text>
+                </g>
+                <text x={PICKUP_X} y={PICKUP_Y + 34} textAnchor="middle" fontSize="10" fontWeight="700" fill={PURPLE} fontFamily="ui-monospace, Menlo, monospace">
                   TÄSCH
                 </text>
               </g>
 
-              {/* Dropoff marker · isla destino · X marks the spot */}
+              {/* Dropoff · isla · X marks the spot */}
               <g>
-                {/* Pulse ring · only when nearing destination */}
+                {/* Pulse ring · cuando NEARING o AT */}
                 {isNearing || isAt ? (
                   <circle
                     cx={DROPOFF_X}
@@ -426,71 +558,41 @@ export function OrderTrackerWidget() {
                     strokeWidth="2"
                     opacity="0.5"
                   >
-                    <animate
-                      attributeName="r"
-                      from="14"
-                      to="28"
-                      dur="1.4s"
-                      repeatCount="indefinite"
-                    />
-                    <animate
-                      attributeName="opacity"
-                      from="0.6"
-                      to="0"
-                      dur="1.4s"
-                      repeatCount="indefinite"
-                    />
+                    <animate attributeName="r" from="14" to="32" dur="1.4s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" from="0.6" to="0" dur="1.4s" repeatCount="indefinite" />
                   </circle>
                 ) : null}
                 <circle
                   cx={DROPOFF_X}
                   cy={DROPOFF_Y}
-                  r="14"
+                  r="16"
                   fill={isDelivered ? CYAN : SAND}
                   stroke={isAt || isDelivered ? PURPLE : "rgba(61,36,102,0.7)"}
                   strokeWidth="2"
                 />
+                <text x={DROPOFF_X} y={DROPOFF_Y + 7} textAnchor="middle" fontSize="22">🏝</text>
+                {/* X marks the spot · pirate map */}
                 <text
-                  x={DROPOFF_X}
-                  y={DROPOFF_Y + 7}
+                  x={DROPOFF_X + 22}
+                  y={DROPOFF_Y - 10}
                   textAnchor="middle"
-                  fontSize="20"
-                >
-                  🏝
-                </text>
-                {/* X marks the spot · pirate map convention */}
-                <text
-                  x={DROPOFF_X + 18}
-                  y={DROPOFF_Y - 8}
-                  textAnchor="middle"
-                  fontSize="14"
+                  fontSize="16"
                   fontWeight="900"
-                  fill="#D92235"
-                  transform={`rotate(20 ${DROPOFF_X + 18} ${DROPOFF_Y - 8})`}
+                  fill={RED_PIRATE}
+                  transform={`rotate(20 ${DROPOFF_X + 22} ${DROPOFF_Y - 10})`}
                 >
                   ✕
                 </text>
-                <text
-                  x={DROPOFF_X}
-                  y={DROPOFF_Y + 32}
-                  textAnchor="middle"
-                  fontSize="10"
-                  fontWeight="700"
-                  fill={PURPLE}
-                  fontFamily="ui-monospace, Menlo, monospace"
-                >
+                <text x={DROPOFF_X} y={DROPOFF_Y + 34} textAnchor="middle" fontSize="10" fontWeight="700" fill={PURPLE} fontFamily="ui-monospace, Menlo, monospace">
                   TU ISLA
                 </text>
               </g>
 
-              {/* Canoa · only render when en_route or near destination */}
-              {(snap?.stage === "en_route" ||
-                snap?.stage === "delivered" ||
-                isNearing ||
-                isAt) ? (
+              {/* Canoa · rotated to follow path + rocking */}
+              {showCanoa ? (
                 <g
                   style={{
-                    transform: `translate(${canoaPos.x - MAP_W / 2}px, ${canoaPos.y - MAP_H / 2}px)`,
+                    transform: `translate(${canoaPos.x - MAP_W / 2}px, ${canoaPos.y - MAP_H / 2}px) rotate(${canoaAngle + canoaRock}deg)`,
                     transformOrigin: `${MAP_W / 2}px ${MAP_H / 2}px`,
                     transition: "transform 700ms cubic-bezier(0.4, 0, 0.2, 1)",
                   }}
@@ -498,32 +600,53 @@ export function OrderTrackerWidget() {
                 >
                   <text
                     x={MAP_W / 2}
-                    y={MAP_H / 2 + 8}
+                    y={MAP_H / 2 + 10}
                     textAnchor="middle"
-                    fontSize="28"
+                    fontSize="30"
                   >
                     🛶
                   </text>
+                  {/* Wake · 3 little ripple dots behind the canoa */}
+                  {snap?.stage === "en_route" ? (
+                    <g opacity="0.4">
+                      {[8, 16, 24].map((d, i) => (
+                        <circle
+                          key={i}
+                          cx={MAP_W / 2 - d}
+                          cy={MAP_H / 2 + 5}
+                          r={1.5 - i * 0.3}
+                          fill={CYAN}
+                        />
+                      ))}
+                    </g>
+                  ) : null}
                 </g>
               ) : null}
 
-              {/* Delivered · confetti emoji burst */}
+              {/* Delivered · confetti burst */}
               {isDelivered ? (
                 <g>
-                  {["✨", "🎉", "🌊", "✨"].map((emoji, i) => (
+                  {["✨", "🎉", "🌊", "✨", "🎊"].map((emoji, i) => (
                     <text
                       key={`confetti-${i}`}
-                      x={DROPOFF_X + (i % 2 === 0 ? -20 : 20)}
-                      y={DROPOFF_Y - 25 - i * 10}
+                      x={DROPOFF_X + (i - 2) * 14}
+                      y={DROPOFF_Y - 30 - (i % 3) * 8}
                       textAnchor="middle"
-                      fontSize="16"
-                      opacity={0.85}
+                      fontSize="18"
                     >
                       <animate
                         attributeName="opacity"
-                        values="0;1;0"
-                        dur="2s"
-                        begin={`${i * 0.3}s`}
+                        values="0;1;1;0"
+                        dur="2.4s"
+                        begin={`${i * 0.25}s`}
+                        repeatCount="indefinite"
+                      />
+                      <animateTransform
+                        attributeName="transform"
+                        type="translate"
+                        values="0,0; 0,-15; 0,0"
+                        dur="2.4s"
+                        begin={`${i * 0.25}s`}
                         repeatCount="indefinite"
                       />
                       {emoji}
@@ -532,12 +655,44 @@ export function OrderTrackerWidget() {
                 </g>
               ) : null}
             </svg>
+
+            {/* Stage transition celebration overlay */}
+            <AnimatePresence>
+              {celebrating ? (
+                <motion.div
+                  key={celebrating.label}
+                  initial={{ opacity: 0, scale: 0.3 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.3 }}
+                  transition={{ duration: 0.4, ease: [0.2, 1.4, 0.2, 1] }}
+                  className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
+                  style={{
+                    background: "rgba(245,233,210,0.92)",
+                    backdropFilter: "blur(2px)",
+                  }}
+                >
+                  <span className="text-6xl drop-shadow-md">{celebrating.emoji}</span>
+                  <span
+                    className="mt-1 font-[family-name:var(--font-bebas),sans-serif] text-3xl tracking-wider"
+                    style={{ color: PURPLE }}
+                  >
+                    {celebrating.label}
+                  </span>
+                  <span
+                    className="mt-1 font-[family-name:var(--font-handwritten),cursive] text-sm italic"
+                    style={{ color: PURPLE_DARK }}
+                  >
+                    {celebrating.copy}
+                  </span>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
           </div>
         </div>
 
-        {/* ─── INFO SECTION ─── */}
-        <div className="space-y-2.5 px-5 pb-4 pt-3" style={{ color: INK }}>
-          {/* ETA row */}
+        {/* ═══════ INFO SECTION · ETA · badges · cards ═══════ */}
+        <div className="space-y-2.5 px-5 pb-4 pt-2" style={{ color: INK }}>
+          {/* ETA */}
           {snap ? (
             <div className="flex items-baseline justify-between gap-2">
               {etaMin !== null && etaMin >= 0 ? (
@@ -546,9 +701,7 @@ export function OrderTrackerWidget() {
                     {etaMin === 0 ? "Llegando" : `${etaMin}`}
                   </span>
                   {etaMin > 0 ? (
-                    <span className="ml-1 text-sm font-medium opacity-70">
-                      min
-                    </span>
+                    <span className="ml-1 text-sm font-medium opacity-70">min</span>
                   ) : null}
                   {distanceM !== null ? (
                     <span className="ml-2 text-sm opacity-60">
@@ -598,34 +751,206 @@ export function OrderTrackerWidget() {
             </motion.div>
           ) : null}
 
-          {/* Driver card collapsable */}
-          {snap?.rider_info?.name ? (
-            <button
-              type="button"
-              onClick={() => setDriverOpen((v) => !v)}
-              className="flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left text-xs transition-colors"
+          {/* Rider card enriched */}
+          {rider?.name ? (
+            <div
+              className="rounded-xl border px-3 py-2.5"
               style={{
                 borderColor: "rgba(61,36,102,0.20)",
                 background: "rgba(61,36,102,0.04)",
-                color: INK,
               }}
             >
-              <div className="flex items-center gap-2">
-                <span className="text-base">{snap.rider_info.vehicleType === "MOTORCYCLE" ? "🛵" : "🚴"}</span>
-                <span className="font-semibold">{snap.rider_info.name}</span>
-                {driverOpen && snap.rider_info.plate ? (
-                  <span className="font-mono opacity-60">· {snap.rider_info.plate}</span>
+              <button
+                type="button"
+                onClick={() => setDriverOpen((v) => !v)}
+                className="flex w-full items-center justify-between text-left"
+                style={{ color: INK }}
+              >
+                <div className="flex items-center gap-2.5">
+                  {/* Avatar · inicial */}
+                  <div
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold text-white"
+                    style={{ background: `linear-gradient(135deg, ${PURPLE}, ${CYAN_DARK})` }}
+                  >
+                    {riderInitial}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold">{rider.name}</span>
+                    <div className="flex items-center gap-1.5 text-[11px]">
+                      {rider.rating ? (
+                        <span>
+                          {"★".repeat(riderStars)}<span className="opacity-40">{"★".repeat(5 - riderStars)}</span>
+                          <span className="ml-1 opacity-70">{rider.rating.toFixed(1)}</span>
+                        </span>
+                      ) : null}
+                      {rider.plate ? (
+                        <span className="font-mono opacity-60">· {rider.plate}</span>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+                <ChevronDown
+                  className="h-4 w-4 transition-transform"
+                  style={{
+                    transform: driverOpen ? "rotate(180deg)" : "rotate(0deg)",
+                  }}
+                />
+              </button>
+              <AnimatePresence>
+                {driverOpen ? (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mt-2 flex items-center gap-2 border-t pt-2 text-[11px]" style={{ borderColor: "rgba(61,36,102,0.15)" }}>
+                      {rider.vehicleType ? (
+                        <span className="opacity-70">
+                          {rider.vehicleType === "MOTORCYCLE" ? "🛵 Moto" : "🚴 Bici"}
+                        </span>
+                      ) : null}
+                      {rider.tenure_months ? (
+                        <span className="opacity-70">· {rider.tenure_months} meses con nosotros</span>
+                      ) : null}
+                      {rider.phone ? (
+                        <a
+                          href={`https://wa.me/${rider.phone.replace(/\D/g, "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-auto flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold text-white"
+                          style={{ background: `linear-gradient(90deg, ${CYAN_DARK}, ${PURPLE})` }}
+                        >
+                          <Phone className="h-3 w-3" />
+                          Llamar
+                        </a>
+                      ) : null}
+                    </div>
+                  </motion.div>
                 ) : null}
-              </div>
-              <ChevronDown
-                className="h-3.5 w-3.5 transition-transform"
-                style={{
-                  transform: driverOpen ? "rotate(180deg)" : "rotate(0deg)",
-                }}
-              />
-            </button>
+              </AnimatePresence>
+            </div>
+          ) : null}
+
+          {/* Order summary collapsable */}
+          {snap?.cart_lines && snap.cart_lines.length > 0 ? (
+            <div
+              className="rounded-xl border px-3 py-2"
+              style={{
+                borderColor: "rgba(61,36,102,0.20)",
+                background: "rgba(245,233,210,0.5)",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setOrderOpen((v) => !v)}
+                className="flex w-full items-center justify-between text-left"
+                style={{ color: INK }}
+              >
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="text-base">🍲</span>
+                  <span className="truncate text-[12px] font-semibold">
+                    {snap.cart_lines.length} {snap.cart_lines.length === 1 ? "plato" : "platos"} · ${snap.total_usd.toFixed(2)}
+                  </span>
+                </div>
+                {orderOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+              <AnimatePresence>
+                {orderOpen ? (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="overflow-hidden"
+                  >
+                    <ul className="mt-2 space-y-1 border-t pt-2 text-[11px]" style={{ borderColor: "rgba(61,36,102,0.15)" }}>
+                      {snap.cart_lines.map((line, i) => (
+                        <li key={i} className="flex justify-between gap-2">
+                          <span className="truncate">
+                            <span className="font-mono opacity-60">{line.qty}×</span> {line.name}
+                          </span>
+                          <span className="tabular-nums opacity-80">
+                            ${(line.priceUsd * line.qty).toFixed(2)}
+                          </span>
+                        </li>
+                      ))}
+                      <li className="mt-1 flex justify-between border-t pt-1 font-semibold" style={{ borderColor: "rgba(61,36,102,0.15)" }}>
+                        <span>Total</span>
+                        <span className="tabular-nums">${snap.total_usd.toFixed(2)}</span>
+                      </li>
+                    </ul>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
           ) : null}
         </div>
+
+        {/* Timeline overlay · click clock icon en header abre/cierra */}
+        <AnimatePresence>
+          {timelineOpen && snap ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 z-10 flex items-end justify-center p-3"
+              style={{ background: "rgba(31,17,56,0.65)", backdropFilter: "blur(4px)" }}
+              onClick={() => setTimelineOpen(false)}
+            >
+              <motion.div
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 20, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full rounded-2xl border-2 p-4"
+                style={{ background: SAND, borderColor: PURPLE, color: INK }}
+              >
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="font-[family-name:var(--font-bebas),sans-serif] text-xl tracking-wider">
+                    HISTORIAL
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setTimelineOpen(false)}
+                    className="rounded-full p-1 opacity-70 hover:opacity-100"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <ul className="space-y-1.5 text-[12px]">
+                  {[
+                    { label: "Pedido recibido", ts: snap.created_at, emoji: "📝" },
+                    { label: "Cocina aceptó", ts: snap.accepted_at, emoji: "✅" },
+                    { label: "En la cocina", ts: snap.preparing_at, emoji: "🍳" },
+                    { label: "Listo para enviar", ts: snap.ready_at, emoji: "📦" },
+                    { label: "Motorizado salió", ts: snap.rider_picked_up_at, emoji: "🛵" },
+                    { label: "Entregado", ts: snap.delivered_at, emoji: "🌊" },
+                  ].map((step, i) => (
+                    <li
+                      key={i}
+                      className={[
+                        "flex items-center justify-between gap-2",
+                        step.ts ? "opacity-100" : "opacity-30",
+                      ].join(" ")}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>{step.emoji}</span>
+                        <span>{step.label}</span>
+                      </div>
+                      <span className="font-mono text-[11px] opacity-70">
+                        {formatTime(step.ts)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </motion.div>
     </AnimatePresence>
   )

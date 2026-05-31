@@ -47,6 +47,10 @@ interface OrderRow {
   /** R97.5 · sub-status del delivery · NEARING_DESTINATION · AT_DESTINATION ·
    *  derivado de Haversine rider→dropoff vía courier webhook geofencing. */
   delivery_substatus: string | null
+  /** R97.6 · timestamps de cada lifecycle event · para timeline en tracker */
+  accepted_at: string | null
+  preparing_at: string | null
+  ready_at: string | null
   customer_name: string
   customer_phone: string
   cart_lines: Array<{ id: string; name: string; priceUsd: number; qty: number }>
@@ -117,7 +121,7 @@ export async function GET(
   const { data, error } = await supabase
     .from("orders")
     .select(
-      "id, order_code, status, delivery_substatus, customer_name, customer_phone, cart_lines, subtotal_usd, discount_code, discount_usd, delivery_fee_usd, total_usd, delivery_provider, delivery_provider_tracking_url, delivery_eta_minutes, rider_info, customer_notes, created_at, rider_picked_up_at, in_transit_at, delivered_at, cancelled_at, cancellation_reason, delivery_photo_url, delivery_photo_lat, delivery_photo_lng, delivery_photo_at",
+      "id, order_code, status, delivery_substatus, customer_name, customer_phone, cart_lines, subtotal_usd, discount_code, discount_usd, delivery_fee_usd, total_usd, delivery_provider, delivery_provider_tracking_url, delivery_eta_minutes, rider_info, customer_notes, created_at, accepted_at, preparing_at, ready_at, rider_picked_up_at, in_transit_at, delivered_at, cancelled_at, cancellation_reason, delivery_photo_url, delivery_photo_lat, delivery_photo_lng, delivery_photo_at",
     )
     .eq("order_code", order_code.toUpperCase())
     .maybeSingle()
@@ -158,6 +162,9 @@ export async function GET(
     rider_info: row.rider_info,
     customer_notes: row.customer_notes,
     created_at: row.created_at,
+    accepted_at: row.accepted_at,
+    preparing_at: row.preparing_at,
+    ready_at: row.ready_at,
     rider_picked_up_at: row.rider_picked_up_at,
     delivered_at: row.delivered_at,
     cancelled_at: row.cancelled_at,
