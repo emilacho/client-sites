@@ -256,11 +256,14 @@ export function OrderTrackerWidget() {
   }, [code, dismissed, autoDismissTimer])
 
   // ── Stage transition detection · trigger celebration ─────────────
+  // R97.7.1 · fix · usar useRef para timer · evita race condition donde
+  // el cleanup del effect cancela el setTimeout antes de que dispare ·
+  // sin esto el celebrating overlay quedaba pegado tras un stage change.
+  const celebrationTimerRef = useRef<number | null>(null)
   useEffect(() => {
-    if (!snap) return undefined
+    if (!snap) return
     const currStage = snap.stage
     const prevStage = prevStageRef.current
-    let cleanup: (() => void) | undefined = undefined
     if (prevStage && prevStage !== currStage) {
       const stageDef = STAGES.find((s) => s.key === currStage)
       if (stageDef) {
@@ -270,13 +273,28 @@ export function OrderTrackerWidget() {
           label: stageDef.label,
           copy: pickRandom(copyArr) ?? "",
         })
-        const id = window.setTimeout(() => setCelebrating(null), 2200)
-        cleanup = () => window.clearTimeout(id)
+        // Cancelar timer anterior (si había celebration previo aún activo)
+        if (celebrationTimerRef.current !== null) {
+          window.clearTimeout(celebrationTimerRef.current)
+        }
+        // Schedule clear · NO cancelar via effect cleanup
+        celebrationTimerRef.current = window.setTimeout(() => {
+          setCelebrating(null)
+          celebrationTimerRef.current = null
+        }, 2200)
       }
     }
     prevStageRef.current = currStage
-    return cleanup
   }, [snap])
+
+  // Cleanup celebration timer ONLY on unmount
+  useEffect(() => {
+    return () => {
+      if (celebrationTimerRef.current !== null) {
+        window.clearTimeout(celebrationTimerRef.current)
+      }
+    }
+  }, [])
 
   // ── Microcopy rotator · pick new on stage change + every 9s ──────
   useEffect(() => {
