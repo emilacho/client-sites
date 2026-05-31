@@ -43,6 +43,7 @@ interface TrackerSnapshot {
   preparing_at: string | null
   ready_at: string | null
   rider_picked_up_at: string | null
+  in_transit_at: string | null
   delivered_at: string | null
   rider_info: {
     name?: string
@@ -397,10 +398,16 @@ export function OrderTrackerWidget() {
               <button
                 type="button"
                 onClick={() => setTimelineOpen((v) => !v)}
-                aria-label="Ver historial"
-                className="rounded-full p-1 opacity-60 transition-opacity hover:opacity-100"
+                aria-label="Ver historial de tiempos"
+                className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide transition-colors hover:bg-white/15"
+                style={{
+                  background: "rgba(255,255,255,0.10)",
+                  color: CYAN,
+                  border: "1px solid rgba(77,212,216,0.35)",
+                }}
               >
-                <Clock className="h-3 w-3" />
+                <Clock className="h-3.5 w-3.5" />
+                <span>Historial</span>
               </button>
             </div>
             <button
@@ -950,7 +957,7 @@ export function OrderTrackerWidget() {
                     { label: "Cocina aceptó", ts: snap.accepted_at, emoji: "✅" },
                     { label: "En la cocina", ts: snap.preparing_at, emoji: "🍳" },
                     { label: "Listo para enviar", ts: snap.ready_at, emoji: "📦" },
-                    { label: "Motorizado salió", ts: snap.rider_picked_up_at, emoji: "🛵" },
+                    { label: "Motorizado salió", ts: snap.rider_picked_up_at ?? snap.in_transit_at, emoji: "🛵" },
                     { label: "Entregado", ts: snap.delivered_at, emoji: "🌊" },
                   ].map((step, i) => (
                     <li

@@ -166,6 +166,7 @@ export async function GET(
     preparing_at: row.preparing_at,
     ready_at: row.ready_at,
     rider_picked_up_at: row.rider_picked_up_at,
+    in_transit_at: row.in_transit_at,
     delivered_at: row.delivered_at,
     cancelled_at: row.cancelled_at,
     cancellation_reason: row.cancellation_reason,
