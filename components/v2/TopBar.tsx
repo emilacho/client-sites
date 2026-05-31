@@ -40,8 +40,10 @@ export function TopBar({ onOpenAccount }: TopBarProps = {}) {
 
   return (
     <header className="pointer-events-none fixed inset-x-0 top-0 z-30 px-3 pt-3 md:px-6 md:pt-4">
-      <div className="pointer-events-auto mx-auto flex max-w-6xl items-center justify-between rounded-full border border-slate-800/80 bg-slate-950/65 px-4 py-2 backdrop-blur-xl md:px-5">
-        <div className="flex min-w-0 flex-1 items-center gap-2.5 pr-3">
+      <div className="pointer-events-auto mx-auto grid max-w-6xl grid-cols-[1fr_auto_1fr] items-center rounded-full border border-slate-800/80 bg-slate-950/65 px-4 py-2 backdrop-blur-xl md:px-5">
+        {/* Spacer izquierdo · balancea el peso visual de los icons del lado derecho · keeps brand bloque centrado */}
+        <div aria-hidden />
+        <div className="flex min-w-0 items-center justify-center gap-2.5">
           <AnimatePresence mode="wait" initial={false}>
             {variant === "location" ? (
               <motion.div
@@ -103,6 +105,8 @@ export function TopBar({ onOpenAccount }: TopBarProps = {}) {
             · ghost kitchen Guayaquil · restaurante Olón, Sta Elena
           </span>
         </div>
+        {/* Right column · icons cluster · justify-end mantiene anclados a la derecha */}
+        <div className="flex items-center justify-end gap-0">
         {/* R96.13 · open/closed badge · pulsing dot + texto compact */}
         <span
           className={[
@@ -158,6 +162,7 @@ export function TopBar({ onOpenAccount }: TopBarProps = {}) {
             </span>
           ) : null}
         </button>
+        </div>
       </div>
     </header>
   )
