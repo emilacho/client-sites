@@ -9,9 +9,11 @@ import { MENU_ITEMS, type MenuItem } from "@/lib/v2/naufrago-content"
  * top 3 distinct items con metadata enrichment (emoji + gradient).
  *
  * Fallback · si no hay data suficiente (cliente nuevo · <5 orders)
- * devolvemos pinned ranking · Encebollado Náufrago · Ceviche
- * Náufrago · Encebollado Mixto (los 3 platos signature · R104.4 · patacones
- * salió del menú).
+ * devolvemos pinned ranking · Encebollado Náufrago · Ceviche Náufrago.
+ * R104.5 · eran TRES · el tercero era Patacones Náufrago y se eliminó
+ * sin reemplazo (decisión de Emilio). Con pocos pedidos la tira muestra
+ * dos tarjetas, no tres · en cuanto haya ventas reales el ranking la
+ * completa solo.
  */
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -20,7 +22,6 @@ export const revalidate = 300
 const FALLBACK_IDS = [
   "encebollado-naufrago",
   "ceviche-naufrago",
-  "encebollado-mixto",
 ]
 
 interface CartLineLite {

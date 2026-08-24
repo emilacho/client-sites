@@ -105,7 +105,7 @@ export async function handleSearchMenu(
       query: params.query,
       results: [],
       hint:
-        "Ningún ítem matcheó · sugerile al cliente las opciones más populares (Encebollado Náufrago $4 · Encebollado Mixto $6 · Ceviche Náufrago $7) o pedile que reformule.",
+        "Ningún ítem matcheó · sugerile al cliente las opciones más populares (Encebollado Náufrago $4 · Ceviche Náufrago $7) o pedile que reformule.",
     }
   }
   // Si el top hit usa dynamicVariantsKey · poblamos todaysJuices.

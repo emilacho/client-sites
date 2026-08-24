@@ -520,7 +520,7 @@ export const naufragoV2 = {
        string here means downstream consumers stay simple. */
     headline: "Cuando tengas esa hambre de... NÁUFRAGO te espera!",
     subheadline:
-      "Encebollados, ceviches y jugos del día con producto fresco — sin esperar mesa, sin salir de casa.",
+      "Encebollados y ceviches con producto del día — sin esperar mesa, sin salir de casa.",
     ctaPrimary: "Pedir por WhatsApp",
     ctaSecondary: "Ver menú",
   },
@@ -564,12 +564,12 @@ export const naufragoV2 = {
    *  miniaturas y los nombres de la canoa) pasaron a MENU_ITEMS, que es
    *  el catálogo completo. Quedaba como tabla de búsqueda de 3 platos:
    *  cualquier otro plato de la canoa no se encontraba y perdía su foto.
-   *  Se conserva SOLO por si algún consumidor externo la lee, y ya no
-   *  nombra patacones. */
+   *  Se conserva SOLO por si algún consumidor externo la lee.
+   *  R104.5 · patacones se ELIMINÓ y no se reemplazó por otro plato
+   *  (decisión de Emilio: eliminar, no sustituir) · quedan dos. */
   menu: [
     MENU_ITEMS.find((i) => i.id === "encebollado-naufrago")!,
     MENU_ITEMS.find((i) => i.id === "ceviche-naufrago")!,
-    MENU_ITEMS.find((i) => i.id === "encebollado-mixto")!,
   ] satisfies MenuItem[],
 } as const
 
