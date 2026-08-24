@@ -519,7 +519,11 @@ function LandingInner() {
       <MenuModal open={menuOpen} onClose={() => setMenuOpen(false)} />
       <TrackOrderModal open={trackOpen} onClose={() => setTrackOpen(false)} />
       {/* R97.8 · 4 modals nuevos · reemplazan VoiceOrderModal */}
-      <StoriesModal open={storiesOpen} onClose={() => setStoriesOpen(false)} />
+      <StoriesModal
+        open={storiesOpen}
+        onClose={() => setStoriesOpen(false)}
+        onOpenMenu={() => setMenuOpen(true)}
+      />
       <CombosModal open={combosOpen} onClose={() => setCombosOpen(false)} />
       <ScheduleModal open={scheduleOpen} onClose={() => setScheduleOpen(false)} />
       <ClubModal open={clubOpen} onClose={() => setClubOpen(false)} />

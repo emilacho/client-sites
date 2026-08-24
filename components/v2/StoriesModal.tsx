@@ -12,6 +12,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import { X, ChevronLeft, ChevronRight } from "lucide-react"
 import Image from "next/image"
 import { useCart } from "@/lib/v2/cart-context"
+import { MENU_ITEMS } from "@/lib/v2/naufrago-content"
 
 const PURPLE = "#3D2466"
 const CYAN = "#4DD4D8"
@@ -55,6 +56,14 @@ const DISHES: DishStory[] = [
     priceUsd: 6,
   },
   {
+    itemId: "encebollado-junior",
+    name: "Encebollado Junior",
+    imageUrl: "/stories/encebollado-junior.jpg",
+    emoji: "🍲",
+    poetic: "Para el Junior de la Fam",
+    priceUsd: 3.5,
+  },
+  {
     itemId: "ceviche-naufrago",
     name: "Ceviche Náufrago",
     imageUrl: "/stories/ceviche-naufrago.jpg",
@@ -83,14 +92,25 @@ const DISHES: DishStory[] = [
       "Verdes fritos al carbón · queso · huevo · sal prieta que sabe a Manabí.",
     priceUsd: 4,
   },
+  {
+    itemId: "jugo-natural",
+    name: "Jugo natural del día",
+    imageUrl: "/stories/jugo-natural.jpg",
+    emoji: "🍹",
+    poetic: "Fruta exprimida al momento · el sabor lo decide el día.",
+    priceUsd: 2,
+  },
 ]
 
 export interface StoriesModalProps {
   open: boolean
   onClose: () => void
+  /** R104.3 · abre la carta · lo usan los platos que exigen elegir algo
+   *  antes de pedirlos (ej el jugo, que se pide por sabor del día). */
+  onOpenMenu?: () => void
 }
 
-export function StoriesModal({ open, onClose }: StoriesModalProps) {
+export function StoriesModal({ open, onClose, onOpenMenu }: StoriesModalProps) {
   const cart = useCart()
   const [idx, setIdx] = useState(0)
   const [imgError, setImgError] = useState<Record<string, boolean>>({})
@@ -112,7 +132,21 @@ export function StoriesModal({ open, onClose }: StoriesModalProps) {
   const current = DISHES[idx]
   const hasImg = Boolean(current.imageUrl) && !imgError[current.itemId]
 
+  // R104.3 · hay platos que NO se pueden mandar a la canoa desde acá: el
+  // jugo se pide por sabor del día (catálogo que el local cambia a diario)
+  // y agregarlo sin sabor deja una línea a medias que después nadie sabe
+  // preparar. Para esos, el botón lleva a la carta a elegir.
+  const enCarta = MENU_ITEMS.find((m) => m.id === current.itemId)
+  const hayQueElegir = Boolean(
+    enCarta?.dynamicVariantsKey || enCarta?.variants?.length,
+  )
+
   function handleCta() {
+    if (hayQueElegir) {
+      onClose()
+      onOpenMenu?.()
+      return
+    }
     cart.add({
       id: current.itemId,
       name: current.name,
@@ -259,7 +293,7 @@ export function StoriesModal({ open, onClose }: StoriesModalProps) {
               }}
               className="flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm font-bold shadow-lg"
             >
-              ✦ Agregar a la Canoa ·{" "}
+              {hayQueElegir ? "✦ Elegir el sabor · " : "✦ Agregar a la Canoa · "}
               <span className="font-mono">${current.priceUsd.toFixed(2)}</span>
             </button>
 
