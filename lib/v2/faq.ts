@@ -31,7 +31,7 @@ export const FAQ: FaqItem[] = [
   {
     question: "¿Cómo funcionan las perlas del náufrago?",
     answer:
-      "Por cada pedido entregado ganás un 10% del total en perlas (1 perla = $0.01). Las podés usar como descuento en futuros pedidos (cap 50% del subtotal) o canjear por rewards · 5% descuento (100 perlas) · patacones gratis (300 perlas) · 15% descuento (600 perlas).",
+      "Por cada pedido entregado ganás un 10% del total en perlas (1 perla = $0.01). Las podés usar como descuento en futuros pedidos (cap 50% del subtotal) o canjear por rewards · 5% descuento (100 perlas) · 15% descuento (600 perlas).",
   },
   {
     question: "¿Cómo accedo a mi cuenta?",

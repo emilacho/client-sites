@@ -24,7 +24,7 @@ import { CanoeIcon } from "./CanoeIcon"
 import { PlatoThumb } from "./PlatoThumb"
 import { motion, AnimatePresence } from "framer-motion"
 import { useCart } from "@/lib/v2/cart-context"
-import { buildWhatsAppLink, naufragoV2 } from "@/lib/v2/naufrago-content"
+import { buildWhatsAppLink, MENU_ITEMS } from "@/lib/v2/naufrago-content"
 import { saveLastOrder } from "@/lib/v2/use-last-order"
 import MapAddressPicker from "./MapAddressPicker"
 import { PaymentForm } from "./PaymentForm"
@@ -69,7 +69,10 @@ function PedidosYaGlyph() {
 }
 
 function MenuThumb({ id, emoji }: { id: string; emoji: string }) {
-  const item = naufragoV2.menu.find((m) => m.id === id)
+  // R104.4 · antes buscaba en `naufragoV2.menu`, que son 3 platos, no la
+  // carta. Cualquier otro plato de la canoa no se encontraba y se quedaba
+  // sin su foto (y sin su color). Ahora busca en el catálogo completo.
+  const item = MENU_ITEMS.find((m) => m.id === id)
   return (
     <PlatoThumb
       imageUrl={item?.imageUrl}
@@ -222,7 +225,7 @@ export function CartDrawer() {
               ) : (
                 <ul className="flex flex-col gap-2">
                   {cart.lines.map((line) => {
-                    const item = naufragoV2.menu.find((m) => m.id === line.id)
+                    const item = MENU_ITEMS.find((m) => m.id === line.id)
                     const noteOpen = notesExpanded.has(line.id) || !!line.notes
                     return (
                       <li

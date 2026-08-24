@@ -44,14 +44,9 @@ export const LOYALTY_REWARDS: LoyaltyReward[] = [
     description: "Aplicado al subtotal del pedido",
     percentOff: 5,
   },
-  {
-    id: "perlas-300-postre",
-    cost: 300,
-    type: "free_item",
-    label: "Patacones Náufrago gratis",
-    description: "Verdes fritos con queso, huevo y sal prieta · valor $4",
-    freeItemId: "patacones-naufrago",
-  },
+  // R104.4 · el premio de 300 perlas era "Patacones gratis" y sale de la
+  // lista con el plato. NO se reemplazó por otro plato gratis: cuál y por
+  // cuántas perlas es una decisión de negocio. Hoy quedan 100 y 600.
   {
     id: "perlas-600-15pct",
     cost: 600,

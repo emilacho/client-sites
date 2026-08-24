@@ -1545,7 +1545,7 @@ const COCONUT_REVIEWS: CocoReview[] = [
     coconutName: "Coconut_10_43",
     name: "Carlos M.",
     location: "Olón",
-    review: "Patacones perfectos · sal prieta auténtica.",
+    review: "El encebollado mixto rinde · camarón de verdad.",
     rating: 5,
     proxyYOffset: 0.1,
     photoUrl: "/reviews/reviewer-5.jpg",

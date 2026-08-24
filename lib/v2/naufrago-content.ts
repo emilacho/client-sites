@@ -18,7 +18,6 @@
 export type MenuCategoryId =
   | "encebollados"
   | "ceviches"
-  | "otros"
   | "bebidas"
   | "extras"
 
@@ -213,7 +212,6 @@ export const CEVICHE_TOGGLES: MenuItemIngredientToggle[] = [
 export const MENU_CATEGORIES: Array<{ id: MenuCategoryId; label: string; emoji: string }> = [
   { id: "encebollados", label: "Encebollados", emoji: "🍲" },
   { id: "ceviches",     label: "Ceviches",     emoji: "🦐" },
-  { id: "otros",        label: "Otros",        emoji: "🍴" },
   { id: "bebidas",      label: "Bebidas",      emoji: "🥤" },
   { id: "extras",       label: "Extras",       emoji: "🍌" },
 ]
@@ -334,24 +332,6 @@ export const MENU_ITEMS: MenuItem[] = [
     ],
   },
 
-  // ── Otros (1) ─────────────────────────────────────────────────────
-  {
-    id: "patacones-naufrago",
-    category: "otros",
-    name: "Patacones Náufrago",
-    description: "Verdes fritos con queso, huevo y sal prieta.",
-    ingredients: "12-15 Patacones · Queso · Huevo frito · Sal prieta",
-    tags: [],
-    priceUsd: 4.0,
-    emoji: "🍌",
-    gradient: "from-amber-700 via-yellow-500 to-lime-400",
-    allergens: ["lacteo", "huevo"],
-    ingredientToggles: [
-      { id: "huevo", label: "Huevo", emoji: "🥚", removeLabel: "Sin huevo", extraLabel: "+ Extra huevo", extraPriceDelta: 0.5 },
-      { id: "queso", label: "Queso", emoji: "🧀", removeLabel: "Sin queso", extraLabel: "+ Extra queso", extraPriceDelta: 0.5 },
-      { id: "aguacate", label: "Aguacate", emoji: "🥑", extraLabel: "+ aguacate", extraPriceDelta: 1.0 },
-    ],
-  },
 
   // ── Bebidas (6) ───────────────────────────────────────────────────
   {
@@ -540,7 +520,7 @@ export const naufragoV2 = {
        string here means downstream consumers stay simple. */
     headline: "Cuando tengas esa hambre de... NÁUFRAGO te espera!",
     subheadline:
-      "Encebollados, ceviches y patacones con producto del día — sin esperar mesa, sin salir de casa.",
+      "Encebollados, ceviches y jugos del día con producto fresco — sin esperar mesa, sin salir de casa.",
     ctaPrimary: "Pedir por WhatsApp",
     ctaSecondary: "Ver menú",
   },
@@ -580,15 +560,16 @@ export const naufragoV2 = {
     whatsappCta: "Escribir por WhatsApp",
     hoursLabel: "Horario de pedidos",
   },
-  /** Legacy 3-item quick list · still consumed by MenuQuickAdd bottom
-   *  strip. Picks one canonical item per plate category (Encebollado
-   *  Náufrago · Ceviche Náufrago · Patacones Náufrago). The 17-item
-   *  catalog lives in MENU_ITEMS (above) and powers the MenuModal
-   *  opened from the cofre. */
+  /** R104.4 · lista corta legacy · sus dos únicos consumidores (las
+   *  miniaturas y los nombres de la canoa) pasaron a MENU_ITEMS, que es
+   *  el catálogo completo. Quedaba como tabla de búsqueda de 3 platos:
+   *  cualquier otro plato de la canoa no se encontraba y perdía su foto.
+   *  Se conserva SOLO por si algún consumidor externo la lee, y ya no
+   *  nombra patacones. */
   menu: [
     MENU_ITEMS.find((i) => i.id === "encebollado-naufrago")!,
     MENU_ITEMS.find((i) => i.id === "ceviche-naufrago")!,
-    MENU_ITEMS.find((i) => i.id === "patacones-naufrago")!,
+    MENU_ITEMS.find((i) => i.id === "encebollado-mixto")!,
   ] satisfies MenuItem[],
 } as const
 

@@ -80,18 +80,6 @@ const DISHES: DishStory[] = [
     poetic: "Camarón y pescado curtidos · maridaje del mar a tu mesa de playa.",
     priceUsd: 9,
   },
-  // ─── Único pendiente de foto · la tanda del 05-ago no trae patacones ──
-  // (los aros amarillos de las otras fotos son CHIFLE de guarnición, no
-  //  el plato de patacones con queso, huevo y sal prieta). Cae a emoji.
-  {
-    itemId: "patacones-naufrago",
-    name: "Patacones Náufrago",
-    imageUrl: null,
-    emoji: "🍌",
-    poetic:
-      "Verdes fritos al carbón · queso · huevo · sal prieta que sabe a Manabí.",
-    priceUsd: 4,
-  },
   {
     itemId: "jugo-natural",
     name: "Jugo natural del día",

@@ -10,7 +10,8 @@ import { MENU_ITEMS, type MenuItem } from "@/lib/v2/naufrago-content"
  *
  * Fallback · si no hay data suficiente (cliente nuevo · <5 orders)
  * devolvemos pinned ranking · Encebollado Náufrago · Ceviche
- * Náufrago · Patacones Náufrago (los 3 platos signature).
+ * Náufrago · Encebollado Mixto (los 3 platos signature · R104.4 · patacones
+ * salió del menú).
  */
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -19,7 +20,7 @@ export const revalidate = 300
 const FALLBACK_IDS = [
   "encebollado-naufrago",
   "ceviche-naufrago",
-  "patacones-naufrago",
+  "encebollado-mixto",
 ]
 
 interface CartLineLite {

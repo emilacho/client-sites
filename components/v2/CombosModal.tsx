@@ -52,18 +52,10 @@ const COMBOS: Combo[] = [
     ],
     discountUsd: 1.5,
   },
-  {
-    id: "combo-familia",
-    label: "Combo Familia",
-    emoji: "👨‍👩‍👧",
-    description: "Encebollado Mixto + Patacones + 2 colas grandes · alcanza para 3.",
-    items: [
-      { itemId: "encebollado-mixto", itemName: "Encebollado Mixto", priceUsd: 6, qty: 1 },
-      { itemId: "patacones-naufrago", itemName: "Patacones Náufrago", priceUsd: 4, qty: 1 },
-      { itemId: "cola-grande", itemName: "Cola grande · Coca-Cola", priceUsd: 2, qty: 2 },
-    ],
-    discountUsd: 1.0,
-  },
+  // R104.4 · el Combo Familia queda FUERA hasta nueva orden: su gracia era
+  // "Encebollado Mixto + Patacones + 2 colas", y sin patacones ya no es ese
+  // combo. Recomponerlo es decidir qué se ofrece y a qué precio · eso lo
+  // decide Emilio, no este archivo. Vuelve en cuanto diga con qué.
 ]
 
 export interface CombosModalProps {
