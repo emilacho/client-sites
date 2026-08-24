@@ -46,11 +46,10 @@ const DISHES: DishStory[] = [
       "Atención · no nos responsabilizamos por efectos secundarios serios como exceso de energía y vitalidad. Consumir con responsabilidad.",
     priceUsd: 4,
   },
-  // ─── Pendientes de foto · agregar cuando Emilio suba ──────────────
   {
     itemId: "encebollado-mixto",
     name: "Encebollado Mixto",
-    imageUrl: null,
+    imageUrl: "/stories/encebollado-mixto.jpg",
     emoji: "🍲",
     poetic: "Pescado del muelle y camarón del estero · dos mundos del mar en un solo plato.",
     priceUsd: 6,
@@ -72,6 +71,9 @@ const DISHES: DishStory[] = [
     poetic: "Camarón y pescado curtidos · maridaje del mar a tu mesa de playa.",
     priceUsd: 9,
   },
+  // ─── Único pendiente de foto · la tanda del 05-ago no trae patacones ──
+  // (los aros amarillos de las otras fotos son CHIFLE de guarnición, no
+  //  el plato de patacones con queso, huevo y sal prieta). Cae a emoji.
   {
     itemId: "patacones-naufrago",
     name: "Patacones Náufrago",
