@@ -25,6 +25,7 @@ import { useCallback, useEffect, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Minus, Plus } from "lucide-react"
 import { useCart } from "@/lib/v2/cart-context"
+import { PlatoThumb } from "./PlatoThumb"
 import {
   ALLERGEN_LABELS,
   MENU_ITEMS,
@@ -252,12 +253,18 @@ function PopularStrip() {
                 : "border-slate-700 bg-slate-900/60 hover:bg-slate-800")
             }
           >
-            <div
-              aria-hidden
-              className={`flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br ${it.gradient} text-2xl shadow-inner`}
-            >
-              <span>{it.emoji}</span>
-            </div>
+            {/* R104 · los sugeridos vienen del servidor y ese contrato no
+                lleva foto · el plato SÍ la tiene, así que se resuelve contra
+                la carta por id. Evita tocar la respuesta del API. */}
+            <PlatoThumb
+              imageUrl={MENU_ITEMS.find((m) => m.id === it.id)?.imageUrl}
+              emoji={it.emoji}
+              gradient={it.gradient}
+              alt={it.name}
+              className="h-12 w-12 rounded-lg"
+              emojiClassName="text-2xl"
+              sizePx={48}
+            />
             <span className="line-clamp-1 text-xs font-semibold text-white">
               {it.name}
             </span>
@@ -361,12 +368,15 @@ function MenuCard({ item }: { item: MenuItem }) {
   return (
     <article className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3 transition-colors hover:bg-slate-900">
       <div className="flex gap-3">
-        <div
-          aria-hidden
-          className={`flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${item.gradient} text-3xl shadow-inner`}
-        >
-          <span>{item.emoji}</span>
-        </div>
+        <PlatoThumb
+          imageUrl={item.imageUrl}
+          emoji={item.emoji}
+          gradient={item.gradient}
+          alt={item.name}
+          className="h-20 w-20 rounded-xl"
+          emojiClassName="text-3xl"
+          sizePx={80}
+        />
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-start justify-between gap-2">
             <h3 className="truncate font-display text-base font-semibold text-white">

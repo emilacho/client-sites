@@ -125,8 +125,15 @@ export interface MenuItem {
    *  currently only `para-llevar`. Optional · used by downstream
    *  consumers that need to exclude service fees from totals. */
   type?: "service_fee"
-  /** Display-only · simple emoji + gradient stand-in until real
-   *  food photography lands in `client-websites/naufrago/v2/menu/`. */
+  /** R104 · foto real del plato · vive en `public/stories/` (esa carpeta
+   *  guarda LA foto de cada plato · la usan tanto el carrusel "Fotos del
+   *  menú" como las tarjetas de la carta · una sola copia por plato).
+   *  Ausente = todavía no hay foto de ESE plato · cae a emoji+gradient.
+   *  No se rellena con una foto parecida: una foto que no es el plato
+   *  promete una cosa y sirve otra. */
+  imageUrl?: string
+  /** Display-only · emoji + gradient · es el RESPALDO cuando no hay
+   *  `imageUrl`, no el estado normal. */
   emoji: string
   /** Tailwind gradient classes for the 2D thumbnail. */
   gradient: string
@@ -226,6 +233,7 @@ export const MENU_ITEMS: MenuItem[] = [
     ingredients: "Pescado 100g · Yuca · Cebolla · Chifle o Pan",
     tags: [],
     priceUsd: 4.0,
+    imageUrl: "/stories/encebollado-naufrago.jpg",
     emoji: "🍲",
     gradient: "from-amber-700 via-amber-500 to-orange-400",
     allergens: ["pescado"],
@@ -246,6 +254,7 @@ export const MENU_ITEMS: MenuItem[] = [
     ingredients: "Camarón · Pescado 100g · Yuca · Cebolla · Chifle o Pan",
     tags: [],
     priceUsd: 6.0,
+    imageUrl: "/stories/encebollado-mixto.jpg",
     emoji: "🍲",
     gradient: "from-amber-700 via-orange-500 to-rose-400",
     allergens: ["pescado", "mariscos"],
@@ -291,6 +300,7 @@ export const MENU_ITEMS: MenuItem[] = [
       "Pescado curtido 200g · Leche de tigre · Aguacate · Salsa de maní · Chifle · Tomate cebolla pimiento",
     tags: [],
     priceUsd: 7.0,
+    imageUrl: "/stories/ceviche-naufrago.jpg",
     emoji: "🐟",
     gradient: "from-cyan-600 via-emerald-500 to-lime-400",
     allergens: ["pescado", "mani"],
@@ -310,6 +320,7 @@ export const MENU_ITEMS: MenuItem[] = [
       "Camarón · Pescado curtido 200g · Leche de tigre · Aguacate · Salsa de maní · Chifle · Tomate cebolla pimiento",
     tags: [],
     priceUsd: 9.0,
+    imageUrl: "/stories/ceviche-mixto.jpg",
     emoji: "🦐",
     gradient: "from-emerald-600 via-cyan-500 to-sky-400",
     allergens: ["pescado", "mariscos", "mani"],
@@ -349,6 +360,7 @@ export const MENU_ITEMS: MenuItem[] = [
     description: "Sabor del día · elegí cuando agregues.",
     tags: [],
     priceUsd: 2.0,
+    imageUrl: "/stories/jugo-natural.jpg",
     emoji: "🍹",
     gradient: "from-orange-700 via-amber-500 to-yellow-300",
     // R96.25 · sabor del día varía · catálogo dinámico Supabase

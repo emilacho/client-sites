@@ -21,6 +21,7 @@
 import { useEffect, useState } from "react"
 import { ArrowLeft, Loader2, MessageSquare, Minus, Plus, Trash2, Utensils, X } from "lucide-react"
 import { CanoeIcon } from "./CanoeIcon"
+import { PlatoThumb } from "./PlatoThumb"
 import { motion, AnimatePresence } from "framer-motion"
 import { useCart } from "@/lib/v2/cart-context"
 import { buildWhatsAppLink, naufragoV2 } from "@/lib/v2/naufrago-content"
@@ -69,14 +70,16 @@ function PedidosYaGlyph() {
 
 function MenuThumb({ id, emoji }: { id: string; emoji: string }) {
   const item = naufragoV2.menu.find((m) => m.id === id)
-  const gradient = item?.gradient ?? "from-slate-700 to-slate-900"
   return (
-    <div
-      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gradient-to-br ${gradient} text-lg shadow-inner ring-1 ring-white/20`}
-      aria-hidden
-    >
-      {emoji}
-    </div>
+    <PlatoThumb
+      imageUrl={item?.imageUrl}
+      emoji={emoji}
+      gradient={item?.gradient}
+      alt={item?.name}
+      className="h-10 w-10 rounded-md ring-1 ring-white/20"
+      emojiClassName="text-lg"
+      sizePx={40}
+    />
   )
 }
 
