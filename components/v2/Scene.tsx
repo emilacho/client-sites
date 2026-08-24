@@ -1510,8 +1510,8 @@ const COCONUT_REVIEWS: CocoReview[] = [
   //   foto-2 outdoor-lentes   → Pablo G.  (Olón · relaxed portrait fits family-man)
   //   foto-3 joven-perro      → Andrea P. (Punta Blanca · home-ordering convenience)
   //   foto-4 cumpleaños #6    → María C.  (Olón · on-time delivery for a celebration)
-  // Lucía F. keeps the DiceBear fallback. (Carlos M. salió en R104.5 ·
-  // su reseña hablaba de patacones.)
+  // Carlos M. + Lucía F. keep the DiceBear fallback (gender-mixed
+  // unphotographed pair · 2M + 2F balance preserved overall).
   {
     coconutName: "Coconut_1_3",
     name: "María C.",
@@ -1541,10 +1541,19 @@ const COCONUT_REVIEWS: CocoReview[] = [
     proxyYOffset: 0,
     photoUrl: "/reviews/reviewer-3-andrea.jpg",
   },
-  // R104.5 · acá iba Carlos M. · su reseña era sobre los patacones. Con el
-  // plato fuera del menú la reseña se ELIMINA, no se reescribe: inventarle
-  // otra frase a un cliente con nombre y foto es fabricar un testimonio.
-  // Quedan 5 cocos con reseña · el Coconut_10_43 ya no muestra ninguna.
+  // R104.6 · Carlos M. vuelve · la frase la puso EMILIO, textual ("como me
+  // gusta calientito"). No es invención mía: por eso vuelve y por eso se
+  // deja tal cual. Su reseña anterior hablaba de patacones y salió con el
+  // plato.
+  {
+    coconutName: "Coconut_10_43",
+    name: "Carlos M.",
+    location: "Olón",
+    review: "Como me gusta calientito.",
+    rating: 5,
+    proxyYOffset: 0.1,
+    photoUrl: "/reviews/reviewer-5.jpg",
+  },
   {
     coconutName: "Coconut_11_44",
     name: "Lucía F.",
