@@ -9,9 +9,9 @@
  * olvidarse de una. Ahora hay uno.
  *
  * Regla: si el plato tiene foto propia se muestra la foto · si no, cae al
- * emoji sobre su gradient. El respaldo NO es decorativo: hay platos que
- * todavía no tienen foto (patacones · encebollado junior) y ponerles una
- * foto parecida sería prometer una cosa y servir otra.
+ * emoji sobre su gradient. El respaldo NO es decorativo: hoy patacones
+ * sigue sin foto propia, y ponerle una parecida (el chifle de guarnición
+ * de otras tomas) sería prometer una cosa y servir otra.
  *
  * `sizes` importa: la foto original es 900x900 y estas miniaturas miden
  * entre 40 y 80 px. Sin `sizes` el navegador se bajaría la grande.

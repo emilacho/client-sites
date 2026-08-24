@@ -277,6 +277,7 @@ export const MENU_ITEMS: MenuItem[] = [
     ingredients: "Pescado 45g · Yuca · Cebolla · Chifle o Pan",
     tags: [],
     priceUsd: 3.5,
+    imageUrl: "/stories/encebollado-junior.jpg",
     emoji: "🥣",
     gradient: "from-amber-600 via-yellow-500 to-amber-300",
     allergens: ["pescado"],
