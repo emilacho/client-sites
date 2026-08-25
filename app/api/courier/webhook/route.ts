@@ -35,7 +35,15 @@ export async function POST(request: Request) {
   // Read the raw body first · we need it for HMAC verification,
   // then parse JSON ourselves.
   const rawBody = await request.text()
+  // R107.2 · PedidosYa NO firma con HMAC ni manda `x-pedidosya-signature`:
+  // manda la CLAVE ESTÁTICA que registramos, en `Authorization` y en
+  // `x-api-key`. Esta ruta leía los dos encabezados equivocados, así que
+  // la clave llegaba nula y se rechazaba TODO aviso — incluido el legítimo.
+  // Medido: con la clave correcta devolvía 401 igual que sin clave.
+  // Los dos nombres viejos quedan de respaldo, no cuestan nada.
   const signature =
+    request.headers.get("authorization") ??
+    request.headers.get("x-api-key") ??
     request.headers.get("x-pedidosya-signature") ??
     request.headers.get("x-signature")
   if (!verifyWebhookSignature(rawBody, signature)) {
