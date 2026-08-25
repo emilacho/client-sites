@@ -456,7 +456,11 @@ function CartFooter() {
       if (!res.ok || !json.ok) {
         // R97.5 · mejor mensaje · si hay issues array · concatenar
         // los campos fallidos para que el cliente sepa qué corregir.
-        let msg = json.detail || json.error || "quote_failed"
+        // R106 · el servidor manda `message` en castellano para el
+        // cliente y `detail` técnico para nosotros. Antes se mostraba
+        // el técnico, que decía cosas como
+        // `courier_shape_error:quote_400:{"code":"WAYPOINTS_OUT_OF_ZONE"…}`.
+        let msg = json.message || json.detail || json.error || "quote_failed"
         if (Array.isArray(json.issues) && json.issues.length > 0) {
           msg = json.issues
             .map((i: { path: string; message: string }) =>
@@ -698,7 +702,9 @@ function CartFooter() {
                 shipping.kind === "paying" ||
                 shipping.kind === "ordering" ? (
                   <span className="ml-1 text-slate-500">
-                    ({"etaMinutes" in shipping ? shipping.etaMinutes : "—"} min)
+                    ({"etaMinutes" in shipping && shipping.etaMinutes > 0
+                      ? `${shipping.etaMinutes} min`
+                      : "tiempo al confirmar"})
                   </span>
                 ) : null}
               </span>

@@ -61,10 +61,36 @@ export async function POST(request: Request) {
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
-    // courier_env_missing:* → 503 (mis-configured server)
-    // courier_token_failed:*, courier_quote_failed:* → 502
+
+    // R106 · fuera de zona NO es una falla nuestra: es la respuesta
+    // correcta de PedidosYa cuando la dirección queda fuera de su
+    // cobertura. Antes se le mostraba al cliente el texto crudo
+    // `courier_shape_error:quote_400:{"code":"WAYPOINTS_OUT_OF_ZONE"…}`.
+    // Es el caso que más se va a ver, porque la página ya no promete
+    // zona · el cliente pone su dirección y acá se entera.
+    if (message.includes("WAYPOINTS_OUT_OF_ZONE")) {
+      return NextResponse.json(
+        {
+          error: "out_of_zone",
+          message:
+            "No llegamos con motorizado hasta esa dirección. Probá otra, o escribinos por WhatsApp y vemos cómo hacerte llegar el pedido.",
+        },
+        { status: 422 },
+      )
+    }
+
+    // courier_env_missing:* → 503 (falta configurar el servidor)
+    // el resto → 502 (el proveedor respondió algo que no esperábamos)
     const status = message.startsWith("courier_env_missing:") ? 503 : 502
-    return NextResponse.json({ error: "quote_failed", detail: message }, { status })
+    return NextResponse.json(
+      {
+        error: "quote_failed",
+        message:
+          "No pudimos calcular el envío en este momento. Probá de nuevo en un minuto o escribinos por WhatsApp.",
+        detail: message,
+      },
+      { status },
+    )
   }
 }
 
