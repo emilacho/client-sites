@@ -68,7 +68,18 @@ export async function POST(request: Request) {
     // `courier_shape_error:quote_400:{"code":"WAYPOINTS_OUT_OF_ZONE"…}`.
     // Es el caso que más se va a ver, porque la página ya no promete
     // zona · el cliente pone su dirección y acá se entera.
-    if (message.includes("WAYPOINTS_OUT_OF_ZONE")) {
+    // R108.1 · PedidosYa tiene al menos DOS maneras de decir "no llego":
+    //   WAYPOINTS_OUT_OF_ZONE   · la dirección cae fuera de su cobertura
+    //   MAX_DISTANCE_EXCEEDED   · "Distance of 10000 meters was exceeded"
+    // Las dos son la MISMA noticia para el cliente y ninguna es una falla
+    // nuestra. Sólo contemplaba la primera, así que un pedido a más de
+    // 10 km volvía como "no pudimos calcular el envío" — que suena a que
+    // se rompió algo y invita a reintentar para siempre.
+    // Dato operativo que se desprende: el radio de reparto es 10 km.
+    if (
+      message.includes("WAYPOINTS_OUT_OF_ZONE") ||
+      message.includes("MAX_DISTANCE_EXCEEDED")
+    ) {
       return NextResponse.json(
         {
           error: "out_of_zone",
