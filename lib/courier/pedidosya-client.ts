@@ -162,3 +162,36 @@ export function verifyWebhookSignature(
     "x-api-key": signature,
   })
 }
+
+/**
+ * R107.3 · lectura del aviso de estado con la forma REAL.
+ *
+ * El andamio de R74 SUPUSO `{event, orderId, status, timestamp, payload}`
+ * y la ruta validaba contra eso. PedidosYa manda otra cosa:
+ *   { topic, id, referenceId, generated, transmitted,
+ *     data: { status, cancelCode?, cancelReason? } }
+ * con `id` = el id del envío. Un aviso REAL habría sido rechazado con
+ * 400 · y el síntoma habría sido "PedidosYa no manda avisos".
+ *
+ * Devuelve los nombres viejos para no tocar todo lo que cuelga de la
+ * ruta, y agrega `mappedStatus`, que es el estado traducido a los 8
+ * valores que acepta nuestra tabla.
+ */
+export function parseWebhookEvent(rawBody: string): {
+  event: string
+  orderId: string
+  status: string
+  mappedStatus: string | null
+  timestamp: string
+  payload: Record<string, unknown>
+} {
+  const e = pedidosYaCourier.parseWebhookEvent(rawBody)
+  return {
+    event: "SHIPPING_STATUS",
+    orderId: e.providerOrderId,
+    status: e.providerStatus,
+    mappedStatus: e.mappedStatus,
+    timestamp: e.timestamp,
+    payload: e.payload,
+  }
+}

@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server"
 import {
-  courierWebhookEventSchema,
-  type CourierWebhookEvent,
-} from "@/lib/schemas"
-import { verifyWebhookSignature } from "@/lib/courier/pedidosya-client"
+  verifyWebhookSignature,
+  parseWebhookEvent,
+} from "@/lib/courier/pedidosya-client"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { buildStagePayload, sendPushForOrder } from "@/lib/push-server"
 import { earnPerlas } from "@/lib/loyalty-server"
@@ -53,39 +52,24 @@ export async function POST(request: Request) {
     )
   }
 
-  let parsedJson: unknown
+  // R107.3 · se lee con la forma REAL del aviso, no con la que supuso
+  // R74. PedidosYa manda { topic, id, referenceId, generated,
+  // transmitted, data: { status } } · la ruta validaba contra
+  // { event, orderId, status, timestamp, payload } y por lo tanto
+  // habría RECHAZADO con 400 todo aviso legítimo. El síntoma habría
+  // sido "PedidosYa no manda avisos" con los avisos llegando.
+  let event: ReturnType<typeof parseWebhookEvent>
   try {
-    parsedJson = JSON.parse(rawBody)
-  } catch {
-    return NextResponse.json({ error: "invalid_json" }, { status: 400 })
-  }
-
-  // PedidosYa may wrap the event in different envelopes per
-  // version (e.g. { data: {...} } or { event: ..., orderId: ... }).
-  // Probe the most common shape, fall back to the raw object.
-  let candidate: unknown = parsedJson
-  if (
-    typeof parsedJson === "object" &&
-    parsedJson !== null &&
-    "data" in parsedJson
-  ) {
-    candidate = (parsedJson as { data: unknown }).data
-  }
-
-  const parsed = courierWebhookEventSchema.safeParse(candidate)
-  if (!parsed.success) {
+    event = parseWebhookEvent(rawBody)
+  } catch (err) {
     return NextResponse.json(
       {
         error: "validation_failed",
-        issues: parsed.error.issues.map((i) => ({
-          path: i.path.join("."),
-          message: i.message,
-        })),
+        detail: err instanceof Error ? err.message : String(err),
       },
       { status: 400 },
     )
   }
-  const event: CourierWebhookEvent = parsed.data
 
   try {
     const supabase = getSupabaseAdmin()
@@ -131,7 +115,14 @@ export async function POST(request: Request) {
       // Map courier status to naufrago order status + update naufrago_orders
       // so the tracker UI polling reflects it. Then build payload por status
       // y push send (fire-and-forget · no bloquea respuesta al webhook).
-      const orderUpdate: Record<string, unknown> = { status: event.status }
+      // R107.3 · el pedido del cliente guarda el estado TRADUCIDO. Antes
+      // guardaba el del proveedor tal cual ("NEAR_DROPOFF"), que NO es
+      // uno de los 8 valores que acepta la tabla · la actualización
+      // fallaba y el seguimiento se quedaba congelado en "recibido".
+      // Medido: con un aviso NEAR_DROPOFF el pedido seguía en PENDING.
+      // Si el estado no tiene traducción, no se toca el pedido.
+      const orderUpdate: Record<string, unknown> = {}
+      if (event.mappedStatus) orderUpdate.status = event.mappedStatus
       const p = event.payload as Record<string, unknown> | undefined
 
       // R96.19 · driver auto-fill · si payload trae rider info ·

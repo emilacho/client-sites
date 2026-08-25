@@ -76,12 +76,15 @@ export const courierOrderRequestSchema = z.object({
 })
 export type CourierOrderRequest = z.infer<typeof courierOrderRequestSchema>
 
-/* Webhook payload · loose shape until docs confirm the exact
- * envelope. PedidosYa typically POSTs:
- *   { event, orderId, status, timestamp, payload }
- * with HMAC-SHA256 signature in X-PedidosYa-Signature (header
- * name TBD per docs). We accept any object and validate
- * narrowly inside the route. */
+/* ⚠️ R107.3 · esta forma es una SUPOSICIÓN de R74 y NO es la que manda
+ * PedidosYa. La real es:
+ *   { topic, id, referenceId, generated, transmitted,
+ *     data: { status, cancelCode?, cancelReason? } }   · id = envío
+ * Tampoco hay firma HMAC: mandan la clave estática registrada en los
+ * encabezados `Authorization` y `x-api-key`.
+ * La ruta del aviso YA NO usa este esquema · lee con
+ * `parseWebhookEvent()` del proveedor real. Se conserva sólo porque
+ * el tipo cuelga de otros lados · no validar avisos con esto. */
 export const courierWebhookEventSchema = z.object({
   event: z.string().min(1).max(120),
   orderId: z.string().min(1).max(120),
