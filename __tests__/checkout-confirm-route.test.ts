@@ -16,10 +16,16 @@ const orderInsertSingle = vi.fn()
 const orderInsert = vi.fn()
 const eventInsert = vi.fn()
 
+// R107.5 · los nombres de tabla de esta simulación quedaron viejos.
+// Desde R97.2 el cliente de Supabase tiene `naufrago` como esquema por
+// defecto, así que el código llama a `orders` / `order_events`, no a
+// `naufrago_orders` / `naufrago_order_events`. La simulación no
+// coincidía con ninguno y lanzaba "unmocked table" ⇒ las 5 pruebas de
+// esta ruta fallaban desde entonces, sin que el código tuviera nada.
 vi.mock("@/lib/supabase", () => ({
   getSupabaseAdmin: () => ({
     from(table: string) {
-      if (table === "naufrago_orders") {
+      if (table === "orders") {
         return {
           insert: (...args: unknown[]) => {
             orderInsert(...args)
@@ -29,7 +35,7 @@ vi.mock("@/lib/supabase", () => ({
           },
         }
       }
-      if (table === "naufrago_order_events") {
+      if (table === "order_events") {
         return {
           insert: (...args: unknown[]) => {
             return Promise.resolve(eventInsert(...args))
