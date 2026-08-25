@@ -81,11 +81,9 @@ export async function POST(request: Request) {
 
   try {
     const supabase = getSupabaseAdmin()
-    // R97.2 · courier_orders + courier_order_events viven en public
-    // schema (legacy R74) · .schema("public") explícito porque el
-    // client default es naufrago.
+    // R106 · las dos tablas viven en el esquema `naufrago` · ver la nota
+    // en /api/courier/order/route.ts.
     await supabase
-      .schema("public")
       .from("courier_orders")
       .update({
         status: event.status,
@@ -95,7 +93,6 @@ export async function POST(request: Request) {
     // Persist the full event log too (optional table for audit /
     // analytics · see migration TODO in /api/courier/order/route.ts).
     await supabase
-      .schema("public")
       .from("courier_order_events")
       .insert({
         pedidosya_order_id: event.orderId,

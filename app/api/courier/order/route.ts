@@ -88,12 +88,13 @@ export async function POST(request: Request) {
   // Best-effort persist · don't block the customer on Supabase
   // errors. The webhook handler will create the row if it arrives
   // before this insert (idempotent on pedidosya_order_id).
-  // R97.2 · courier_orders vive en public schema (legacy R74) ·
-  // .schema("public") explícito porque el client default es naufrago.
+  // R106 · courier_orders vive en el esquema `naufrago`, como el resto
+  // del cliente. Antes apuntaba a `public` (legado R74) · esa tabla nunca
+  // llegó a crearse, y de haberse creado ahí habría quedado publicada
+  // hacia afuera con nombre, teléfono y dirección del cliente adentro.
   const supabase = getSupabaseAdmin()
   try {
     await supabase
-      .schema("public")
       .from("courier_orders")
       .upsert(
         {

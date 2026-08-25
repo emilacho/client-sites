@@ -1,139 +1,32 @@
 import "server-only"
 /**
- * @deprecated Round 97 · superseded by
- * `lib/courier/pedidosya-courier.ts` which implements the
- * shared `CourierProvider` interface. New routes (R98+) consume
- * the new abstraction · the old `/api/courier/{quote,order,
- * webhook}` endpoints (R74) still use this file and will be
- * migrated/removed in R98-R99. Do NOT import this file in new
- * code · use `getCourierProvider('PEDIDOSYA_COURIER')` instead.
+ * ADAPTADOR · R106 · este archivo YA NO habla con PedidosYa.
  *
- * --- original header below ---
+ * Historia corta: en julio se reescribió el proveedor real contra la API
+ * de verdad (`pedidosya-courier.ts`, con prueba en vivo), pero las cuatro
+ * rutas de `/api/courier/*` siguieron importando ESTE archivo — el andamio
+ * de R74, hecho de suposiciones y con modo simulado adentro. Resultado: el
+ * código real estaba escrito y NUNCA se ejecutaba. La página devolvía
+ * `MOCK-QUOTE-…` y un enlace de seguimiento a un dominio inexistente.
  *
- * PedidosYa Courier API client · Round 74.
+ * Este archivo pasa a ser una CAPA DE TRADUCCIÓN: conserva las firmas
+ * viejas que usan las rutas y por dentro llama al proveedor real. Se hizo
+ * así a propósito y no por comodidad: las formas viejas (`orderId`,
+ * `status`, `lines`) están cableadas a nombres de columna en ~12 puntos
+ * del camino del dinero, y reescribir eso en el mismo cambio que enciende
+ * la API real mezcla dos riesgos distintos.
  *
- *  ⚠ SCAFFOLD · the exact endpoint paths, payload field names, and
- *  HMAC signature header are marked TODO(R74) inline. The docs
- *  (https://developers.pedidosya.com/courier-doc/first-steps and
- *  /courier-api) render client-side as a SPA so they could not be
- *  read automatically · the values below are placeholders based on
- *  the conventional PedidosYa Courier B2B API shape used in other
- *  LATAM markets. Verify against the live docs OR the Postman
- *  collection PedidosYa hands out with credentials before wiring
- *  to production.
+ * PENDIENTE declarado · migrar las 4 rutas a `getCourierProvider()` del
+ * registro y borrar este archivo. Es un cambio mecánico, hoy no se hace.
  *
- *  Required environment variables (drop into `.env.local`):
- *    PEDIDOSYA_COURIER_BASE_URL          · prod    https://courier-api.pedidosya.com
- *                                          sandbox https://courier-api-stg.pedidosya.com
- *    PEDIDOSYA_COURIER_CLIENT_ID         · per docs
- *    PEDIDOSYA_COURIER_CLIENT_SECRET     · per docs
- *    PEDIDOSYA_COURIER_COUNTRY_CODE      · "EC" for Náufrago Olón
- *    PEDIDOSYA_COURIER_PICKUP_ADDRESS    · canonical pickup street
- *                                          (Náufrago kitchen)
- *    PEDIDOSYA_COURIER_PICKUP_LAT        · pickup decimal lat
- *    PEDIDOSYA_COURIER_PICKUP_LNG        · pickup decimal lng
- *    PEDIDOSYA_COURIER_WEBHOOK_SECRET    · HMAC key for webhook
- *                                          signature verification
- *
- *  Lifecycle · the client manages its own bearer token in-process
- *  (Map keyed by env so dev + test don't collide). Tokens are
- *  refreshed on 401 retries or on expiry. No persistent token
- *  cache · this runs on the Node runtime so per-instance state
- *  is fine for low/mid traffic.
+ * Lo que se fue con el andamio: el MODO SIMULADO. Ya no existe. Si faltan
+ * credenciales, la ruta devuelve 503 con el nombre de la variable — falla
+ * a la vista, no con un precio inventado.
  */
+import { pedidosYaCourier } from "./pedidosya-courier"
+import type { DispatchItem } from "./provider"
 
-interface TokenCache {
-  token: string
-  expiresAt: number // ms epoch
-}
-
-const tokenCache = new Map<string, TokenCache>()
-
-function requireEnv(name: string): string {
-  const value = process.env[name]
-  if (!value) throw new Error(`courier_env_missing:${name}`)
-  return value
-}
-
-function envOptional(name: string): string | undefined {
-  return process.env[name] || undefined
-}
-
-function getBaseUrl(): string {
-  return (
-    envOptional("PEDIDOSYA_COURIER_BASE_URL") ??
-    // Default to staging for safety · explicit env switch promotes
-    // to production. Real URL TBD per docs.
-    "https://courier-api-stg.pedidosya.com"
-  )
-}
-
-async function getAccessToken(): Promise<string> {
-  const clientId = requireEnv("PEDIDOSYA_COURIER_CLIENT_ID")
-  const clientSecret = requireEnv("PEDIDOSYA_COURIER_CLIENT_SECRET")
-  const cacheKey = `${getBaseUrl()}::${clientId}`
-  const cached = tokenCache.get(cacheKey)
-  if (cached && cached.expiresAt > Date.now() + 30_000) return cached.token
-
-  // TODO(R74) · confirm the token endpoint path + body format.
-  //   Conventional PedidosYa pattern (per their sister LATAM APIs):
-  //     POST {baseUrl}/v3/oauth/token
-  //     Headers · Content-Type: application/x-www-form-urlencoded
-  //     Body    · grant_type=client_credentials&client_id=...&client_secret=...
-  //   Response · { access_token, token_type, expires_in }
-  const tokenUrl = `${getBaseUrl()}/v3/oauth/token`
-  const body = new URLSearchParams({
-    grant_type: "client_credentials",
-    client_id: clientId,
-    client_secret: clientSecret,
-  })
-  const res = await fetch(tokenUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body,
-    cache: "no-store",
-  })
-  if (!res.ok) {
-    const text = await res.text().catch(() => "")
-    throw new Error(`courier_token_failed:${res.status}:${text.slice(0, 200)}`)
-  }
-  const json = (await res.json()) as {
-    access_token?: string
-    token_type?: string
-    expires_in?: number
-  }
-  if (!json.access_token)
-    throw new Error("courier_token_failed:no_access_token_in_response")
-  const expiresInMs = (json.expires_in ?? 3600) * 1000
-  tokenCache.set(cacheKey, {
-    token: json.access_token,
-    expiresAt: Date.now() + expiresInMs,
-  })
-  return json.access_token
-}
-
-interface AuthedRequestInit extends Omit<RequestInit, "headers"> {
-  headers?: Record<string, string>
-}
-
-async function authedFetch(
-  path: string,
-  init: AuthedRequestInit = {},
-): Promise<Response> {
-  const token = await getAccessToken()
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-    ...(init.headers ?? {}),
-  }
-  return fetch(`${getBaseUrl()}${path}`, {
-    ...init,
-    headers,
-    cache: "no-store",
-  })
-}
-
-/* ─── Quote / estimate ────────────────────────────────────────── */
+/* ─── Formas heredadas · las consumen las rutas de /api/courier ─── */
 
 export interface QuoteParams {
   dropoff: {
@@ -143,10 +36,7 @@ export interface QuoteParams {
     latitude?: number
     longitude?: number
   }
-  /** Sum of cart line subtotals · used by PedidosYa to size the
-   *  rider (bag vs cargo). */
   cartTotalUsd: number
-  /** Number of distinct items · same purpose. */
   itemCount: number
 }
 
@@ -154,99 +44,9 @@ export interface QuoteResult {
   quoteToken: string
   priceUsd: number
   etaMinutes: number
-  expiresAt: string // ISO
-  raw: unknown // verbatim response · stored for debugging
+  expiresAt: string
+  raw: unknown
 }
-
-export async function getDeliveryQuote(
-  params: QuoteParams,
-): Promise<QuoteResult> {
-  // R97.5 · MOCK MODE para smoke tests (Zermatt-Täsch · etc) ·
-  // bypassea el API real de PedidosYa y devuelve cotización ficticia ·
-  // pickup canónico del env aún se requiere (lat/lng para Haversine).
-  if (process.env.PEDIDOSYA_COURIER_MOCK === "true") {
-    return {
-      quoteToken: `MOCK-QUOTE-${Date.now()}`,
-      priceUsd: Number(process.env.PEDIDOSYA_COURIER_MOCK_PRICE ?? "5"),
-      etaMinutes: Number(process.env.PEDIDOSYA_COURIER_MOCK_ETA ?? "5"),
-      expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),
-      raw: { mock: true, params },
-    }
-  }
-  // TODO(R74) · confirm estimates endpoint + payload field names.
-  //   Conventional shape:
-  //     POST /v3/estimates/orders
-  //     {
-  //       waypoints: [
-  //         { type: "PICKUP",  addressStreet, lat, lng, countryCode },
-  //         { type: "DROPOFF", addressStreet, lat, lng, countryCode, detail }
-  //       ],
-  //       items: [{ description, quantity, priceUsd }],
-  //       paymentMethod: "BUSINESS_ACCOUNT"
-  //     }
-  //   Response keys we map · estimateId, deliveryOfferPrice,
-  //     deliveryTimeInMinutes, expirationDate.
-  const countryCode =
-    params.dropoff.countryCode ??
-    envOptional("PEDIDOSYA_COURIER_COUNTRY_CODE") ??
-    "EC"
-  const pickupStreet = requireEnv("PEDIDOSYA_COURIER_PICKUP_ADDRESS")
-  const pickupLat = Number(requireEnv("PEDIDOSYA_COURIER_PICKUP_LAT"))
-  const pickupLng = Number(requireEnv("PEDIDOSYA_COURIER_PICKUP_LNG"))
-
-  const body = {
-    waypoints: [
-      {
-        type: "PICKUP",
-        addressStreet: pickupStreet,
-        countryCode,
-        latitude: pickupLat,
-        longitude: pickupLng,
-      },
-      {
-        type: "DROPOFF",
-        addressStreet: params.dropoff.street,
-        addressDetail: params.dropoff.detail || undefined,
-        countryCode,
-        latitude: params.dropoff.latitude,
-        longitude: params.dropoff.longitude,
-      },
-    ],
-    items: [
-      {
-        description: `Náufrago · ${params.itemCount} item(s)`,
-        quantity: params.itemCount,
-        priceUsd: params.cartTotalUsd,
-      },
-    ],
-  }
-
-  const res = await authedFetch("/v3/estimates/orders", {
-    method: "POST",
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) {
-    const text = await res.text().catch(() => "")
-    throw new Error(`courier_quote_failed:${res.status}:${text.slice(0, 300)}`)
-  }
-  const json = (await res.json()) as {
-    estimateId?: string
-    deliveryOfferPrice?: number
-    deliveryTimeInMinutes?: number
-    expirationDate?: string
-  }
-  if (!json.estimateId)
-    throw new Error("courier_quote_failed:no_estimate_id_in_response")
-  return {
-    quoteToken: json.estimateId,
-    priceUsd: json.deliveryOfferPrice ?? 0,
-    etaMinutes: json.deliveryTimeInMinutes ?? 0,
-    expiresAt: json.expirationDate ?? new Date(Date.now() + 5 * 60_000).toISOString(),
-    raw: json,
-  }
-}
-
-/* ─── Create order ────────────────────────────────────────────── */
 
 export interface CreateOrderParams {
   quoteToken: string
@@ -254,6 +54,8 @@ export interface CreateOrderParams {
   customer: { name: string; phone: string; email?: string }
   lines: Array<{ name: string; qty: number; priceUsd: number }>
   notes?: string
+  /** Nuestro código de pedido · viaja a PedidosYa para cruzarlo en su panel. */
+  externalReference?: string
 }
 
 export interface CreateOrderResult {
@@ -263,97 +65,94 @@ export interface CreateOrderResult {
   raw: unknown
 }
 
-export async function createOrder(
-  params: CreateOrderParams,
-): Promise<CreateOrderResult> {
-  // R97.5 · MOCK MODE para smoke tests · NO dispatcha motorizado real ·
-  // devuelve datos sintéticos. El simulador externo (scripts/simulate-
-  // zermatt-tasch.mjs) toma el orderCode + avanza status + rider position.
-  if (process.env.PEDIDOSYA_COURIER_MOCK === "true") {
-    const mockOrderId = `MOCK-PYA-${Date.now()}`
-    return {
-      orderId: mockOrderId,
-      trackingUrl: `https://mock-tracker.naufrago.local/${mockOrderId}`,
-      status: "CREATED",
-      raw: { mock: true, params, mockOrderId },
-    }
-  }
-  // TODO(R74) · confirm orders endpoint + payload shape.
-  //   Conventional:
-  //     POST /v3/orders
-  //     { estimateId, contactInfo: {...}, instructions, items: [...] }
-  const body = {
-    estimateId: params.quoteToken,
-    contactInfo: {
-      pickupContactName: "Náufrago",
-      pickupContactPhone: envOptional("PEDIDOSYA_COURIER_PICKUP_PHONE"),
-      dropoffContactName: params.customer.name,
-      dropoffContactPhone: params.customer.phone,
-      dropoffContactEmail: params.customer.email || undefined,
-    },
-    instructions: params.notes || undefined,
-    items: params.lines.map((l) => ({
-      description: l.name,
-      quantity: l.qty,
-      priceUsd: l.priceUsd,
-    })),
-  }
+function paisPorDefecto(): string {
+  return process.env.PEDIDOSYA_COURIER_COUNTRY_CODE ?? "EC"
+}
 
-  const res = await authedFetch("/v3/orders", {
-    method: "POST",
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) {
-    const text = await res.text().catch(() => "")
-    throw new Error(`courier_order_failed:${res.status}:${text.slice(0, 300)}`)
-  }
-  const json = (await res.json()) as {
-    orderId?: string
-    trackingUrl?: string
-    status?: string
-  }
-  if (!json.orderId)
-    throw new Error("courier_order_failed:no_order_id_in_response")
+function comoDireccion(d: QuoteParams["dropoff"]) {
   return {
-    orderId: json.orderId,
-    trackingUrl: json.trackingUrl,
-    status: json.status ?? "CREATED",
-    raw: json,
+    street: d.street,
+    detail: d.detail ?? null,
+    countryCode: d.countryCode ?? paisPorDefecto(),
+    latitude: d.latitude,
+    longitude: d.longitude,
   }
 }
 
-/* ─── Webhook signature ──────────────────────────────────────── */
+/**
+ * La cotización necesita el detalle del pedido y acá sólo llega el total
+ * y el conteo. Se manda UNA línea agregada · a PedidosYa le sirve para
+ * dimensionar al motorizado, no para cobrar por artículo.
+ */
+function comoArticulosAgregados(
+  cartTotalUsd: number,
+  itemCount: number,
+): DispatchItem[] {
+  const cantidad = Math.max(1, itemCount)
+  return [
+    {
+      description: `Pedido Náufrago · ${cantidad} ítem(s)`,
+      quantity: cantidad,
+      priceUsd: cantidad > 0 ? cartTotalUsd / cantidad : cartTotalUsd,
+    },
+  ]
+}
 
-import { createHmac, timingSafeEqual } from "node:crypto"
+export async function getDeliveryQuote(
+  params: QuoteParams,
+): Promise<QuoteResult> {
+  const r = await pedidosYaCourier.getQuote({
+    dropoff: comoDireccion(params.dropoff),
+    items: comoArticulosAgregados(params.cartTotalUsd, params.itemCount),
+    cartTotalUsd: params.cartTotalUsd,
+  })
+  return {
+    quoteToken: r.quoteToken,
+    priceUsd: r.priceUsd,
+    etaMinutes: r.etaMinutes,
+    expiresAt: r.expiresAt,
+    raw: r.raw,
+  }
+}
+
+export async function createOrder(
+  params: CreateOrderParams,
+): Promise<CreateOrderResult> {
+  const r = await pedidosYaCourier.dispatch({
+    quoteToken: params.quoteToken,
+    dropoff: comoDireccion(params.dropoff),
+    customer: {
+      name: params.customer.name,
+      phone: params.customer.phone,
+      email: params.customer.email ?? null,
+    },
+    items: params.lines.map((l) => ({
+      description: `${l.qty}× ${l.name}`,
+      quantity: l.qty,
+      priceUsd: l.priceUsd,
+    })),
+    notes: params.notes ?? null,
+    externalReference: params.externalReference,
+  })
+  return {
+    orderId: r.providerOrderId,
+    trackingUrl: r.trackingUrl,
+    status: r.providerStatus,
+    raw: r.raw,
+  }
+}
 
 /**
- * Verify a PedidosYa webhook signature. The exact header name +
- * signature format need confirmation from the docs.
- *
- * TODO(R74) · per docs, set the correct header (likely
- * `x-pedidosya-signature`) and signature format (likely
- * `sha256=HEXDIGEST` over the raw request body).
+ * Las rutas llaman con UNA firma suelta (así era el andamio). PedidosYa
+ * NO firma con HMAC: manda una clave estática en los encabezados. Se
+ * traduce a la forma que espera el proveedor real.
  */
 export function verifyWebhookSignature(
   rawBody: string,
-  signatureHeader: string | null,
+  signature: string | null,
 ): boolean {
-  if (!signatureHeader) return false
-  const secret = envOptional("PEDIDOSYA_COURIER_WEBHOOK_SECRET")
-  if (!secret) {
-    // Fail closed if no secret is configured in production · in dev
-    // (NODE_ENV !== production) we allow unsigned for easier
-    // local testing.
-    return process.env.NODE_ENV !== "production"
-  }
-  const expectedHex = createHmac("sha256", secret).update(rawBody).digest("hex")
-  // Common PedidosYa shape is either `sha256=<hex>` or bare hex.
-  const provided = signatureHeader.startsWith("sha256=")
-    ? signatureHeader.slice(7)
-    : signatureHeader
-  if (provided.length !== expectedHex.length) return false
-  return timingSafeEqual(
-    Buffer.from(provided, "hex"),
-    Buffer.from(expectedHex, "hex"),
-  )
+  return pedidosYaCourier.verifyWebhookSignature(rawBody, {
+    authorization: signature,
+    "x-api-key": signature,
+  })
 }
