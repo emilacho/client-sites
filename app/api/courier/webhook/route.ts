@@ -191,7 +191,10 @@ export async function POST(request: Request) {
       // R96.18 · photo proof of delivery · si PedidosYa entrega event
       // DELIVERED con foto + GPS · persiste en naufrago_orders columns.
       // PedidosYa schema varies · probamos shapes comunes.
-      if (event.status === "DELIVERED" && p) {
+      // R107.4 · se compara contra el estado TRADUCIDO. El proveedor
+      // nunca dice "DELIVERED" · dice "COMPLETED". Esta condición jamás
+      // era cierta, así que la foto de entrega nunca se guardaba.
+      if (event.mappedStatus === "DELIVERED" && p) {
         const photoUrl =
           (typeof p.delivery_photo_url === "string"
             ? p.delivery_photo_url
@@ -219,14 +222,22 @@ export async function POST(request: Request) {
         .from("orders")
         .update(orderUpdate)
         .eq("order_code", nfOrder.order_code)
-      const payload = buildStagePayload(event.status, nfOrder.order_code)
+      // R107.4 · buildStagePayload decide según NUESTRO vocabulario
+      // (PENDING · ACCEPTED · …). Recibía el del proveedor (COMPLETED ·
+      // NEAR_DROPOFF), así que no coincidía con ningún caso y el cliente
+      // no recibía NINGÚN aviso al teléfono en todo el recorrido.
+      const payload = event.mappedStatus
+        ? buildStagePayload(event.mappedStatus, nfOrder.order_code)
+        : null
       if (payload) {
         void sendPushForOrder(nfOrder.order_code, payload).catch((err) => {
           console.warn("[courier-webhook] push send failed", err)
         })
       }
       // R96.21 · earn perlas al DELIVERED · idempotent vía ledger check.
-      if (event.status === "DELIVERED" && nfOrder.customer_phone) {
+      // R107.4 · idem · las perlas del cliente NUNCA se acreditaban
+      // porque se esperaba "DELIVERED" y llegaba "COMPLETED".
+      if (event.mappedStatus === "DELIVERED" && nfOrder.customer_phone) {
         void earnPerlas({
           phone: nfOrder.customer_phone,
           totalUsd: nfOrder.total_usd ?? 0,
@@ -245,7 +256,7 @@ export async function POST(request: Request) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           orderCode: nfOrder.order_code,
-          newStatus: event.status,
+          newStatus: event.mappedStatus ?? event.status,
         }),
         keepalive: true,
       }).catch(() => {})
@@ -268,7 +279,10 @@ export async function POST(request: Request) {
             ? (riderRaw.lng as number)
             : null
       if (
-        event.status === "OUT_FOR_DELIVERY" &&
+        // R107.4 · "OUT_FOR_DELIVERY" no es un estado de PedidosYa NI
+        // nuestro · la rama estaba muerta. El equivalente real es el
+        // motorizado en camino con el pedido encima.
+        event.mappedStatus === "IN_TRANSIT" &&
         riderLat !== null &&
         riderLng !== null &&
         nfOrder.dropoff_lat !== null &&
