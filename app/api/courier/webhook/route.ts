@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import {
   verifyWebhookSignature,
   parseWebhookEvent,
-} from "@/lib/courier/pedidosya-client"
+} from "@/lib/courier/para-rutas"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { buildStagePayload, sendPushForOrder } from "@/lib/push-server"
 import { earnPerlas } from "@/lib/loyalty-server"

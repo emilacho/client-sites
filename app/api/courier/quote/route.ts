@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { courierQuoteRequestSchema } from "@/lib/schemas"
-import { getDeliveryQuote } from "@/lib/courier/pedidosya-client"
+import { getDeliveryQuote } from "@/lib/courier/para-rutas"
 
 export const runtime = "nodejs"
 
@@ -79,9 +79,14 @@ export async function POST(request: Request) {
       )
     }
 
-    // courier_env_missing:* → 503 (falta configurar el servidor)
-    // el resto → 502 (el proveedor respondió algo que no esperábamos)
-    const status = message.startsWith("courier_env_missing:") ? 503 : 502
+    // R108 · proveedor no implementado → 501 · es "todavía no existe",
+    // no "falló". courier_env_missing:* → 503 (falta configurar el
+    // servidor) · el resto → 502 (respuesta inesperada del proveedor).
+    const status = message.startsWith("courier_provider_not_implemented:")
+      ? 501
+      : message.startsWith("courier_env_missing:")
+        ? 503
+        : 502
     return NextResponse.json(
       {
         error: "quote_failed",

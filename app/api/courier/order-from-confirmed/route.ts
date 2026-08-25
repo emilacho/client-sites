@@ -3,7 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase"
 import {
   getDeliveryQuote,
   createOrder as createPedidosYaOrder,
-} from "@/lib/courier/pedidosya-client"
+} from "@/lib/courier/para-rutas"
 
 /**
  * POST /api/courier/order-from-confirmed · R97.4 · Fase 3
@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
   try {
     quote = await getDeliveryQuote({
       dropoff: {
-        street: order.dropoff_detail ?? "Olón · ubicación compartida vía WhatsApp",
+        street: order.dropoff_detail ?? "Ubicación compartida por WhatsApp · Guayaquil",
         detail: order.dropoff_detail ?? undefined,
         countryCode: "EC",
         latitude: Number(order.dropoff_lat),
@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
     dispatched = await createPedidosYaOrder({
       quoteToken: quote.quoteToken,
       dropoff: {
-        street: order.dropoff_detail ?? "Olón · ubicación compartida vía WhatsApp",
+        street: order.dropoff_detail ?? "Ubicación compartida por WhatsApp · Guayaquil",
         detail: order.dropoff_detail ?? undefined,
         countryCode: "EC",
         latitude: Number(order.dropoff_lat),

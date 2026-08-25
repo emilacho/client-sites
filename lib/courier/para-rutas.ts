@@ -1,34 +1,45 @@
 import "server-only"
 /**
- * ADAPTADOR · R106 · este archivo YA NO habla con PedidosYa.
+ * Puente entre las rutas de `/api/courier/*` y el proveedor de reparto.
  *
- * Historia corta: en julio se reescribió el proveedor real contra la API
- * de verdad (`pedidosya-courier.ts`, con prueba en vivo), pero las cuatro
- * rutas de `/api/courier/*` siguieron importando ESTE archivo — el andamio
- * de R74, hecho de suposiciones y con modo simulado adentro. Resultado: el
- * código real estaba escrito y NUNCA se ejecutaba. La página devolvía
- * `MOCK-QUOTE-…` y un enlace de seguimiento a un dominio inexistente.
+ * R108 · antes esto era `pedidosya-client.ts`, un andamio de R74 que
+ * decía hablar con PedidosYa y en realidad devolvía datos simulados. El
+ * proveedor real (`pedidosya-courier.ts`) estaba escrito desde julio y
+ * las cuatro rutas seguían importando el andamio · el código bueno nunca
+ * se ejecutaba. Se vació y quedó como capa de traducción; ahora además
+ * **resuelve por el registro**, así que ya no está atado a PedidosYa: el
+ * día que entre Rappi, las rutas no se tocan.
  *
- * Este archivo pasa a ser una CAPA DE TRADUCCIÓN: conserva las firmas
- * viejas que usan las rutas y por dentro llama al proveedor real. Se hizo
- * así a propósito y no por comodidad: las formas viejas (`orderId`,
- * `status`, `lines`) están cableadas a nombres de columna en ~12 puntos
- * del camino del dinero, y reescribir eso en el mismo cambio que enciende
- * la API real mezcla dos riesgos distintos.
+ * Qué hace y por qué existe · las rutas hablan en "líneas del carrito y
+ * total", el proveedor habla en "artículos y direcciones normalizadas".
+ * Esa traducción vive UNA vez acá y no copiada en cada ruta.
  *
- * PENDIENTE declarado · migrar las 4 rutas a `getCourierProvider()` del
- * registro y borrar este archivo. Es un cambio mecánico, hoy no se hace.
- *
- * Lo que se fue con el andamio: el MODO SIMULADO. Ya no existe. Si faltan
- * credenciales, la ruta devuelve 503 con el nombre de la variable — falla
- * a la vista, no con un precio inventado.
+ * Lo que se fue con el andamio: el MODO SIMULADO. Si faltan credenciales
+ * la ruta devuelve 503 con el nombre de la variable · falla a la vista,
+ * nunca con un precio inventado.
  */
-import { pedidosYaCourier } from "./pedidosya-courier"
-import type { DispatchItem } from "./provider"
+import { getCourierProvider } from "./index"
+import type { CourierProvider, DispatchItem } from "./provider"
+import type { DeliveryProvider } from "@/lib/schemas"
+
+/** Proveedor por defecto · el registro decide, no este archivo. */
+const POR_DEFECTO: DeliveryProvider = "PEDIDOSYA_COURIER"
+
+/**
+ * Devuelve el proveedor pedido, o explota con un mensaje que la ruta
+ * convierte en 501 · "ese repartidor todavía no está implementado".
+ */
+function proveedor(id: DeliveryProvider = POR_DEFECTO): CourierProvider {
+  const p = getCourierProvider(id)
+  if (!p) throw new Error(`courier_provider_not_implemented:${id}`)
+  return p
+}
 
 /* ─── Formas heredadas · las consumen las rutas de /api/courier ─── */
 
 export interface QuoteParams {
+  /** Cuál repartidor · si no se dice, el del registro por defecto. */
+  providerId?: DeliveryProvider
   dropoff: {
     street: string
     detail?: string
@@ -49,6 +60,8 @@ export interface QuoteResult {
 }
 
 export interface CreateOrderParams {
+  /** Cuál repartidor · si no se dice, el del registro por defecto. */
+  providerId?: DeliveryProvider
   quoteToken: string
   dropoff: QuoteParams["dropoff"]
   customer: { name: string; phone: string; email?: string }
@@ -105,7 +118,7 @@ function comoArticulosAgregados(
 export async function getDeliveryQuote(
   params: QuoteParams,
 ): Promise<QuoteResult> {
-  const r = await pedidosYaCourier.getQuote({
+  const r = await proveedor(params.providerId).getQuote({
     dropoff: comoDireccion(params.dropoff),
     items: comoArticulosAgregados(params.cartTotalUsd, params.itemCount),
     cartTotalUsd: params.cartTotalUsd,
@@ -122,7 +135,7 @@ export async function getDeliveryQuote(
 export async function createOrder(
   params: CreateOrderParams,
 ): Promise<CreateOrderResult> {
-  const r = await pedidosYaCourier.dispatch({
+  const r = await proveedor(params.providerId).dispatch({
     quoteToken: params.quoteToken,
     dropoff: comoDireccion(params.dropoff),
     customer: {
@@ -157,7 +170,7 @@ export function verifyWebhookSignature(
   rawBody: string,
   signature: string | null,
 ): boolean {
-  return pedidosYaCourier.verifyWebhookSignature(rawBody, {
+  return proveedor().verifyWebhookSignature(rawBody, {
     authorization: signature,
     "x-api-key": signature,
   })
@@ -185,7 +198,7 @@ export function parseWebhookEvent(rawBody: string): {
   timestamp: string
   payload: Record<string, unknown>
 } {
-  const e = pedidosYaCourier.parseWebhookEvent(rawBody)
+  const e = proveedor().parseWebhookEvent(rawBody)
   return {
     event: "SHIPPING_STATUS",
     orderId: e.providerOrderId,

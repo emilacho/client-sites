@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { courierOrderRequestSchema } from "@/lib/schemas"
-import { createOrder } from "@/lib/courier/pedidosya-client"
+import { createOrder } from "@/lib/courier/para-rutas"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { cliente } from "@/cliente.config"
 
