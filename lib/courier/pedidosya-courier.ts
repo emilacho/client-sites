@@ -442,10 +442,22 @@ export const pedidosYaCourier: CourierProvider = {
     const json = (await res.json()) as Record<string, unknown>
     const shippingId = asString(json.shippingId)
     if (!shippingId) throw new CourierShapeError("dispatch_missing_shippingId")
+    // R107 · el despacho SÍ trae el precio y la ventana de entrega,
+    // dentro de `route`. Verificado con un despacho real de prueba
+    // 25-ago: route.pricing.total = 4.3 · route.deliveryTimeTo con
+    // la ventana · route.estimatedDrivingTime en minutos.
+    // Esta es la cifra autoritativa del envío · el estimate previo
+    // podía quedar viejo y el navegador no es fuente confiable.
+    const ruta = asObject(json.route)
+    const precios = asObject(ruta?.pricing)
     return {
       providerOrderId: shippingId,
       trackingUrl: asString(json.shareLocationUrl),
       providerStatus: asString(json.status) ?? "CONFIRMED",
+      priceUsd: asNumber(precios?.total),
+      etaMinutes:
+        minutesUntil(asString(ruta?.deliveryTimeTo)) ??
+        asNumber(ruta?.estimatedDrivingTime),
       raw: json,
     }
   },

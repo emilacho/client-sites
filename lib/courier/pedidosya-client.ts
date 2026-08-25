@@ -62,6 +62,10 @@ export interface CreateOrderResult {
   orderId: string
   trackingUrl?: string
   status: string
+  /** R107 · precio real del envío confirmado por el proveedor. */
+  priceUsd?: number
+  /** R107 · minutos hasta la entrega, según el proveedor. */
+  etaMinutes?: number
   raw: unknown
 }
 
@@ -138,6 +142,8 @@ export async function createOrder(
     orderId: r.providerOrderId,
     trackingUrl: r.trackingUrl,
     status: r.providerStatus,
+    priceUsd: r.priceUsd,
+    etaMinutes: r.etaMinutes,
     raw: r.raw,
   }
 }

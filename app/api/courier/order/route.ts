@@ -125,6 +125,16 @@ export async function POST(request: Request) {
   // dejaríamos PENDING hasta que llegue confirmación PedidosYa real.
   const mockMode = process.env.PEDIDOSYA_COURIER_MOCK === "true"
   const cartTotalUsd = lines.reduce((s, l) => s + l.priceUsd * l.qty, 0)
+
+  // R107 · el envío SÍ se cobra. Hasta hoy esta fila guardaba
+  // delivery_fee_usd = 0 y total = comida, así que el pedido quedaba
+  // registrado por menos de lo que costaba y la cocina veía un total
+  // que no cerraba. La cifra viene del DESPACHO (route.pricing.total),
+  // que es la que PedidosYa confirmó · no la del navegador ni la de
+  // una re-cotización, que podrían diferir de lo cobrado.
+  const deliveryFeeUsd = courierResult.priceUsd ?? 0
+  const totalUsd = Number((cartTotalUsd + deliveryFeeUsd).toFixed(2))
+  const etaMinutes = courierResult.etaMinutes ?? null
   const { generateOrderCode } = await import("@/lib/checkout/order-code")
   const orderCode = generateOrderCode()
   let naufragoOrderId: string | null = null
@@ -145,13 +155,18 @@ export async function POST(request: Request) {
         dropoff_country_code: dropoff.countryCode ?? "EC",
         cart_lines: lines,
         subtotal_usd: cartTotalUsd,
-        delivery_fee_usd: 0,
-        total_usd: cartTotalUsd,
+        delivery_fee_usd: deliveryFeeUsd,
+        total_usd: totalUsd,
+        delivery_eta_minutes: etaMinutes,
         delivery_provider: "PEDIDOSYA_COURIER",
         delivery_provider_order_id: courierResult.orderId,
         delivery_provider_tracking_url: courierResult.trackingUrl ?? null,
         delivery_quote_token: quoteToken,
-        payment_method: "CARD_DEBIT",
+        // R107 · antes decía "CARD_DEBIT" fijo · era falso: no hay
+        // pasarela de tarjeta conectada, así que ningún pedido se pagó
+        // con débito. La cocina lo leía como cobrado por adelantado.
+        // Lo que existe hoy es efectivo contra entrega.
+        payment_method: "CASH_ON_DELIVERY",
         payment_status: mockMode ? "CAPTURED" : "PENDING",
         payment_provider: mockMode ? "KUSHKI" : null,
         customer_notes: notes || null,
@@ -177,7 +192,12 @@ export async function POST(request: Request) {
         order_id: inserted.id,
         event_type: "ORDER_CREATED",
         actor: "system",
-        payload: { mock_mode: mockMode, total_usd: cartTotalUsd },
+        payload: {
+          mock_mode: mockMode,
+          subtotal_usd: cartTotalUsd,
+          delivery_fee_usd: deliveryFeeUsd,
+          total_usd: totalUsd,
+        },
       })
     }
   } catch (err) {

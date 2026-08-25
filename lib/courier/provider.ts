@@ -94,6 +94,14 @@ export interface DispatchResult {
   /** Provider's tracking id · stored as
    *  delivery_provider_order_id on the row. */
   providerOrderId: string
+  /** R107 · precio REAL del envío que el proveedor confirmó al
+   *  despachar · es la cifra autoritativa: no la del navegador ni
+   *  la de una re-cotización que podría diferir. Ausente = el
+   *  proveedor no lo informa en el despacho. */
+  priceUsd?: number
+  /** R107 · minutos hasta la entrega según el proveedor, contados
+   *  al momento del despacho. Ausente = no lo informa. */
+  etaMinutes?: number
   /** Optional URL the customer can hit to see the provider's
    *  own tracker · shown as a fallback. */
   trackingUrl?: string
