@@ -56,7 +56,7 @@ export const cliente: ClienteConfig = {
   whatsappE164: "593997744288",
   whatsappDisplay: "0997744288",
   instagram: "naufrago.ec",
-  address: "Calle de los Paraguas, frente al Hostal Isramar · Olón, Santa Elena",
+  address: "Avenida 8 NO · Urdenor 1 · Tarqui, Guayaquil",
   schedule: "Jueves a Lunes · 9:00 AM – 5:00 PM",
   scheduleShort: "Jue–Lun · 9am–5pm",
   businessHours: {

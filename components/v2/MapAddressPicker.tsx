@@ -10,6 +10,7 @@
  *   muestra solo el input text simple
  */
 import { useEffect, useRef, useState } from "react"
+import { COCINA } from "@/lib/ubicacion"
 import { useGoogleMapsScript } from "@/lib/v2/use-google-maps"
 
 interface Props {
@@ -53,7 +54,9 @@ interface GGeocoderInstance {
 }
 
 // Olón Ecuador · centro default si no hay geo.
-const OLON_CENTER = { lat: -1.795, lng: -80.756 }
+// R105 · el mapa abre en la cocina que despacha. Antes abría en Olón, a
+// 103 km: un cliente de Guayaquil veía el mapa en otra provincia.
+const CENTRO_MAPA = { lat: COCINA.lat, lng: COCINA.lng }
 
 export default function MapAddressPicker({ initial, onChange }: Props) {
   const { ready, unavailable } = useGoogleMapsScript()
@@ -127,9 +130,9 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
     }
     const g = w.google.maps
     const startLat =
-      typeof initial?.lat === "number" ? initial.lat : OLON_CENTER.lat
+      typeof initial?.lat === "number" ? initial.lat : CENTRO_MAPA.lat
     const startLng =
-      typeof initial?.lng === "number" ? initial.lng : OLON_CENTER.lng
+      typeof initial?.lng === "number" ? initial.lng : CENTRO_MAPA.lng
 
     const map = new g.Map(mapDivRef.current, {
       center: { lat: startLat, lng: startLng },

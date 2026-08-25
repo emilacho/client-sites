@@ -8,6 +8,7 @@
  * rendered by the page and shows whichever panel is active.
  */
 import { motion, AnimatePresence } from "framer-motion"
+import { COCINA, RESTAURANTE_OLON } from "@/lib/ubicacion"
 import { Anchor, Coffee, MessageSquare, Phone, Star, X } from "lucide-react"
 import {
   naufragoV2,
@@ -104,8 +105,13 @@ function HistoriaBody() {
         <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 font-mono uppercase tracking-wider text-cyan-200">
           {cliente.scheduleShort}
         </span>
+        {/* R105 · dos locales · la cocina que despacha es la de Guayaquil ·
+            el restaurante de Olón se queda (decisión de Emilio 25-ago). */}
         <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 font-mono uppercase tracking-wider text-violet-200">
-          Olón · Santa Elena
+          Cocina · {COCINA.ciudad}
+        </span>
+        <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 font-mono uppercase tracking-wider text-violet-200">
+          Restaurante · {RESTAURANTE_OLON.ciudad}
         </span>
       </div>
     </div>
@@ -159,8 +165,14 @@ function ContactBody() {
       </a>
       <dl className="mt-2 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
         <div>
-          <dt className="text-xs uppercase tracking-wider text-slate-500">Zona</dt>
-          <dd className="mt-1 text-slate-200">Olón · Manglaralto · Punta Blanca</dd>
+          {/* R105 · ya NO se promete una lista de zonas (decía "Olón ·
+              Manglaralto · Punta Blanca", que era el dato de prueba). Se
+              consulta por dirección al pedir · así no prometemos un barrio
+              al que después no llega el motorizado. */}
+          <dt className="text-xs uppercase tracking-wider text-slate-500">Entrega</dt>
+          <dd className="mt-1 text-slate-200">
+            Poné tu dirección al pedir y te decimos si llegamos y cuánto cuesta.
+          </dd>
         </div>
         <div>
           <dt className="text-xs uppercase tracking-wider text-slate-500">

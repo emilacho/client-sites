@@ -5,11 +5,13 @@
  */
 import { cliente } from "@/cliente.config"
 import { MENU_ITEMS } from "@/lib/v2/naufrago-content"
+import { COCINA } from "@/lib/ubicacion"
 
-// Olón Ecuador coordenadas aproximadas (frente al Hostal Isramar)
+// R105 · la cocina que despacha · Guayaquil. Antes acá había un tercer par
+// de coordenadas de Olón, distinto de los otros dos del repositorio.
 const NAUFRAGO_GEO = {
-  latitude: -1.7967,
-  longitude: -80.756,
+  latitude: COCINA.lat,
+  longitude: COCINA.lng,
 }
 
 const NAUFRAGO_OPENING = [
@@ -41,10 +43,11 @@ export function restaurantSchema(): JsonLd {
     servesCuisine: ["Ecuadorian", "Seafood", "Latin American"],
     address: {
       "@type": "PostalAddress",
-      streetAddress: "Calle de los Paraguas, frente al Hostal Isramar",
-      addressLocality: "Olón",
-      addressRegion: "Santa Elena",
-      addressCountry: "EC",
+      streetAddress: COCINA.calle,
+      addressLocality: COCINA.ciudad,
+      addressRegion: COCINA.provincia,
+      postalCode: COCINA.codigoPostal,
+      addressCountry: COCINA.pais,
     },
     geo: {
       "@type": "GeoCoordinates",
@@ -107,10 +110,11 @@ export function localBusinessSchema(): JsonLd {
     telephone: `+${cliente.whatsappE164}`,
     address: {
       "@type": "PostalAddress",
-      streetAddress: "Calle de los Paraguas, frente al Hostal Isramar",
-      addressLocality: "Olón",
-      addressRegion: "Santa Elena",
-      addressCountry: "EC",
+      streetAddress: COCINA.calle,
+      addressLocality: COCINA.ciudad,
+      addressRegion: COCINA.provincia,
+      postalCode: COCINA.codigoPostal,
+      addressCountry: COCINA.pais,
     },
     geo: {
       "@type": "GeoCoordinates",

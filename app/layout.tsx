@@ -77,6 +77,9 @@ export const metadata: Metadata = {
   keywords: [
     "ceviche Olón",
     "encebollado Ecuador",
+    "delivery Guayaquil",
+    "encebollado Guayaquil",
+    "ceviche Guayaquil",
     "delivery Santa Elena",
     "ghost kitchen",
     "comida costera",

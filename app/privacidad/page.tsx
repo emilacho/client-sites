@@ -167,7 +167,7 @@ export default function PrivacidadPage() {
             </a>
           </p>
           <p className="mt-2 text-xs text-slate-500">
-            Responsable · Náufrago · Olón · Provincia de Santa Elena · Ecuador.
+            Responsable · Náufrago · Avenida 8 NO, Urdenor 1, Tarqui · Guayaquil · Provincia del Guayas · Ecuador.
             Resolveremos tu solicitud dentro de 15 días hábiles per art. 30 LOPDP.
           </p>
         </Section>
