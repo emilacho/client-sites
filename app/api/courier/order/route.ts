@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { avisarACocina } from "@/lib/avisar-cocina"
 import { courierOrderRequestSchema } from "@/lib/schemas"
 import { createOrder } from "@/lib/courier/para-rutas"
 import { getSupabaseAdmin } from "@/lib/supabase"
@@ -177,6 +178,53 @@ export async function POST(request: Request) {
       .single()
     if (inserted) {
       naufragoOrderId = inserted.id
+
+      // R110 · AVISO A LA COCINA · hasta hoy el pedido se guardaba y nadie
+      // en el local se enteraba: el único WhatsApp del recorrido era para
+      // el cliente. Con el reparto conectado eso es un motorizado real
+      // llegando por un pedido que nadie vio.
+      // Sin esperar respuesta y sin poder tumbar el pedido: si el mensaje
+      // falla, el pedido YA está guardado y el cliente ya tiene su código.
+      void avisarACocina({
+        orderCode,
+        customerName: customer.name,
+        customerPhone: customer.phone,
+        dropoffAddress: dropoff.street,
+        dropoffDetail: dropoff.detail ?? null,
+        lines: lines.map((l) => ({
+          name: l.name,
+          qty: l.qty,
+          priceUsd: l.priceUsd,
+        })),
+        subtotalUsd: cartTotalUsd,
+        deliveryFeeUsd,
+        totalUsd,
+        notes: notes || null,
+        etaMinutes,
+        paymentMethod: "CASH_ON_DELIVERY",
+      })
+        .then(async (r) => {
+          // R110 · el resultado queda en el historial del pedido. Un aviso
+          // que no sale tiene que ser CONSULTABLE · si sólo va a la consola
+          // del servidor, nadie se entera de que la cocina no se enteró.
+          await supabase.from("order_events").insert({
+            order_id: inserted.id,
+            event_type: r.ok ? "KITCHEN_NOTIFIED" : "KITCHEN_NOTIFY_FAILED",
+            actor: "system",
+            payload: r.ok ? { sid: r.sid } : { motivo: r.motivo },
+          })
+        })
+        .catch(async (err) => {
+          await supabase
+            .from("order_events")
+            .insert({
+              order_id: inserted.id,
+              event_type: "KITCHEN_NOTIFY_FAILED",
+              actor: "system",
+              payload: { error: String(err).slice(0, 300) },
+            })
+            .then(undefined, () => {})
+        })
       // Trigger WhatsApp template ACCEPTED para que el cliente
       // reciba la primera notificación · idempotente via R96.110.
       const origin =
