@@ -183,9 +183,16 @@ export async function POST(request: Request) {
       // en el local se enteraba: el único WhatsApp del recorrido era para
       // el cliente. Con el reparto conectado eso es un motorizado real
       // llegando por un pedido que nadie vio.
-      // Sin esperar respuesta y sin poder tumbar el pedido: si el mensaje
-      // falla, el pedido YA está guardado y el cliente ya tiene su código.
-      void avisarACocina({
+      //
+      // R110.1 · SE ESPERA, no se manda y se olvida. El primer intento usó
+      // `void ...` y el aviso NUNCA se ejecutó: en este servidor la función
+      // se corta apenas manda la respuesta y mata lo que quedó pendiente.
+      // Medido · pedido de prueba sin ningún registro de aviso.
+      // Esperar suma ~medio segundo a una petición que ya tarda varios,
+      // y a cambio garantiza que la cocina se entere. Ese cambio conviene.
+      // Sigue sin poder tumbar el pedido: avisarACocina nunca tira
+      // excepción · devuelve el motivo.
+      const avisoCocina = await avisarACocina({
         orderCode,
         customerName: customer.name,
         customerPhone: customer.phone,
@@ -203,50 +210,22 @@ export async function POST(request: Request) {
         etaMinutes,
         paymentMethod: "CASH_ON_DELIVERY",
       })
-        .then(async (r) => {
-          // R110 · el resultado queda en el historial del pedido. Un aviso
-          // que no sale tiene que ser CONSULTABLE · si sólo va a la consola
-          // del servidor, nadie se entera de que la cocina no se enteró.
-          await supabase.from("order_events").insert({
-            order_id: inserted.id,
-            event_type: r.ok ? "KITCHEN_NOTIFIED" : "KITCHEN_NOTIFY_FAILED",
-            actor: "system",
-            payload: r.ok ? { sid: r.sid } : { motivo: r.motivo },
-          })
+      // El resultado queda CONSULTABLE en el historial del pedido · un
+      // aviso que falla en silencio es peor que no tenerlo: nadie se
+      // entera de que la cocina no se enteró.
+      await supabase
+        .from("order_events")
+        .insert({
+          order_id: inserted.id,
+          event_type: avisoCocina.ok
+            ? "KITCHEN_NOTIFIED"
+            : "KITCHEN_NOTIFY_FAILED",
+          actor: "system",
+          payload: avisoCocina.ok
+            ? { sid: avisoCocina.sid }
+            : { motivo: avisoCocina.motivo },
         })
-        .catch(async (err) => {
-          await supabase
-            .from("order_events")
-            .insert({
-              order_id: inserted.id,
-              event_type: "KITCHEN_NOTIFY_FAILED",
-              actor: "system",
-              payload: { error: String(err).slice(0, 300) },
-            })
-            .then(undefined, () => {})
-        })
-      // Trigger WhatsApp template ACCEPTED para que el cliente
-      // reciba la primera notificación · idempotente via R96.110.
-      const origin =
-        process.env.NEXT_PUBLIC_APP_URL ?? "https://naufrago.delivery"
-      void fetch(`${origin}/api/notifications/order-status`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orderCode, newStatus: "ACCEPTED" }),
-        keepalive: true,
-      }).catch(() => {})
-      // Log event
-      await supabase.from("order_events").insert({
-        order_id: inserted.id,
-        event_type: "ORDER_CREATED",
-        actor: "system",
-        payload: {
-          mock_mode: mockMode,
-          subtotal_usd: cartTotalUsd,
-          delivery_fee_usd: deliveryFeeUsd,
-          total_usd: totalUsd,
-        },
-      })
+        .then(undefined, () => {})
     }
   } catch (err) {
     console.warn("[courier-order] naufrago.orders persist failed", err)
