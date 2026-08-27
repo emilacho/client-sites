@@ -12,6 +12,23 @@
  * NO manual copy overrides · agent outputs are the source of truth.
  */
 
+/** R96.13 · day-of-week index igual a `Date.getDay()` · 0=Domingo · 6=Sábado.
+ *  Cada día acepta una ventana [openHour, closeHour] en hora local del local
+ *  (Ecuador · UTC-5 sin DST). null = cerrado ese día. */
+export type BusinessHours = Readonly<{
+  0: [number, number] | null
+  1: [number, number] | null
+  2: [number, number] | null
+  3: [number, number] | null
+  4: [number, number] | null
+  5: [number, number] | null
+  6: [number, number] | null
+}>
+
+/** IANA timezone del local · usado por el hook `useBusinessHours` para
+ *  evaluar open/closed con la hora real del local, no del browser. */
+export const CLIENTE_TZ = "America/Guayaquil"
+
 export interface ClienteConfig {
   slug: string
   name: string
@@ -23,6 +40,7 @@ export interface ClienteConfig {
   address: string
   schedule: string
   scheduleShort: string
+  businessHours: BusinessHours
   positioningStatement: string
   taglineHero: string
   followersCount: number
@@ -38,9 +56,18 @@ export const cliente: ClienteConfig = {
   whatsappE164: "593997744288",
   whatsappDisplay: "0997744288",
   instagram: "naufrago.ec",
-  address: "Calle de los Paraguas, frente al Hostal Isramar · Olón, Santa Elena",
+  address: "Avenida 8 NO · Urdenor 1 · Tarqui, Guayaquil",
   schedule: "Jueves a Lunes · 9:00 AM – 5:00 PM",
   scheduleShort: "Jue–Lun · 9am–5pm",
+  businessHours: {
+    0: [9, 17],  // Domingo · 9am-5pm
+    1: [9, 17],  // Lunes · 9am-5pm
+    2: null,     // Martes · cerrado
+    3: null,     // Miércoles · cerrado
+    4: [9, 17],  // Jueves · 9am-5pm
+    5: [9, 17],  // Viernes · 9am-5pm
+    6: [9, 17],  // Sábado · 9am-5pm
+  },
   positioningStatement:
     "Náufrago es la cocina costera de Olón que transforma el marisco más fresco de la zona en ceviches y encebollados con alma de playa — servidos directo a tu puerta de jueves a lunes, para que cada bocado sepa a mar recién salido.",
   taglineHero: "Fresco como recién salido del mar",

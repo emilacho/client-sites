@@ -1,0 +1,16 @@
+Carpeta para fotos de la galería "Pesca del día" del StoriesModal.
+
+Filenames esperados (Emilio sube · paths matchean al DISHES array) ·
+  encebollado-naufrago.jpg
+  encebollado-mixto.jpg
+  ceviche-naufrago.jpg
+  ceviche-mixto.jpg
+
+Recomendaciones ·
+  - Aspect ratio 1:1 (cuadrada) · 800×800 px ideal
+  - JPG calidad 80-90 · ~150-300 KB cada una
+  - Composición · plato visto desde arriba o ¾ · fondo natural
+  - Iluminación · luz natural · sin filtros agresivos
+
+Cuando falta una foto · el modal cae a emoji placeholder + label
+"Foto en camino · pesca pendiente".

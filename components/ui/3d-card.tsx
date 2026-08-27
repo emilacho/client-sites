@@ -136,14 +136,19 @@ export const CardItem = ({
     }
   };
 
+  // Cast Tag to a permissive component type · `as?: React.ElementType`
+  // resolves to a union too wide for TypeScript to validate the JSX
+  // children + ref · cast here so callers retain the type benefit on
+  // the prop while the internal render compiles cleanly.
+  const TagAny = Tag as React.ElementType<React.ComponentPropsWithRef<"div">>
   return (
-    <Tag
+    <TagAny
       ref={ref}
       className={cn("w-fit transition duration-200 ease-linear", className)}
       {...rest}
     >
       {children}
-    </Tag>
+    </TagAny>
   );
 };
 
