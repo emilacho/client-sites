@@ -226,6 +226,37 @@ export async function POST(request: Request) {
             : { motivo: avisoCocina.motivo },
         })
         .then(undefined, () => {})
+
+      // ─── RESTAURADO R110.2 · esto lo borré yo al reescribir el bloque
+      // en R110.1 y estuvo ausente dos publicaciones. Sin esto el cliente
+      // no recibía su primer aviso y el pedido no quedaba registrado en su
+      // propio historial.
+      //
+      // El aviso al CLIENTE también se espera ahora, por la misma razón
+      // que el de la cocina: con `void` la función se apaga al responder y
+      // se lo lleva puesto.
+      const origin =
+        process.env.NEXT_PUBLIC_APP_URL ?? "https://naufrago.ec"
+      await fetch(`${origin}/api/notifications/order-status`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orderCode, newStatus: "ACCEPTED" }),
+      }).catch(() => {})
+
+      await supabase
+        .from("order_events")
+        .insert({
+          order_id: inserted.id,
+          event_type: "ORDER_CREATED",
+          actor: "system",
+          payload: {
+            mock_mode: mockMode,
+            subtotal_usd: cartTotalUsd,
+            delivery_fee_usd: deliveryFeeUsd,
+            total_usd: totalUsd,
+          },
+        })
+        .then(undefined, () => {})
     }
   } catch (err) {
     console.warn("[courier-order] naufrago.orders persist failed", err)
