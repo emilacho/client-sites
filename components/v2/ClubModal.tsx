@@ -24,8 +24,8 @@ const BENEFITS = [
   { emoji: "🚚", title: "Envío gratis", detail: "Hasta 4 pedidos al mes sin costo de motorizado." },
   { emoji: "🍹", title: "Jugo gratis siempre", detail: "1 jugo natural del día sumado a cada pedido · sin condición." },
   { emoji: "💎", title: "10% off acumulado", detail: "Descuento extra en cada pedido · acumulable con tu tesoro y promos." },
-  { emoji: "⚓", title: "Prioridad en cocina", detail: "Tu pedido se arma antes de los pedidos no-club · 10 min menos." },
-  { emoji: "🏝", title: "Eventos exclusivos", detail: "Ceviches especiales, jornadas privadas en la playa, primer dibs de jugos raros." },
+  { emoji: "⚓", title: "Prioridad en cocina", detail: "Tu pedido se arma antes que los pedidos sin membresía · 10 min menos." },
+  { emoji: "🏝", title: "Eventos exclusivos", detail: "Ceviches especiales, jornadas privadas en la playa, los primeros en probar los jugos raros." },
 ]
 
 type Stage =
@@ -175,7 +175,7 @@ export function ClubModal({ open, onClose }: ClubModalProps) {
                   </span>
                   <span className="text-sm opacity-70">/mes</span>
                   <span className="ml-auto text-[10px] opacity-60">
-                    Cancelás cuando quieras
+                    Cancelas cuando quieras
                   </span>
                 </div>
 
@@ -205,7 +205,7 @@ export function ClubModal({ open, onClose }: ClubModalProps) {
                   }}
                 >
                   <p className="mb-2 text-[11px] opacity-80">
-                    🚧 Arrancamos pronto · sumate a la lista de espera ·
+                    🚧 Arrancamos pronto · súmate a la lista de espera ·
                     primeros 50 reciben{" "}
                     <strong style={{ color: CYAN }}>1 mes gratis</strong>.
                   </p>
