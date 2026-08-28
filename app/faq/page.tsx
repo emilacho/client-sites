@@ -13,7 +13,7 @@ import { cliente } from "@/cliente.config"
 export const metadata = {
   title: "Preguntas frecuentes · Náufrago",
   description:
-    "Horarios · zonas de entrega · pagos · perlas · cuenta · ruleta · soporte. Todo lo que necesitás saber para pedir en Náufrago.",
+    "Horarios · zonas de entrega · pagos · tesoro de náufrago · cuenta · ruleta · soporte. Todo lo que necesitas saber para pedir en Náufrago.",
 }
 
 export default function FaqPage() {
@@ -38,7 +38,7 @@ export default function FaqPage() {
           Preguntas Frecuentes
         </h1>
         <p className="text-sm text-slate-400">
-          Lo más consultado por nuestros clientes. Si tu pregunta no está acá ·
+          Lo más consultado por nuestros clientes. Si tu pregunta no está aquí ·
           escríbenos por WhatsApp al{" "}
           <a
             href={`https://wa.me/${cliente.whatsappE164}`}
@@ -75,7 +75,7 @@ export default function FaqPage() {
 
         <div className="mt-8 border-t border-slate-800 pt-4 text-center">
           <p className="text-xs text-slate-500">
-            ¿No encontraste lo que buscás?{" "}
+            ¿No encontraste lo que buscas?{" "}
             <a
               href={`https://wa.me/${cliente.whatsappE164}?text=${encodeURIComponent(
                 "Hola Náufrago · tengo una pregunta",
@@ -89,7 +89,7 @@ export default function FaqPage() {
             href="/"
             className="mt-3 inline-block text-xs uppercase tracking-widest text-slate-500 hover:text-slate-300"
           >
-            ← Volver a la home
+            ← Volver al inicio
           </Link>
         </div>
       </article>

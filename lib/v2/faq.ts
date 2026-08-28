@@ -1,3 +1,4 @@
+import { DIAS_CERRADO, HORARIO_TEXTO } from "@/lib/horario"
 import { PORCENTAJE_GANANCIA } from "@/lib/perlas"
 
 /**
@@ -13,12 +14,12 @@ export const FAQ: FaqItem[] = [
   {
     question: "¿Cuáles son los horarios de pedido?",
     answer:
-      "Atendemos de jueves a lunes de 9:00 AM a 5:00 PM. Martes y miércoles cerramos para descanso de la cocina.",
+      `Atendemos ${HORARIO_TEXTO}. ${DIAS_CERRADO.charAt(0).toUpperCase() + DIAS_CERRADO.slice(1)} cerramos para descanso de la cocina.`,
   },
   {
     question: "¿A qué zonas hacen entrega?",
     answer:
-      "Entregamos en Guayaquil y zonas cercanas dentro de un radio de ~15 km con motorizado de PedidosYa. Si tu dirección está fuera del radio puedes coordinar el retiro por WhatsApp.",
+      "Cocinamos en Guayaquil y entregamos con motorizado de PedidosYa. Al escribir tu dirección te decimos al instante si llegamos hasta ahí y cuánto cuesta el envío, antes de que pagues. Si quedas fuera de cobertura puedes coordinar el retiro por WhatsApp.",
   },
   {
     question: "¿Cuánto tarda la entrega?",
@@ -28,12 +29,12 @@ export const FAQ: FaqItem[] = [
   {
     question: "¿Qué métodos de pago aceptan?",
     answer:
-      "Cobro contra entrega (efectivo al motorizado) o coordinación previa por WhatsApp. Próximamente vamos a integrar pago con tarjeta vía Kushki.",
+      "Cobro contra entrega (efectivo al motorizado) o coordinación previa por WhatsApp. El pago con tarjeta está en camino.",
   },
   {
-    question: "¿Cómo funcionan las perlas del náufrago?",
+    question: "¿Cómo funciona el tesoro de náufrago?",
     answer:
-      `Por cada pedido entregado ganas un ${PORCENTAJE_GANANCIA}% del total en perlas (1 perla = $0.01). Las puedes usar como descuento en futuros pedidos (hasta el 50% del subtotal) o canjearlas por premios · 5% de descuento (100 perlas) · 15% de descuento (600 perlas).`,
+      `Por cada pedido entregado acumulas el ${PORCENTAJE_GANANCIA}% del total en tesoro de náufrago. Lo puedes usar como descuento en tus próximos pedidos (hasta la mitad del subtotal) o cambiarlo por premios · 5% de descuento por $1.00 de tesoro · 15% de descuento por $6.00 de tesoro.`,
   },
   {
     question: "¿Cómo accedo a mi cuenta?",
@@ -43,7 +44,7 @@ export const FAQ: FaqItem[] = [
   {
     question: "¿Cómo cambio mi número de WhatsApp?",
     answer:
-      "En Mi Cuenta → 'Mi WhatsApp' → Cambiar. Te enviamos un código de 4 dígitos al nuevo número para confirmar · al verificar transferimos automáticamente tu balance de perlas + histórico de pedidos al nuevo WhatsApp.",
+      "En Mi Cuenta → 'Mi WhatsApp' → Cambiar. Te enviamos un código de 4 dígitos al nuevo número para confirmar · al verificar transferimos automáticamente tu tesoro de náufrago + histórico de pedidos al nuevo WhatsApp.",
   },
   {
     question: "¿Puedo eliminar mi cuenta y mis datos?",

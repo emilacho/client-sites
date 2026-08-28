@@ -520,7 +520,7 @@ export const pedidosYaCourier: CourierProvider = {
     headers: Record<string, string | null | undefined>,
   ): boolean {
     // PedidosYa NO firma con HMAC. Seguridad = clave estática: cuando
-    // configurás authorizationKey, invocan tu callback mandando esa
+    // configuras authorizationKey, invocan tu callback mandando esa
     // clave en los headers Authorization y x-api-key. Validamos que
     // alguno matchee PEDIDOSYA_COURIER_WEBHOOK_KEY.
     const key = envOptional("PEDIDOSYA_COURIER_WEBHOOK_KEY")

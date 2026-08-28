@@ -31,3 +31,21 @@ export const SPEND_CAP = 0.5
 export function perlasQueGana(totalUsd: number): number {
   return Math.round((totalUsd * EARN_RATE) / PERLA_VALUE_USD)
 }
+
+/**
+ * El nombre de cara al cliente · R121 (decision de Emilio 28-ago).
+ *
+ * Antes se llamaba "perlas" y se mostraba CONTADO: "Tienes 340 perlas".
+ * El cliente tenia que hacer la cuenta mental para saber que eso eran
+ * $3.40. Ahora se llama tesoro de naufrago y se muestra en DOLARES, que
+ * es lo que de verdad le importa: cuanto se ahorra.
+ *
+ * La unidad interna (1 perla = $0.01) no cambia · sigue viviendo en la
+ * base y en el servidor. Lo que cambio es como se lo contamos al cliente.
+ */
+export const TESORO_NOMBRE = "tesoro de náufrago"
+
+/** Convierte el saldo interno a lo que ve el cliente · "3.40". */
+export function tesoroUsd(perlas: number): string {
+  return (perlas * PERLA_VALUE_USD).toFixed(2)
+}

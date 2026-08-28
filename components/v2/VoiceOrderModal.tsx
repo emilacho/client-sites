@@ -221,7 +221,7 @@ export function VoiceOrderModal({ open, onClose }: VoiceOrderModalProps) {
                   </p>
                 ) : (
                   <p className="text-[11px] text-slate-500">
-                    Si no atendés en 30 segundos te volvemos a llamar una vez
+                    Si no atiendes en 30 segundos te volvemos a llamar una vez
                     más · sino te escribimos por WhatsApp.
                   </p>
                 )}
@@ -330,7 +330,7 @@ export function VoiceOrderModal({ open, onClose }: VoiceOrderModalProps) {
                 </button>
 
                 <p className="text-[11px] text-slate-500">
-                  Al confirmar aceptás que un asistente de voz te llame para
+                  Al confirmar aceptas que un asistente de voz te llame para
                   tomar el pedido · gratis · sin costo de llamada para ti.
                 </p>
               </form>

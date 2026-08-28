@@ -49,7 +49,7 @@ export default function PrivacidadPage() {
           <ul className="ml-5 list-disc space-y-1">
             <li>Nombre completo</li>
             <li>Número de WhatsApp (formato internacional E.164)</li>
-            <li>Email (opcional · si te registrás vía Google o magic link)</li>
+            <li>Email (opcional · si te registras con Google o con el enlace que te enviamos por correo)</li>
             <li>Direcciones de entrega · calle · referencia · coordenadas geo</li>
             <li>Histórico de pedidos · items · totales · fechas</li>
             <li>Preferencias alimenticias (notas opcionales para la cocina)</li>
@@ -62,7 +62,7 @@ export default function PrivacidadPage() {
           <ul className="ml-5 list-disc space-y-1">
             <li>Procesar y entregar tu pedido</li>
             <li>Confirmar y dar seguimiento al pedido vía WhatsApp</li>
-            <li>Gestionar tu programa de fidelización (perlas)</li>
+            <li>Gestionar tu programa de fidelización (tesoro de náufrago)</li>
             <li>Mejorar la experiencia (preferencias persistentes)</li>
             <li>Cumplir con obligaciones legales y contables del negocio</li>
             <li>Comunicarte promociones · solo si das consentimiento explícito</li>
@@ -186,7 +186,7 @@ export default function PrivacidadPage() {
             href="/"
             className="text-xs uppercase tracking-widest text-slate-500 hover:text-slate-300"
           >
-            ← Volver a la home
+            ← Volver al inicio
           </Link>
         </div>
       </article>

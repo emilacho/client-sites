@@ -18,7 +18,7 @@ export default function OrderNotFound() {
         </p>
         <p className="mt-3 text-sm text-neutral-600">
           El código que abriste no existe · o ya pasó mucho tiempo desde la
-          entrega. Si acabás de ordenar, esperá un par de segundos y refrescá.
+          entrega. Si acabas de ordenar, espera un par de segundos y refrescá.
         </p>
         <Link
           href="/"

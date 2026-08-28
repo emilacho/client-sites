@@ -1,9 +1,12 @@
 "use client"
 /**
- * PerlasChip · R96.119 · chip perlas en TopBar con count-up animado.
+ * Chip del tesoro de naufrago en la barra superior, con conteo animado.
+ * R121 - muestra DOLARES, no unidades: antes decia '340' y el cliente
+ * tenia que convertir mentalmente para saber que eran $3.40.
  * Framer-motion useMotionValue + animate() · transición suave entre
  * deltas de balance (ej. 100 → 240 al confirmar DELIVERED).
  */
+import { tesoroUsd } from "@/lib/perlas"
 import { useEffect, useRef, useState } from "react"
 import { animate } from "framer-motion"
 
@@ -34,7 +37,7 @@ export default function PerlasChip({ value, onClick }: Props) {
     return () => controls.stop()
   }, [value])
 
-  // R96.128 · siempre visible cuando hay sesión · incluso con 0 perlas ·
+  // R96.128 · siempre visible cuando hay sesión · incluso con el tesoro en cero ·
   // así el cliente nuevo (logueado pero sin pedidos) ve la feature loyalty
   // existe · le motiva a hacer el primer pedido. Pre-R96.128 ocultaba si <=0.
 
@@ -43,10 +46,10 @@ export default function PerlasChip({ value, onClick }: Props) {
       type="button"
       onClick={onClick}
       className="mr-2 inline-flex shrink-0 items-center gap-1 rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-100 transition-colors hover:bg-cyan-500/20"
-      title={`${value} perlas · ≈$${(value * 0.01).toFixed(2)}`}
+      title={`Tu tesoro de náufrago · $${tesoroUsd(value)}`}
     >
       <span aria-hidden>✦</span>
-      <span className="tabular-nums">{display}</span>
+      <span className="tabular-nums">${tesoroUsd(display)}</span>
     </button>
   )
 }

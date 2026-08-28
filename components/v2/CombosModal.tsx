@@ -128,7 +128,7 @@ export function CombosModal({ open, onClose }: CombosModalProps) {
                     y decía 3 · al sacar el Combo Familia (se iba con los
                     patacones) quedó diciendo 3 con 2 en pantalla. Un número
                     a mano se desincroniza sin que nadie lo note. */}
-                {COMBOS.length} combos curados por el cocinero · ahorrás el
+                {COMBOS.length} combos curados por el cocinero · ahorras el
                 envío de pensar.
               </p>
             </div>
@@ -193,7 +193,7 @@ export function CombosModal({ open, onClose }: CombosModalProps) {
                       </span>
                       {"  "}
                       <span className="text-[10px] opacity-60">
-                        · ahorrás ${combo.discountUsd.toFixed(2)}
+                        · ahorras ${combo.discountUsd.toFixed(2)}
                       </span>
                     </span>
                     <button
