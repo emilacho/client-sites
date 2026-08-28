@@ -6,10 +6,15 @@ const err = []
 pg.on("pageerror", (e) => err.push(String(e)))
 await pg.goto(BASE + "/", { waitUntil: "networkidle", timeout: 120000 })
 await pg.waitForTimeout(2500)
+// el aviso de cookies tapa la pantalla en la primera visita
+try { await pg.locator("text=/ACEPTAR/i").first().click({ timeout: 6000 }); await pg.waitForTimeout(700) } catch {}
+// Los botones de la isla flotan sin parar, asi que el clic normal de Playwright
+// nunca los ve "quietos" y expira. dispatchEvent no espera a que se detengan.
 let abierto = false
-for (const sel of ['text=/CLUB/i', '[aria-label*="lub"]', 'text=/Náufrago Club/i']) {
-  try { await pg.locator(sel).first().click({ timeout: 6000 }); abierto = true; break } catch {}
-}
+try {
+  await pg.locator('[aria-label="Suscripción Náufrago Club"]').first().dispatchEvent("click")
+  abierto = true
+} catch {}
 await pg.waitForTimeout(1500)
 const t = (await pg.locator("body").innerText()).replace(/\s+/g, " ")
 console.log("  se abrio el club        :", abierto)
