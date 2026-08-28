@@ -214,7 +214,7 @@ export function CombosModal({ open, onClose }: CombosModalProps) {
           </ul>
 
           <p className="mt-3 text-center text-[10px] text-slate-500">
-            Los items se agregan al cart · podés ajustarlos antes de confirmar.
+            Los platos se agregan al carrito · puedes ajustarlos antes de confirmar.
           </p>
         </motion.div>
       </motion.div>

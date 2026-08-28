@@ -387,7 +387,7 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
           · cliente edita libremente · ESTE es el campo final que viaja al server. */}
       <div>
         <label className="block text-[10px] uppercase tracking-widest text-cyan-300/80 mb-1">
-          Dirección final (podés editarla)
+          Dirección final (puedes editarla)
         </label>
         <input
           type="text"

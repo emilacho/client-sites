@@ -1,7 +1,7 @@
 "use client"
 /**
  * OrderHistorySection · R96.115 · Fase C · sección "Histórico de pedidos"
- * en /mi-cuenta. Cards verticales + status badge + "Pedí igual" CTA + load more.
+ * en /mi-cuenta. Cards verticales + status badge + "Pide igual" CTA + load more.
  */
 import Link from "next/link"
 import { RotateCw } from "lucide-react"
@@ -86,9 +86,9 @@ export default function OrderHistorySection() {
   if (orders.length === 0) {
     return (
       <div className="mt-3 rounded-2xl border border-slate-800 bg-slate-900/40 px-4 py-5 text-center">
-        <p className="text-sm text-slate-300">Aún no tenés pedidos</p>
+        <p className="text-sm text-slate-300">Aún no tienes pedidos</p>
         <p className="mt-1 text-[11px] text-slate-500">
-          Pedí tu primer Hambre de Náufrago desde la home
+          Pide tu primer Hambre de Náufrago desde la home
         </p>
         <Link
           href="/"
@@ -194,10 +194,10 @@ function OrderCard({
         onClick={() => onReorder({ ...order, cart_lines: lines })}
         disabled={!canReorder}
         className="inline-flex shrink-0 items-center gap-1 rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-white shadow-md disabled:opacity-40"
-        title="Pedí igual"
+        title="Pide igual"
       >
         <RotateCw className="h-3 w-3" />
-        Pedí igual
+        Pide igual
       </button>
     </div>
   )

@@ -588,8 +588,8 @@ function VariantPicker({
       : dynOpts.map((o) => ({ id: o.id, label: o.label, priceDelta: 0 }))
 
   const pickerTitle = item.variants
-    ? "Elegí tu sabor"
-    : dynLabel ?? "Elegí tu sabor"
+    ? "Elige tu sabor"
+    : dynLabel ?? "Elige tu sabor"
 
   return (
     <motion.div
@@ -641,7 +641,7 @@ function VariantPicker({
           </p>
         ) : variants.length === 0 ? (
           <p className="py-6 text-center text-sm text-slate-400">
-            Sin opciones disponibles ahora · escribinos por WhatsApp.
+            Sin opciones disponibles ahora · escríbenos por WhatsApp.
           </p>
         ) : (
           <div className="grid grid-cols-2 gap-2">

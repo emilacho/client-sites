@@ -1,0 +1,22 @@
+import { chromium } from "playwright"
+import { mkdirSync } from "node:fs"
+import { resolve, join } from "node:path"
+const dir = resolve("tmp/carta-vivo"); mkdirSync(dir, { recursive: true })
+const b = await chromium.launch()
+const p = await (await b.newContext({ viewport: { width: 1440, height: 900 } })).newPage()
+await p.goto("https://client-sites-template-git-landing-v2-zero-risk1.vercel.app/", { waitUntil: "networkidle", timeout: 90_000 })
+await p.waitForTimeout(8000)
+await p.mouse.click(1305, 860); await p.waitForTimeout(1200)
+const clic = (r) => p.evaluate((rr) => { const b=[...document.querySelectorAll("button")].find(e=>new RegExp(rr,"i").test(e.textContent||"")); b?.click() }, r)
+await clic("^MEN"); await p.waitForTimeout(6000)
+await p.screenshot({ path: join(dir, "a-encebollados.png") })
+await clic("Ceviches"); await p.waitForTimeout(4000); await p.screenshot({ path: join(dir, "b-ceviches.png") })
+await clic("Bebidas"); await p.waitForTimeout(4000); await p.screenshot({ path: join(dir, "c-bebidas.png") })
+await clic("Encebollados"); await p.waitForTimeout(2500)
+await p.evaluate(() => { const b=[...document.querySelectorAll("button")].filter(e=>(e.textContent||"").trim()==="+ Agregar"); b[0]?.click() })
+await p.waitForTimeout(1500)
+await p.evaluate(() => { const b=[...document.querySelectorAll("button")].filter(e=>(e.textContent||"").trim()==="+ Agregar"); b[1]?.click() })
+await p.waitForTimeout(1500)
+await p.evaluate(() => [...document.querySelectorAll("button")].find(e=>/Canoa de compras/i.test(e.textContent||""))?.click())
+await p.waitForTimeout(4000); await p.screenshot({ path: join(dir, "d-canoa.png") })
+await b.close(); console.log("listo")

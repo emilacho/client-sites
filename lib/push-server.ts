@@ -143,7 +143,7 @@ export function buildStagePayload(
     case "CANCELLED":
       return {
         title: "Pedido cancelado",
-        body: "Lo lamentamos · escribinos por WhatsApp si fue un error",
+        body: "Lo lamentamos · escríbenos por WhatsApp si fue un error",
         tag: `${orderCode}-cancelled`,
         data,
       }

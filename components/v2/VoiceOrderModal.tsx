@@ -186,7 +186,7 @@ export function VoiceOrderModal({ open, onClose }: VoiceOrderModalProps) {
                   Te llamamos al toque
                 </h2>
                 <p className="mt-2 text-xs text-slate-400">
-                  Te llama un asistente · le decís qué querés · termina por
+                  Te llama un asistente · le dices qué quieres · termina por
                   WhatsApp con la ubicación.
                 </p>
               </div>
@@ -262,7 +262,7 @@ export function VoiceOrderModal({ open, onClose }: VoiceOrderModalProps) {
                   </div>
                   {nameFromAccount ? (
                     <span className="mt-1 block text-[10px] text-slate-500">
-                      Tomado de tu cuenta · podés editarlo
+                      Tomado de tu cuenta · puedes editarlo
                     </span>
                   ) : null}
                 </label>
@@ -302,7 +302,7 @@ export function VoiceOrderModal({ open, onClose }: VoiceOrderModalProps) {
                   </div>
                   {phoneFromAccount ? (
                     <span className="mt-1 block text-[10px] text-slate-500">
-                      Tomado de tu cuenta · podés editarlo
+                      Tomado de tu cuenta · puedes editarlo
                     </span>
                   ) : null}
                 </label>
@@ -331,7 +331,7 @@ export function VoiceOrderModal({ open, onClose }: VoiceOrderModalProps) {
 
                 <p className="text-[11px] text-slate-500">
                   Al confirmar aceptás que un asistente de voz te llame para
-                  tomar el pedido · gratis · sin costo de llamada para vos.
+                  tomar el pedido · gratis · sin costo de llamada para ti.
                 </p>
               </form>
             )}

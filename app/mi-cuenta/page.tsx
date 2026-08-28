@@ -23,7 +23,7 @@ const SAND = "#F5E9D2"
 
 export default function MiCuentaPage() {
   // R96.118 · envolver con CartProvider · OrderHistorySection usa useCart()
-  // para "Pedí igual" · sin provider rompe la página al click "Ver detalles".
+  // para "Pide igual" · sin provider rompe la página al click "Ver detalles".
   return (
     <CartProvider>
       <MiCuentaInner />
@@ -102,7 +102,7 @@ function MiCuentaInner() {
           )}
           {!account.whatsapp && (
             <p className="mt-3 rounded-md bg-black/20 px-2 py-1.5 text-[11px] text-amber-200">
-              Agregá tu WhatsApp en tu primer pedido para empezar a ganar perlas.
+              Agrega tu WhatsApp en tu primer pedido para empezar a ganar perlas.
             </p>
           )}
         </div>

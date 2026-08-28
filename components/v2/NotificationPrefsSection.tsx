@@ -79,12 +79,12 @@ export default function NotificationPrefsSection({
         Notificaciones
       </p>
       <p className="mt-1 text-[11px] text-slate-500">
-        Promos por WhatsApp · podés activar/desactivar cuando quieras.
+        Promos por WhatsApp · puedes activarlas o desactivarlas cuando quieras.
       </p>
 
       {!whatsapp ? (
         <p className="mt-2 text-[10px] text-amber-300">
-          Agregá tu WhatsApp arriba para activar notificaciones.
+          Agrega tu WhatsApp arriba para activar notificaciones.
         </p>
       ) : (
         <label className="mt-2 flex cursor-pointer items-center justify-between rounded-md border border-slate-700 bg-slate-950 px-3 py-2">

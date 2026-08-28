@@ -19,7 +19,7 @@ const REMINDER_TEMPLATE = (
   date: string,
 ) => `🌊 Buen lunes Náufrago · ${weekday} ${date}
 
-¿Qué jugos naturales tenés esta semana?
+¿Qué jugos naturales tienes esta semana?
 
 Respondé con los sabores · ejemplo ·
   "naranja y limón"

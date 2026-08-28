@@ -39,7 +39,7 @@ export default function FaqPage() {
         </h1>
         <p className="text-sm text-slate-400">
           Lo más consultado por nuestros clientes. Si tu pregunta no está acá ·
-          escribinos por WhatsApp al{" "}
+          escríbenos por WhatsApp al{" "}
           <a
             href={`https://wa.me/${cliente.whatsappE164}`}
             className="text-cyan-300 underline hover:text-cyan-200"
@@ -82,7 +82,7 @@ export default function FaqPage() {
               )}`}
               className="text-cyan-300 underline hover:text-cyan-200"
             >
-              Escribinos por WhatsApp
+              Escríbenos por WhatsApp
             </a>
           </p>
           <Link

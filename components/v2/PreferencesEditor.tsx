@@ -27,7 +27,7 @@ export default function PreferencesEditor({ whatsapp, initialValue }: Props) {
 
   async function save() {
     if (!whatsapp) {
-      setError("Agregá tu WhatsApp primero en tu próximo pedido")
+      setError("Agrega tu WhatsApp primero en tu próximo pedido")
       return
     }
     setSaving(true)

@@ -61,7 +61,7 @@ export default function CookieConsentBanner() {
     >
       <p className="text-xs text-slate-200">
         Usamos cookies funcionales (sesión · carrito) y analíticas para mejorar
-        la experiencia. Podés rechazarlas sin perder funcionalidad básica.
+        la experiencia. Puedes rechazarlas sin perder funcionalidad básica.
       </p>
       <p className="mt-1 text-[10px] text-slate-500">
         Más info en{" "}

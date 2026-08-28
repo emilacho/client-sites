@@ -2,14 +2,21 @@
  * Loyalty server helpers · R96.21 · "Perlas del náufrago".
  *
  * 1 perla = $0.01.
- * Earn rate · 10% del total_usd al stage DELIVERED.
- * Spend cap · 50% del subtotal (enforce server-side al confirmOrder).
+ * La TASA no vive aca · vive en lib/perlas.ts, que es el unico lugar donde
+ * esta escrita (R120). El servidor, el carrito y las preguntas frecuentes
+ * leen de ahi para que no puedan decir numeros distintos.
+ * Spend cap - 50% del subtotal (enforce server-side al confirmOrder).
  */
 import { getSupabaseAdmin } from "@/lib/supabase"
 
-export const PERLA_VALUE_USD = 0.01
-export const EARN_RATE = 0.1 // 10% del total
-export const SPEND_CAP = 0.5 // 50% del subtotal
+export {
+  PERLA_VALUE_USD,
+  EARN_RATE,
+  SPEND_CAP,
+  PORCENTAJE_GANANCIA,
+  perlasQueGana,
+} from "@/lib/perlas"
+import { EARN_RATE, PERLA_VALUE_USD } from "@/lib/perlas"
 
 /** R96.24 · multi-tier redemption catalog · pattern Domino's
  *  20/40/60 tiers · 3 rewards mixed (% off + free item). Cliente

@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
 
   // ─── 4) Inbound sin order pending · default ────────────────────────
   return twimlResponse(
-    "Hola · este número es para coordinar pedidos · si querés pedir, escribinos a +593997744288 o entrá a naufrago.delivery",
+    "Hola · este número es para coordinar pedidos · si quieres pedir, escríbenos a +593997744288 o entrá a naufrago.delivery",
   )
 }
 

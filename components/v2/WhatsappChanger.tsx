@@ -64,7 +64,7 @@ export default function WhatsappChanger({ currentWhatsapp, onChange }: Props) {
       if (data?.error === "whatsapp_taken") {
         setError("Ese número ya está en uso por otra cuenta")
       } else if (data?.error === "same_as_current") {
-        setError("Es el mismo número que ya tenés")
+        setError("Es el mismo número que ya tienes")
       } else if (data?.error === "invalid_whatsapp") {
         setError("WhatsApp inválido")
       } else {
