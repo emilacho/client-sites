@@ -124,7 +124,12 @@ export function CombosModal({ open, onClose }: CombosModalProps) {
                 COMBO DEL DÍA
               </h2>
               <p className="mt-1 text-[11px] text-slate-400">
-                3 combos curados por el cocinero · ahorrás el envío de pensar.
+                {/* R118 · el número sale del arreglo. Estaba escrito a mano
+                    y decía 3 · al sacar el Combo Familia (se iba con los
+                    patacones) quedó diciendo 3 con 2 en pantalla. Un número
+                    a mano se desincroniza sin que nadie lo note. */}
+                {COMBOS.length} combos curados por el cocinero · ahorrás el
+                envío de pensar.
               </p>
             </div>
             <button
