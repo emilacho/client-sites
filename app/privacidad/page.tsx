@@ -177,7 +177,7 @@ export default function PrivacidadPage() {
             Podemos actualizar este documento cuando cambien nuestras prácticas
             o las regulaciones aplicables. La fecha de &ldquo;Última actualización&rdquo;
             arriba refleja la versión vigente. Si los cambios son materiales
-            te notificaremos por email o WhatsApp.
+            te notificaremos por correo o WhatsApp.
           </p>
         </Section>
 
