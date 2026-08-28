@@ -151,6 +151,30 @@ function LoginForm({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="mt-3 space-y-3">
+      {/* R119 - Por que tener cuenta. Antes esta pantalla ofrecia entrar sin
+          decir nunca para que servia. Los tres beneficios EXISTEN y estan
+          verificados antes de prometerlos: el 10% sale de EARN_RATE en
+          lib/loyalty-server.ts, las direcciones de /api/customer/addresses y
+          el historial de /api/orders/by-account. Nada que no funcione. */}
+      <ul className="space-y-1.5 text-xs text-slate-300">
+        <li className="flex gap-2">
+          <span aria-hidden>🦪</span>
+          <span>
+            Ganás el{" "}
+            <strong className="text-cyan-300">10% de cada pedido</strong> en
+            perlas · las usás como descuento
+          </span>
+        </li>
+        <li className="flex gap-2">
+          <span aria-hidden>📍</span>
+          <span>Tu dirección queda guardada · pedís en dos toques</span>
+        </li>
+        <li className="flex gap-2">
+          <span aria-hidden>🛶</span>
+          <span>Repetís cualquier pedido anterior sin volver a armarlo</span>
+        </li>
+      </ul>
+
       <p className="text-xs text-slate-400">
         Entrá con tu email o Google · sin password.
       </p>
