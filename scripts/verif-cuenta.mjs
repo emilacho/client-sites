@@ -1,5 +1,5 @@
 import { chromium } from "playwright"
-const URL = (process.env.SITIO ?? "http://localhost:3129/") + "?login=1"
+const URL = (process.env.SITIO ?? "https://naufrago.ec/") + "?login=1"
 const b = await chromium.launch()
 const pg = await b.newPage({ viewport: { width: 390, height: 844 }, isMobile: true })
 const errores = []
