@@ -6,6 +6,7 @@ import {
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { buildStagePayload, sendPushForOrder } from "@/lib/push-server"
 import { earnPerlas } from "@/lib/loyalty-server"
+import { enviarVentaALoyverse } from "@/lib/loyverse"
 import { haversineMeters, deriveDeliveryStatus } from "@/lib/geo"
 
 export const runtime = "nodejs"
@@ -107,7 +108,11 @@ export async function POST(request: Request) {
     const { data: nfOrder } = await supabase
       .from("orders")
       .select(
-        "order_code, status, customer_phone, total_usd, dropoff_lat, dropoff_lng",
+        // R124 · se suman los datos de la venta (id, platos, envio, notas)
+        // porque al ENTREGAR hay que mandarla a la contabilidad del local.
+        // Va en UNA sola linea a proposito: el cliente deduce los tipos
+        // leyendo este texto literal, y partirlo en trozos lo rompe.
+        "id, order_code, status, customer_phone, total_usd, subtotal_usd, delivery_fee_usd, cart_lines, customer_notes, delivered_at, dropoff_lat, dropoff_lng",
       )
       .eq("delivery_provider_order_id", event.orderId)
       .maybeSingle()
@@ -237,14 +242,65 @@ export async function POST(request: Request) {
       // R96.21 · earn perlas al DELIVERED · idempotent vía ledger check.
       // R107.4 · idem · las perlas del cliente NUNCA se acreditaban
       // porque se esperaba "DELIVERED" y llegaba "COMPLETED".
+      // R124 · AHORA SE ESPERA la respuesta. Antes iba con `void` -lanzado
+      // y no esperado- y en este tipo de servidor la funcion se apaga en
+      // cuanto responde, asi que el trabajo a medio hacer se muere con
+      // ella. Es el mismo defecto que ya habia arreglado en R110 con el
+      // aviso a la cocina, y aca estaba costando plata al cliente: medido
+      // el 28-ago, 6 pedidos ENTREGADOS y UN SOLO movimiento de tesoro
+      // registrado. El programa de fidelizacion estaba roto en silencio.
       if (event.mappedStatus === "DELIVERED" && nfOrder.customer_phone) {
-        void earnPerlas({
-          phone: nfOrder.customer_phone,
-          totalUsd: nfOrder.total_usd ?? 0,
+        try {
+          await earnPerlas({
+            phone: nfOrder.customer_phone,
+            totalUsd: nfOrder.total_usd ?? 0,
+            orderCode: nfOrder.order_code,
+          })
+        } catch (err) {
+          console.warn("[courier-webhook] no se pudo acreditar el tesoro", err)
+        }
+      }
+
+      // R124 · la venta entra a la contabilidad del local (Loyverse).
+      // Se manda al ENTREGAR y no al crear el pedido, porque se cobra
+      // contra entrega: la venta recien es real cuando el cliente pago.
+      // Si Loyverse falla, el pedido ya se entrego y el cliente ya pago ·
+      // por eso esto nunca tumba nada, solo queda anotado.
+      if (event.mappedStatus === "DELIVERED" && nfOrder.id) {
+        const lineas = Array.isArray(nfOrder.cart_lines)
+          ? (nfOrder.cart_lines as Array<{
+              id?: string
+              name?: string
+              qty?: number
+              priceUsd?: number
+            }>)
+          : []
+        const venta = await enviarVentaALoyverse(String(nfOrder.id), {
           orderCode: nfOrder.order_code,
-        }).catch((err) => {
-          console.warn("[courier-webhook] loyalty earn failed", err)
+          lines: lineas.map((l) => ({
+            id: String(l.id ?? ""),
+            name: String(l.name ?? ""),
+            qty: Number(l.qty ?? 1),
+            priceUsd: Number(l.priceUsd ?? 0),
+          })),
+          deliveryFeeUsd: Number(nfOrder.delivery_fee_usd ?? 0),
+          totalUsd: Number(nfOrder.total_usd ?? 0),
+          notes: nfOrder.customer_notes ?? null,
+          entregadoEn: nfOrder.delivered_at ?? null,
         })
+        if (!("yaEstaba" in venta)) {
+          await supabase
+            .from("order_events")
+            .insert({
+              order_id: nfOrder.id,
+              event_type: venta.ok ? "ACCOUNTING_SYNCED" : "ACCOUNTING_SYNC_FAILED",
+              actor: "system",
+              payload: venta.ok
+                ? { receipt: venta.receiptNumber }
+                : { motivo: venta.motivo },
+            })
+            .then(undefined, () => {})
+        }
       }
 
       // R96.110 · WhatsApp status message · estilo Domino's Pizza Tracker.
