@@ -6,6 +6,7 @@
  * via Kushki pending Sprint próximo. Por ahora captura emails para que
  * cuando active el Club tengamos lista pre-armada de interesados.
  */
+import { CLUB, PORCENTAJE_GANANCIA, PORCENTAJE_SOCIO } from "@/lib/perlas"
 import { useEffect, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { X, Check } from "lucide-react"
@@ -20,12 +21,36 @@ export interface ClubModalProps {
   onClose: () => void
 }
 
+// R122 - beneficios re-dimensionados tras el estudio financiero del 28-ago.
+// Lo que se fue y por que:
+//   ENVIO GRATIS - su costo lo fija PedidosYa, no nosotros: $3.18 a $4.70
+//     segun donde viva el socio, y a veces ni siquiera llega. Cuatro al mes
+//     costaban $15.38 contra una cuota de $9.99.
+//   10% DE DESCUENTO - caia tambien sobre el Junior, el plato donde los
+//     insumos se llevan mas proporcion del precio. Es el error que le costo
+//     el programa a Subway.
+//   PRIORIDAD EN COCINA - un club sirve para que el socio pida MAS; si
+//     ademas se salta la fila, con una sola cocina el resto de los clientes
+//     espera. Leon cerro su programa por exactamente eso, no por margen.
+//   EVENTOS EXCLUSIVOS - costo abierto y sin definir.
 const BENEFITS = [
-  { emoji: "🚚", title: "Envío gratis", detail: "Hasta 4 pedidos al mes sin costo de motorizado." },
-  { emoji: "🍹", title: "Jugo gratis siempre", detail: "1 jugo natural del día sumado a cada pedido · sin condición." },
-  { emoji: "💎", title: "10% off acumulado", detail: "Descuento extra en cada pedido · acumulable con tu tesoro y promos." },
-  { emoji: "⚓", title: "Prioridad en cocina", detail: "Tu pedido se arma antes que los pedidos sin membresía · 10 min menos." },
-  { emoji: "🏝", title: "Eventos exclusivos", detail: "Ceviches especiales, jornadas privadas en la playa, los primeros en probar los jugos raros." },
+  {
+    emoji: "🍹",
+    title: "Un jugo natural gratis",
+    detail:
+      "Con cada plato principal · hasta 4 al mes. El jugo del día, recién hecho.",
+  },
+  {
+    emoji: "🦪",
+    title: "Tu tesoro al doble",
+    detail: `Acumulas el ${PORCENTAJE_SOCIO}% de cada pedido en vez del ${PORCENTAJE_GANANCIA}% · lo usas como descuento.`,
+  },
+  {
+    emoji: "📣",
+    title: "Te avisamos primero",
+    detail:
+      "Cuando hay ceviche especial o un jugo raro, los socios se enteran antes.",
+  },
 ]
 
 type Stage =
@@ -171,7 +196,7 @@ export function ClubModal({ open, onClose }: ClubModalProps) {
                     className="font-[family-name:var(--font-bebas),sans-serif] text-3xl tracking-wider"
                     style={{ color: CYAN }}
                   >
-                    $9.99
+                    ${CLUB.precioUsd.toFixed(2)}
                   </span>
                   <span className="text-sm opacity-70">/mes</span>
                   <span className="ml-auto text-[10px] opacity-60">
