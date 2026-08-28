@@ -1184,7 +1184,7 @@ export function PaymentForm({
       {/* Method selector · 3x2 grid */}
       <div>
         <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-widest text-slate-400">
-          ¿Cómo pagás?
+          ¿Cómo pagas?
         </span>
         <div className="grid grid-cols-3 gap-2">
           <MethodTab

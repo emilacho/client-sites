@@ -23,7 +23,7 @@ import { ArrowLeft, Loader2, MessageSquare, Minus, Plus, Trash2, Utensils, X } f
 import { CanoeIcon } from "./CanoeIcon"
 import { PlatoThumb } from "./PlatoThumb"
 import { motion, AnimatePresence } from "framer-motion"
-import { perlasQueGana } from "@/lib/perlas"
+import { perlasQueGana, tesoroUsd } from "@/lib/perlas"
 import { useCart } from "@/lib/v2/cart-context"
 import { buildWhatsAppLink, MENU_ITEMS } from "@/lib/v2/naufrago-content"
 import { saveLastOrder } from "@/lib/v2/use-last-order"
@@ -735,7 +735,7 @@ function CartFooter() {
           ) : null}
           {loyaltySpendUsd > 0 ? (
             <div className="flex items-baseline justify-between text-xs" style={{ color: "#A78BFA" }}>
-              <span>Perlas canjeadas · {loyaltySpendPerlas}</span>
+              <span>Tesoro usado</span>
               <span className="tabular-nums">−${loyaltySpendUsd.toFixed(2)}</span>
             </div>
           ) : null}
@@ -776,7 +776,7 @@ function CartFooter() {
                   Vas a ganar
                 </span>
                 <span className="tabular-nums font-semibold">
-                  {perlasEarn} perlas (≈${(perlasEarn * 0.01).toFixed(2)})
+                  ${tesoroUsd(perlasEarn)} de tesoro
                 </span>
               </div>
             )
@@ -954,11 +954,11 @@ function CartFooter() {
               <div className="flex items-baseline justify-between gap-2">
                 <div className="flex flex-col gap-0.5">
                   <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-violet-300">
-                    Perlas del náufrago
+                    Tesoro de náufrago
                   </span>
                   <span>
-                    Tienes <strong>{loyaltyBalance.perlas}</strong> perlas · ≈$
-                    {perlasToUsd(loyaltyBalance.perlas).toFixed(2)}
+                    Tienes <strong>${tesoroUsd(loyaltyBalance.perlas)}</strong>{" "}
+                    acumulados
                   </span>
                 </div>
                 <label className="flex cursor-pointer items-center gap-2 text-[11px]">
@@ -980,7 +980,7 @@ function CartFooter() {
                   con descuento directo. */}
               <div className="space-y-1.5 border-t border-violet-500/20 pt-2">
                 <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-violet-300">
-                  O canjeá un reward
+                  O canjea un premio
                 </p>
                 <div className="grid grid-cols-1 gap-1">
                   {LOYALTY_REWARDS.map((r) => {
@@ -1206,7 +1206,7 @@ function CartFooter() {
 
       {shipping.kind === "none" ? (
         <p className="mt-2 text-center text-[11px] text-slate-500">
-          WhatsApp · te confirmamos en chat · pagás al recibir. PedidosYa · envío motorizado · cotización al instante.
+          WhatsApp · te confirmamos en chat · pagas al recibir. PedidosYa · envío motorizado · cotización al instante.
         </p>
       ) : null}
 

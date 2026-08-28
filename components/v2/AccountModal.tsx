@@ -4,7 +4,7 @@
  * que se monta sobre la isla 3D. Login = email magic link o Google.
  * Si autenticado · muestra perfil mini + link a /mi-cuenta full.
  */
-import { PORCENTAJE_GANANCIA } from "@/lib/perlas"
+import { PORCENTAJE_GANANCIA, tesoroUsd } from "@/lib/perlas"
 import { useState } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
@@ -170,7 +170,7 @@ function LoginForm({ onClose }: { onClose: () => void }) {
             <strong className="text-cyan-300">
               {PORCENTAJE_GANANCIA}% de cada pedido
             </strong>{" "}
-            en perlas · las usas como descuento
+            en tesoro de náufrago · lo usas como descuento
           </span>
         </li>
         <li className="flex gap-2">
@@ -237,7 +237,7 @@ function SignedInView({
   account: NonNullable<ReturnType<typeof useAccount>["account"]>
   onLogout: () => Promise<void>
 }) {
-  const perlasUsd = (account.perlas * 0.01).toFixed(2)
+  const tesoro = tesoroUsd(account.perlas)
   return (
     <div className="mt-3 space-y-3 text-slate-100">
       <div>
@@ -261,15 +261,15 @@ function SignedInView({
             ✦
           </span>
           <span className="font-[family-name:var(--font-bebas),sans-serif] text-2xl tracking-wide tabular-nums text-cyan-100">
-            {account.perlas}
+            ${tesoro}
           </span>
           <span className="text-xs text-cyan-200/80">
-            perlas (≈${perlasUsd})
+            de tesoro de náufrago
           </span>
         </div>
         {!account.whatsapp && (
           <p className="mt-1 text-[10px] text-amber-300/80">
-            Agrega tu WhatsApp en tu primer pedido para empezar a ganar perlas.
+            Agrega tu WhatsApp en tu primer pedido para empezar a acumular tesoro.
           </p>
         )}
       </div>

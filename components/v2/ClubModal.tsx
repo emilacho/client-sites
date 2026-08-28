@@ -23,7 +23,7 @@ export interface ClubModalProps {
 const BENEFITS = [
   { emoji: "🚚", title: "Envío gratis", detail: "Hasta 4 pedidos al mes sin costo de motorizado." },
   { emoji: "🍹", title: "Jugo gratis siempre", detail: "1 jugo natural del día sumado a cada pedido · sin condición." },
-  { emoji: "💎", title: "10% off acumulado", detail: "Descuento extra en cada pedido · acumulable con perlas y promos." },
+  { emoji: "💎", title: "10% off acumulado", detail: "Descuento extra en cada pedido · acumulable con tu tesoro y promos." },
   { emoji: "⚓", title: "Prioridad en cocina", detail: "Tu pedido se arma antes de los pedidos no-club · 10 min menos." },
   { emoji: "🏝", title: "Eventos exclusivos", detail: "Ceviches especiales, jornadas privadas en la playa, primer dibs de jugos raros." },
 ]

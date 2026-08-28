@@ -81,10 +81,10 @@ function MiCuentaInner() {
               ✦
             </span>
             <span className="font-[family-name:var(--font-bebas),sans-serif] text-4xl tracking-wide tabular-nums">
-              {perlasNum}
+              ${perlasUsd}
             </span>
             <span className="text-sm opacity-80">
-              perlas (≈${perlasUsd})
+              de tesoro de náufrago
             </span>
           </div>
           {perlasNum < nextRewardCost && (

@@ -7,6 +7,7 @@
  * Composition · a single `<OverlayPanels active={...} onClose />` is
  * rendered by the page and shows whichever panel is active.
  */
+import { HORARIO_TEXTO } from "@/lib/horario"
 import { motion, AnimatePresence } from "framer-motion"
 import { COCINA, RESTAURANTE_OLON } from "@/lib/ubicacion"
 import { Anchor, Coffee, MessageSquare, Phone, Star, X } from "lucide-react"
@@ -151,7 +152,7 @@ function ContactBody() {
         {naufragoV2.contact.title}
       </h3>
       <p className="text-slate-300">
-        Estamos de jueves a lunes, 9 AM a 5 PM. Escríbenos por WhatsApp y te
+        Atendemos {HORARIO_TEXTO}. Escríbenos por WhatsApp y te
         confirmamos tiempo de entrega.
       </p>
       <a

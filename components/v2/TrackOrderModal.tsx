@@ -125,7 +125,7 @@ export function TrackOrderModal({ open, onClose }: TrackOrderModalProps) {
                 />
               </label>
               <p className="text-[11px] text-slate-500">
-                Lo encontrás en la confirmación que te enviamos por WhatsApp ·
+                Lo encuentras en la confirmación que te enviamos por WhatsApp ·
                 empieza con <span className="font-mono">NF-</span>.
               </p>
               {error ? (

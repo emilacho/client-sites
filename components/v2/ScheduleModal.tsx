@@ -11,6 +11,7 @@
  * Validación · debe ser futura (+30min) · debe estar dentro horario
  * 11:00-22:00. Persiste en localStorage 'naufrago_schedule_target'.
  */
+import { COCINA_ABRE_H, COCINA_CIERRA_H } from "@/lib/horario"
 import { useEffect, useMemo, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { X, Clock, Check } from "lucide-react"
@@ -19,8 +20,11 @@ const PURPLE = "#3D2466"
 const CYAN = "#4DD4D8"
 const LS_KEY = "naufrago_schedule_target"
 
-const KITCHEN_OPEN_H = 11
-const KITCHEN_CLOSE_H = 22
+// R121 - el horario ya no se escribe aca: sale de lib/horario.ts, que es
+// el unico lugar. Antes esta pantalla RECHAZABA fuera de 11-22 mientras
+// las preguntas frecuentes prometian 9 AM a 5 PM.
+const KITCHEN_OPEN_H = COCINA_ABRE_H
+const KITCHEN_CLOSE_H = COCINA_CIERRA_H
 const MIN_LEAD_MINUTES = 30
 
 interface ScheduleTarget {

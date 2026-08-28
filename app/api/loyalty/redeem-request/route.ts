@@ -37,7 +37,7 @@ async function sendOtpWhatsApp(phone: string, code: string): Promise<boolean> {
   const authToken = process.env.TWILIO_AUTH_TOKEN
   const fromWa = process.env.TWILIO_WHATSAPP_FROM
   if (!accountSid || !authToken || !fromWa) return false
-  const message = `Tu código Náufrago · ${code}\n\nVálido por 5 min · NO lo compartas. Usalo para canjear tus perlas.`
+  const message = `Tu código Náufrago · ${code}\n\nVálido por 5 min · NO lo compartas. Úsalo para canjear tu tesoro de náufrago.`
   const params = new URLSearchParams({
     To: `whatsapp:+${phone}`,
     From: fromWa,
