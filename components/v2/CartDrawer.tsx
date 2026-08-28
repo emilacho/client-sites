@@ -116,7 +116,13 @@ type ShippingState =
     }
   | { kind: "error"; message: string; previous: "address" | "quoted" | "payment" }
 
-export function CartDrawer() {
+export interface CartDrawerProps {
+  /** R118 · abre la carta · lo usa la canoa vacía para no dejar al
+   *  cliente sin nada que tocar. */
+  onOpenMenu?: () => void
+}
+
+export function CartDrawer({ onOpenMenu }: CartDrawerProps = {}) {
   const cart = useCart()
   const [isMobile, setIsMobile] = useState(false)
   // R96.11 · qué líneas tienen el editor de notas expandido.
@@ -221,7 +227,16 @@ export function CartDrawer() {
 
             <div className="flex-1 overflow-y-auto px-4 py-3">
               {cart.lines.length === 0 ? (
-                <EmptyState />
+                <EmptyState
+                  onVerMenu={
+                    onOpenMenu
+                      ? () => {
+                          cart.close()
+                          onOpenMenu()
+                        }
+                      : undefined
+                  }
+                />
               ) : (
                 <ul className="flex flex-col gap-2">
                   {cart.lines.map((line) => {
@@ -1303,16 +1318,33 @@ function CartFooter() {
   )
 }
 
-function EmptyState() {
+/**
+ * R118 · la canoa vacía es el momento de MÁS intención de compra: el
+ * cliente abrió el carrito porque quiere pedir. Y acá lo mandábamos a
+ * buscar un cofre en la isla · una búsqueda del tesoro, sin ningún botón
+ * para actuar. El descuento del cofre está bien, pero es lo secundario:
+ * primero se come, después se busca el tesoro.
+ */
+function EmptyState({ onVerMenu }: { onVerMenu?: () => void }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 px-6 py-10 text-center">
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-800 text-2xl">
         🛶
       </div>
       <p className="text-sm text-slate-300">Tu canoa está vacía.</p>
-      <p className="text-[12px] text-slate-500">
-        Toca el <strong className="text-cyan-300">cofre</strong> en la isla
-        para reclamar tu descuento, luego explorá el menú.
+      {onVerMenu ? (
+        <button
+          type="button"
+          onClick={onVerMenu}
+          className="mt-1 rounded-full px-6 py-3 text-sm font-bold text-white shadow-lg"
+          style={{ background: "linear-gradient(90deg, #4DD4D8 0%, #2BA8AC 100%)", color: "#0B1220" }}
+        >
+          Ver el menú
+        </button>
+      ) : null}
+      <p className="mt-1 text-[12px] text-slate-500">
+        ¿Buscás descuento? Tocá el{" "}
+        <strong className="text-cyan-300">cofre</strong> en la isla.
       </p>
     </div>
   )

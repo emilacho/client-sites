@@ -515,7 +515,7 @@ function LandingInner() {
       {/* Drawers + modals · z-40+ to sit above the 3D layer.
           Round 85 · TreasureRewardModal unmounted · cofre click
           drives the in-scene 3D pergamino emerge (Scene.tsx). */}
-      <CartDrawer />
+      <CartDrawer onOpenMenu={() => setMenuOpen(true)} />
       <MenuModal open={menuOpen} onClose={() => setMenuOpen(false)} />
       <TrackOrderModal open={trackOpen} onClose={() => setTrackOpen(false)} />
       {/* R97.8 · 4 modals nuevos · reemplazan VoiceOrderModal */}
