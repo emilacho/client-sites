@@ -102,7 +102,13 @@ export async function POST(req: NextRequest) {
 
   // ─── 4) Inbound sin order pending · default ────────────────────────
   return twimlResponse(
-    "Hola · este número es para coordinar pedidos · si quieres pedir, escríbenos a +593997744288 o entrá a naufrago.delivery",
+    // R123 - este mensaje tenia tres cosas mal a la vez:
+    //   1. mandaba a naufrago.delivery, que NO RESPONDE (verificado: la
+    //      conexion ni siquiera se establece). El dominio vivo es naufrago.ec.
+    //   2. le decia "escribenos a +593997744288" a alguien que ya estaba
+    //      escribiendo, sin darle una salida distinta.
+    //   3. "entra" seguia en argentino.
+    "Hola · por aquí coordinamos tu entrega. Para hacer un pedido entra a naufrago.ec · si necesitas ayuda con uno en curso, cuéntanos aquí mismo y te atendemos.",
   )
 }
 
