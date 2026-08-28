@@ -274,7 +274,7 @@ function PopularStrip() {
               </span>
               <span
                 className={
-                  "rounded-full px-2 py-0.5 text-[9px] font-bold transition-colors " +
+                  "rounded-full px-3 py-1 text-[11px] font-bold transition-colors " +
                   (flashId === it.id
                     ? "bg-emerald-500 text-white"
                     : "bg-slate-800 text-slate-200")
@@ -412,11 +412,11 @@ function MenuCard({ item }: { item: MenuItem }) {
                 <button
                   type="button"
                   onClick={() => setModOpen((v) => !v)}
-                  className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium text-violet-200 ring-1 ring-violet-500/20 hover:bg-violet-500/20"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/10 px-4 py-2 text-sm font-medium text-violet-200 ring-1 ring-violet-500/20 hover:bg-violet-500/20"
                 >
                   {modOpen ? "− Cerrar" : "+ Personalizar"}
                   {togglesAsCustomizations.length > 0 && !modOpen ? (
-                    <span className="ml-0.5 rounded-full bg-violet-500/40 px-1.5 text-[9px] font-bold">
+                    <span className="ml-0.5 rounded-full bg-violet-500/40 px-1.5 text-[11px] font-bold">
                       {togglesAsCustomizations.length}
                     </span>
                   ) : null}
@@ -436,7 +436,7 @@ function MenuCard({ item }: { item: MenuItem }) {
               onClick={handleAdd}
               aria-label={`Agregar ${item.name}`}
               className={
-                "inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors " +
+                "inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-colors " +
                 (flash
                   ? "bg-emerald-500 text-white"
                   : "bg-slate-800 text-slate-100 hover:bg-slate-700")
