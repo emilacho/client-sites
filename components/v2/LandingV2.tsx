@@ -117,7 +117,7 @@ function LandingInner() {
   // Round 9 narrows the entry points · cofre + hero CTAs now route to
   // the catalog instead of the empty cart drawer.
   const cart = useCart()
-  // R96.9 · pattern Domino's "Pedí lo mismo" · CTA conditional
+  // R96.9 · pattern Domino's "Pide lo mismo" · CTA conditional
   // basado en localStorage del último pedido (TTL 30 días).
   const { order: lastOrder, clear: clearLastOrder } = useLastOrder()
   // R96.106 · Easy Order ("Hambre de Náufrago") · cross-device · server-side.
@@ -239,10 +239,10 @@ function LandingInner() {
         </SceneErrorBoundary>
       </div>
 
-      {/* R96.31 · TODOS los CTAs + "Pedí lo mismo" alineados al marco
+      {/* R96.31 · TODOS los CTAs + "Pide lo mismo" alineados al marco
           izquierdo top vertical stack. Solo el hero banner (chip +
           headline) queda abajo. Orden top→bottom · primary 'Ver menú'
-          (más prominent) · 'Pedí lo mismo' (condicional) · 'Sigue tu
+          (más prominent) · 'Pide lo mismo' (condicional) · 'Sigue tu
           pedido' · 'Hablar por WhatsApp' · 'Registrate'. */}
       <div className="pointer-events-none absolute left-3 top-20 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-start gap-2">
         {/* R96.150 · botón "Ver menú" estilo letrero de madera Náufrago ·
@@ -448,7 +448,7 @@ function LandingInner() {
               style={{ background: "#3D2466" }}
             >
               <RotateCw className="h-3 w-3" />
-              Pedí lo mismo
+              Pide lo mismo
             </button>
             <button
               type="button"
@@ -471,7 +471,7 @@ function LandingInner() {
 
       {/* Hero copy · esquina inferior izquierda · solo headline +
           chip 'Olón ghost kitchen' + CTA primario 'Ver menú' + card
-          'Pedí lo mismo' condicional. Los 3 CTAs secundarios viven
+          'Pide lo mismo' condicional. Los 3 CTAs secundarios viven
           arriba en el top-left stack · espacio natural entre ambos
           grupos gracias al justify-end del column flex. */}
       <div className="pointer-events-none relative z-10 flex min-h-[100svh] flex-col items-start justify-end px-3 pb-3">
@@ -506,7 +506,7 @@ function LandingInner() {
             te espera!
           </h1>
           {/* R96.31 · hero abajo solo · chip + headline. Todos los
-              CTAs ('Ver menú' · 'Pedí lo mismo' · 'Sigue tu pedido' ·
+              CTAs ('Ver menú' · 'Pide lo mismo' · 'Sigue tu pedido' ·
               'Hablar WhatsApp' · 'Registrate') viven en el stack
               superior izquierdo · ver bloque absolute top-20 arriba. */}
         </motion.div>

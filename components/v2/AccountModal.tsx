@@ -4,6 +4,7 @@
  * que se monta sobre la isla 3D. Login = email magic link o Google.
  * Si autenticado · muestra perfil mini + link a /mi-cuenta full.
  */
+import { PORCENTAJE_GANANCIA } from "@/lib/perlas"
 import { useState } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
@@ -132,11 +133,11 @@ function LoginForm({ onClose }: { onClose: () => void }) {
     return (
       <div className="mt-3 text-sm text-slate-200">
         <p>
-          Te mandamos un link a <strong className="text-cyan-300">{email}</strong>
+          Te enviamos un enlace a <strong className="text-cyan-300">{email}</strong>
           .
         </p>
         <p className="mt-1 text-xs text-slate-400">
-          Abrilo desde tu mail para entrar.
+          Ábrelo desde tu correo para entrar.
         </p>
         <button
           type="button"
@@ -152,31 +153,38 @@ function LoginForm({ onClose }: { onClose: () => void }) {
   return (
     <div className="mt-3 space-y-3">
       {/* R119 - Por que tener cuenta. Antes esta pantalla ofrecia entrar sin
-          decir nunca para que servia. Los tres beneficios EXISTEN y estan
-          verificados antes de prometerlos: el 10% sale de EARN_RATE en
-          lib/loyalty-server.ts, las direcciones de /api/customer/addresses y
-          el historial de /api/orders/by-account. Nada que no funcione. */}
+          decir nunca para que servia.
+          R120 - reescrito en espanol de Ecuador (tuteo, no voseo) y con la
+          tasa real: 4%, bajada por Emilio el 28-ago. El numero NO se tipea
+          aca, sale de lib/perlas.ts, para que no pueda contradecir a lo que
+          el servidor acredita. Los tres beneficios existen y estan
+          verificados: perlas, /api/customer/addresses y /api/orders/by-account. */}
+      <p className="text-sm font-semibold text-slate-100">
+        Crea tu cuenta y por cada pedido acumula tesoro de náufrago
+      </p>
       <ul className="space-y-1.5 text-xs text-slate-300">
         <li className="flex gap-2">
           <span aria-hidden>🦪</span>
           <span>
-            Ganás el{" "}
-            <strong className="text-cyan-300">10% de cada pedido</strong> en
-            perlas · las usás como descuento
+            Ganas el{" "}
+            <strong className="text-cyan-300">
+              {PORCENTAJE_GANANCIA}% de cada pedido
+            </strong>{" "}
+            en perlas · las usas como descuento
           </span>
         </li>
         <li className="flex gap-2">
           <span aria-hidden>📍</span>
-          <span>Tu dirección queda guardada · pedís en dos toques</span>
+          <span>Guarda tu dirección y pide con un solo toque</span>
         </li>
         <li className="flex gap-2">
           <span aria-hidden>🛶</span>
-          <span>Repetís cualquier pedido anterior sin volver a armarlo</span>
+          <span>Repite cualquier pedido anterior sin volver a armarlo</span>
         </li>
       </ul>
 
       <p className="text-xs text-slate-400">
-        Entrá con tu email o Google · sin password.
+        Entra con tu correo o Google · sin contraseña.
       </p>
 
       <button
@@ -214,7 +222,7 @@ function LoginForm({ onClose }: { onClose: () => void }) {
         }}
       >
         <Mail className="h-4 w-4" />
-        {phase === "sending" ? "Enviando…" : "Enviar link por email"}
+        {phase === "sending" ? "Enviando…" : "Enviar enlace por correo"}
       </button>
 
       {error && <p className="text-xs text-rose-400">{error}</p>}
@@ -261,7 +269,7 @@ function SignedInView({
         </div>
         {!account.whatsapp && (
           <p className="mt-1 text-[10px] text-amber-300/80">
-            Agregá tu WhatsApp en tu primer pedido para empezar a ganar perlas.
+            Agrega tu WhatsApp en tu primer pedido para empezar a ganar perlas.
           </p>
         )}
       </div>

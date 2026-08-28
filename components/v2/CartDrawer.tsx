@@ -23,6 +23,7 @@ import { ArrowLeft, Loader2, MessageSquare, Minus, Plus, Trash2, Utensils, X } f
 import { CanoeIcon } from "./CanoeIcon"
 import { PlatoThumb } from "./PlatoThumb"
 import { motion, AnimatePresence } from "framer-motion"
+import { perlasQueGana } from "@/lib/perlas"
 import { useCart } from "@/lib/v2/cart-context"
 import { buildWhatsAppLink, MENU_ITEMS } from "@/lib/v2/naufrago-content"
 import { saveLastOrder } from "@/lib/v2/use-last-order"
@@ -559,7 +560,7 @@ function CartFooter() {
       if (!res.ok || !json.ok) {
         throw new Error(json.detail || json.error || "order_failed")
       }
-      // R96.9 · persist last order para pattern "Pedí lo mismo"
+      // R96.9 · persist last order para pattern "Pide lo mismo"
       saveLastOrder({
         orderCode: json.orderId ?? null,
         lines: cart.lines,
@@ -757,11 +758,13 @@ function CartFooter() {
               ${total.toFixed(2)}
             </span>
           </div>
-          {/* R96.107 · loyalty earn preview · 10% del total final en
-              perlas (1 perla = $0.01). Solo visible si vas a ganar
-              al menos 1 perla · DELIVERED triggera el earn server-side. */}
+          {/* R96.107 · cuanto va a ganar el cliente con este pedido. Solo
+              se muestra si llega al menos a 1 perla.
+              R120 · la tasa ya NO se calcula aca: sale de lib/perlas.ts. Antes
+              decia `total * 0.1` a mano y era una segunda copia de la regla,
+              capaz de contradecir a lo que el servidor acredita de verdad. */}
           {(() => {
-            const perlasEarn = Math.round(total * 0.1 / 0.01)
+            const perlasEarn = perlasQueGana(total)
             if (perlasEarn <= 0) return null
             return (
               <div
@@ -954,7 +957,7 @@ function CartFooter() {
                     Perlas del náufrago
                   </span>
                   <span>
-                    Tenés <strong>{loyaltyBalance.perlas}</strong> perlas · ≈$
+                    Tienes <strong>{loyaltyBalance.perlas}</strong> perlas · ≈$
                     {perlasToUsd(loyaltyBalance.perlas).toFixed(2)}
                   </span>
                 </div>
@@ -1184,7 +1187,7 @@ function CartFooter() {
           <p className="text-center text-[11px] text-slate-400">
             Tu pedido aparece abajo a la derecha de la isla 🌊
             <br />
-            podés explorar mientras lo cocinamos.
+            puedes explorar mientras lo cocinamos.
           </p>
         </div>
       ) : shipping.kind === "error" ? (
@@ -1223,7 +1226,7 @@ function CartFooter() {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-base font-semibold text-cyan-200">
-              Confirmá el canje
+              Confirma el canje
             </h3>
             <p className="mt-1 text-xs text-slate-400">
               Te enviamos un código de 4 dígitos a tu WhatsApp · ingresalo
@@ -1343,7 +1346,7 @@ function EmptyState({ onVerMenu }: { onVerMenu?: () => void }) {
         </button>
       ) : null}
       <p className="mt-1 text-[12px] text-slate-500">
-        ¿Buscás descuento? Tocá el{" "}
+        ¿Buscás descuento? Toca el{" "}
         <strong className="text-cyan-300">cofre</strong> en la isla.
       </p>
     </div>
@@ -1617,7 +1620,7 @@ function DiscountCodeRow() {
           type="text"
           value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())}
-          placeholder="¿Tenés un código?"
+          placeholder="¿Tienes un código?"
           className={[
             "flex-1 rounded-md border bg-slate-950 px-3 py-2 text-sm uppercase tracking-[0.1em] text-slate-100 placeholder:text-slate-500 transition-all",
             error

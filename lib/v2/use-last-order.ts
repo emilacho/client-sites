@@ -12,7 +12,7 @@
  *    porque la confirmación real ocurre en el chat externo)
  *
  * Load · useLastOrder() en el hero · renderiza condicionalmente
- * el 4to CTA "Pedí lo mismo" cuando hay un last-order válido.
+ * el 4to CTA "Pide lo mismo" cuando hay un last-order válido.
  */
 import { useCallback, useEffect, useState } from "react"
 import type { CartLine } from "./cart-context"

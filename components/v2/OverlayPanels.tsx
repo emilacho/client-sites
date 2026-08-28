@@ -151,7 +151,7 @@ function ContactBody() {
         {naufragoV2.contact.title}
       </h3>
       <p className="text-slate-300">
-        Estamos de jueves a lunes, 9 AM a 5 PM. Escribinos por WhatsApp y te
+        Estamos de jueves a lunes, 9 AM a 5 PM. Escríbenos por WhatsApp y te
         confirmamos tiempo de entrega.
       </p>
       <a

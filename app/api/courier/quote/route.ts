@@ -84,7 +84,7 @@ export async function POST(request: Request) {
         {
           error: "out_of_zone",
           message:
-            "No llegamos con motorizado hasta esa dirección. Probá otra, o escribinos por WhatsApp y vemos cómo hacerte llegar el pedido.",
+            "No llegamos con motorizado hasta esa dirección. Prueba otra, o escríbenos por WhatsApp y vemos cómo hacerte llegar el pedido.",
         },
         { status: 422 },
       )
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
       {
         error: "quote_failed",
         message:
-          "No pudimos calcular el envío en este momento. Probá de nuevo en un minuto o escribinos por WhatsApp.",
+          "No pudimos calcular el envío en este momento. Prueba de nuevo en un minuto o escríbenos por WhatsApp.",
         detail: message,
       },
       { status },

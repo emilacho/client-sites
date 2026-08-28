@@ -41,7 +41,7 @@ export default function PrivacidadPage() {
           En <strong>{cliente.name}</strong> respetamos tu privacidad y cumplimos
           con la <strong>Ley Orgánica de Protección de Datos Personales del
           Ecuador (LOPDP)</strong> vigente desde diciembre de 2025. Este
-          documento explica qué datos capturamos · para qué · y cómo podés
+          documento explica qué datos capturamos · para qué · y cómo puedes
           ejercer tus derechos.
         </p>
 
@@ -75,7 +75,7 @@ export default function PrivacidadPage() {
           </p>
           <ul className="ml-5 list-disc space-y-1">
             <li>
-              <strong>PedidosYa</strong> · cuando elegís envío motorizado · les
+              <strong>PedidosYa</strong> · cuando eliges envío motorizado · les
               pasamos nombre · teléfono · dirección de entrega
             </li>
             <li>
@@ -98,7 +98,7 @@ export default function PrivacidadPage() {
         </Section>
 
         <Section title="4 · Tus derechos (ARCO)">
-          <p>Como titular de datos podés ejercer en cualquier momento ·</p>
+          <p>Como titular de datos puedes ejercer en cualquier momento ·</p>
           <ul className="ml-5 list-disc space-y-1">
             <li>
               <strong>Acceso</strong> · descargar todos tus datos desde
@@ -149,14 +149,14 @@ export default function PrivacidadPage() {
           <p>
             Usamos cookies funcionales (sesión · carrito) y analíticas
             (PostHog · uso del sitio). NO usamos cookies de tracking
-            cross-site. Podés rechazar las analíticas en el banner de
+            cross-site. Puedes rechazar las analíticas en el banner de
             consentimiento que aparece al entrar.
           </p>
         </Section>
 
         <Section title="7 · Contacto · DPO (Data Protection Officer)">
           <p>
-            Para ejercer derechos · reclamos o consultas escribinos a ·
+            Para ejercer derechos · reclamos o consultas escríbenos a ·
           </p>
           <p className="mt-1">
             <a

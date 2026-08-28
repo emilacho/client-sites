@@ -45,7 +45,7 @@ export class SceneErrorBoundary extends Component<Props, State> {
                 La isla está cargando despacio
               </p>
               <p className="mt-2 text-sm text-slate-400">
-                Mientras tanto, podés pedir directo por el carrito en la
+                Mientras tanto, puedes pedir directo por el carrito en la
                 esquina superior derecha.
               </p>
             </div>

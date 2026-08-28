@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     return Response.json({
       ok: true,
       message:
-        "Tu cuenta queda marcada para eliminación en 30 días. Volvé a loguearte para cancelar el proceso.",
+        "Tu cuenta queda marcada para eliminación en 30 días. Vuelve a iniciar sesión para cancelar el proceso.",
       deletion_scheduled_for: new Date(
         Date.now() + 30 * 24 * 3600_000,
       ).toISOString(),

@@ -957,7 +957,7 @@ function DigitalWalletForm({
         <>
           <p className="text-center text-[11px] text-slate-300">
             {kind === "apple"
-              ? "Confirmá con Touch ID / Face ID en tu iPhone"
+              ? "Confirma con Touch ID / Face ID en tu iPhone"
               : "Selecciona tu tarjeta guardada en Google Pay"}
           </p>
           {kind === "apple" ? (

@@ -64,7 +64,7 @@ export default function PrivacySection() {
   async function deleteAccount() {
     if (
       !confirm(
-        "¿Eliminar tu cuenta? Tus datos se borrarán en 30 días. Podés cancelar el proceso volviendo a iniciar sesión.",
+        "¿Eliminar tu cuenta? Tus datos se borrarán en 30 días. Puedes cancelar el proceso volviendo a iniciar sesión.",
       )
     )
       return

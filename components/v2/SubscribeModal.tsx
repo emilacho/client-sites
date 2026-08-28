@@ -223,7 +223,7 @@ export function SubscribeModal({ open, onClose }: SubscribeModalProps) {
                   )}
                 </button>
                 <p className="text-center text-[10px] text-slate-500">
-                  No compartimos tus datos · podés salir cuando quieras
+                  No compartimos tus datos · puedes salir cuando quieras
                   respondiendo BAJA al WhatsApp.
                 </p>
               </form>
