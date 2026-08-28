@@ -495,17 +495,10 @@ export const MENU_ITEMS: MenuItem[] = [
     gradient: "from-amber-600 via-yellow-400 to-amber-200",
     allergens: ["gluten"],
   },
-  {
-    id: "extra-huevo",
-    category: "extras",
-    name: "Huevo",
-    description: "",
-    tags: [],
-    priceUsd: 0.5,
-    emoji: "🥚",
-    gradient: "from-yellow-500 via-amber-300 to-stone-200",
-    allergens: ["huevo"],
-  },
+  // R115 · el HUEVO salió de la carta · decisión de Emilio 28-ago: "por
+  // ahora no tenemos eso". Se saca el producto, NO la etiqueta de alérgeno
+  // "huevo" (líneas de arriba) · esa hace falta el día que un plato lleve
+  // huevo y haya que avisarle al cliente.
   {
     id: "extra-aguacate",
     category: "extras",
