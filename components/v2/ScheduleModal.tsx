@@ -282,9 +282,17 @@ export function ScheduleModal({ open, onClose }: ScheduleModalProps) {
               >
                 ELIGE TU HORA
               </h2>
-              <p className="mt-1 text-[11px] text-slate-400">
+              {/* R117 · antes acá sólo estaba el horario de cocina, que es
+                  un dato operativo y NO explica para qué sirve la pantalla.
+                  Un cliente podía entender que estaba reservando una MESA.
+                  Ahora primero se dice qué hace, y después el detalle. */}
+              <p className="mt-1.5 text-[13px] leading-snug text-slate-200">
+                Haz tu pedido ahora y elige a qué hora quieres que llegue.
+                Lo cocinamos para que salga recién hecho.
+              </p>
+              <p className="mt-1.5 text-[11px] text-slate-400">
                 Cocina abierta {KITCHEN_OPEN_H}:00 - {KITCHEN_CLOSE_H}:00 ·
-                mínimo +{MIN_LEAD_MINUTES} min desde ahora.
+                el pedido más próximo es en {MIN_LEAD_MINUTES} minutos.
               </p>
             </div>
             <button
@@ -354,7 +362,7 @@ export function ScheduleModal({ open, onClose }: ScheduleModalProps) {
               {/* Day selector · 3 pills */}
               <div className="mb-3">
                 <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.18em] text-slate-400">
-                  O elige día y hora
+                  O elige otro día
                 </span>
                 <div className="grid grid-cols-3 gap-2">
                   {dayOptions.map((d) => {
