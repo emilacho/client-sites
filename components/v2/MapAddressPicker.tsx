@@ -27,12 +27,13 @@
  * ficha al empezar a escribir y se tira apenas elige. Sin esto, cada
  * tecla se cobraría por separado.
  *
- * EL PIN SIGUE SIENDO EL CLÁSICO
+ * EL PIN · R139 · LAS DOS FORMAS, Y ELIGE SOLA
  * Google también recomienda `AdvancedMarkerElement` en vez de `Marker`.
- * Ese pin exige crear un "Map ID" en la consola de Google, que es un
- * trámite aparte en la cuenta de Emilio. `Marker` está marcado como viejo
- * pero NO tiene fecha de apagado anunciada, así que se deja para cuando
- * exista ese identificador. Queda anotado, no olvidado.
+ * Ese pin exige un "Map ID" creado en la consola de Google. El código
+ * soporta los dos: si `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` está cargado usa
+ * el pin nuevo, y si no, el clásico de siempre. Así el día que exista el
+ * identificador no hay que tocar una línea · se carga la credencial y
+ * listo, y si algún día hubiera que volver atrás, se borra.
  *
  * Si no hay llave o algo falla al armar el mapa · degrada a un campo de
  * texto simple sin romper el carrito.
@@ -60,6 +61,23 @@ interface GMarkerInstance {
   getPosition: () => { lat: () => number; lng: () => number } | null
   addListener: (event: string, cb: () => void) => void
   setMap: (map: GMapInstance | null) => void
+}
+/** El pin nuevo · no tiene setPosition ni setMap, se le asignan. */
+interface GAdvancedMarker {
+  position: { lat: number; lng: number } | null
+  map: GMapInstance | null
+  addListener: (event: string, cb: (e?: unknown) => void) => void
+}
+/**
+ * Un pin, sin importar de qué generación. El resto del componente habla
+ * SOLO con esto · así el cambio de uno a otro no se derrama por todos
+ * lados y el día de mañana se saca el viejo borrando un bloque.
+ */
+interface Pin {
+  mover: (lat: number, lng: number) => void
+  donde: () => { lat: number; lng: number } | null
+  alSoltar: (cb: (lat: number, lng: number) => void) => void
+  quitar: () => void
 }
 interface GGeocoderInstance {
   geocode: (req: {
@@ -90,12 +108,18 @@ interface Sugerencia {
 // 103 km: un cliente de Guayaquil veía el mapa en otra provincia.
 const CENTRO_MAPA = { lat: COCINA.lat, lng: COCINA.lng }
 
+/**
+ * El identificador del mapa que pide el pin nuevo. Se carga como
+ * credencial; si no está, el mapa funciona igual con el pin de siempre.
+ */
+const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID
+
 export default function MapAddressPicker({ initial, onChange }: Props) {
   const { ready, unavailable } = useGoogleMapsScript()
   const inputRef = useRef<HTMLInputElement>(null)
   const mapDivRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<GMapInstance | null>(null)
-  const markerRef = useRef<GMarkerInstance | null>(null)
+  const pinRef = useRef<Pin | null>(null)
   const geocoderRef = useRef<GGeocoderInstance | null>(null)
   // Puerta de entrada a la API nueva de lugares + la ficha de sesión.
   const placesRef = useRef<{
@@ -143,8 +167,9 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
         const { Map } = libMapa as {
           Map: new (el: HTMLElement, opts: Record<string, unknown>) => GMapInstance
         }
-        const { Marker } = libPin as {
+        const { Marker, AdvancedMarkerElement } = libPin as {
           Marker: new (opts: Record<string, unknown>) => GMarkerInstance
+          AdvancedMarkerElement?: new (opts: Record<string, unknown>) => GAdvancedMarker
         }
         const { Geocoder } = libGeo as { Geocoder: new () => GGeocoderInstance }
         placesRef.current = libLugares as typeof placesRef.current
@@ -160,22 +185,61 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: false,
+          // El pin nuevo NO aparece sin este identificador · si no está
+          // cargado, el mapa se arma igual y abajo se usa el pin viejo.
+          ...(MAP_ID ? { mapId: MAP_ID } : {}),
         })
         mapRef.current = map
 
-        const marker = new Marker({
-          position: { lat: startLat, lng: startLng },
-          map,
-          draggable: true,
-        })
-        markerRef.current = marker
+        // ── El pin · nuevo si hay identificador, clásico si no ────────
+        let pin: Pin
+        if (MAP_ID && AdvancedMarkerElement) {
+          const m = new AdvancedMarkerElement({
+            map,
+            position: { lat: startLat, lng: startLng },
+            gmpDraggable: true,
+          })
+          pin = {
+            mover: (lat, lng) => {
+              m.position = { lat, lng }
+            },
+            donde: () => m.position ?? null,
+            alSoltar: (cb) =>
+              m.addListener("dragend", (e) => {
+                // El aviso trae el punto; si no, se lee del propio pin.
+                const p = (e as { latLng?: { lat: () => number; lng: () => number } })?.latLng
+                if (p) return cb(p.lat(), p.lng())
+                const q = m.position
+                if (q) cb(q.lat, q.lng)
+              }),
+            quitar: () => {
+              m.map = null
+            },
+          }
+        } else {
+          const m = new Marker({
+            position: { lat: startLat, lng: startLng },
+            map,
+            draggable: true,
+          })
+          pin = {
+            mover: (lat, lng) => m.setPosition({ lat, lng }),
+            donde: () => {
+              const p = m.getPosition()
+              return p ? { lat: p.lat(), lng: p.lng() } : null
+            },
+            alSoltar: (cb) =>
+              m.addListener("dragend", () => {
+                const p = m.getPosition()
+                if (p) cb(p.lat(), p.lng())
+              }),
+            quitar: () => m.setMap(null),
+          }
+        }
+        pinRef.current = pin
         geocoderRef.current = new Geocoder()
 
-        marker.addListener("dragend", async () => {
-          const pos = marker.getPosition()
-          if (!pos) return
-          const lat = pos.lat()
-          const lng = pos.lng()
+        pin.alSoltar(async (lat, lng) => {
           setLastLat(lat)
           setLastLng(lng)
           try {
@@ -203,12 +267,12 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
     return () => {
       vivo = false
       try {
-        if (markerRef.current) markerRef.current.setMap(null)
+        if (pinRef.current) pinRef.current.quitar()
       } catch (err) {
         console.error("[MapAddressPicker] error al desarmar", err)
       }
       mapRef.current = null
-      markerRef.current = null
+      pinRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready])
@@ -266,7 +330,7 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
         const lng = loc.lng()
         mapRef.current?.setCenter({ lat, lng })
         mapRef.current?.setZoom(17)
-        markerRef.current?.setPosition({ lat, lng })
+        pinRef.current?.mover(lat, lng)
         setLastLat(lat)
         setLastLng(lng)
         onChange({ street, lat, lng })
@@ -292,10 +356,10 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
         const lng = pos.coords.longitude
         const accuracy = pos.coords.accuracy ?? 9999
         const zoom = accuracy < 50 ? 18 : accuracy < 200 ? 17 : accuracy < 500 ? 16 : 14
-        if (mapRef.current && markerRef.current) {
+        if (mapRef.current && pinRef.current) {
           mapRef.current.setCenter({ lat, lng })
           mapRef.current.setZoom(zoom)
-          markerRef.current.setPosition({ lat, lng })
+          pinRef.current.mover(lat, lng)
         }
         const geocoder = geocoderRef.current
         if (!geocoder) {
