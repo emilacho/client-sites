@@ -67,46 +67,42 @@ function ScenePoster() {
           "radial-gradient(ellipse at 50% 40%, #1a2545 0%, #0a1124 60%, #060914 100%)",
       }}
     >
-      {/* R125 · EN CELULAR ESTO REEMPLAZA A LA ISLA 3D.
-          Es una foto de la isla real, tomada de la propia escena, y pesa
-          64 KB contra los 20 MB de los modelos. Medido en celular con
-          conexión móvil: la página bajaba 45 MB y tardaba 65 segundos en
-          asentarse; sin los modelos son 281 KB y 6 segundos.
-          En pantalla grande no se muestra · ahí sí se carga la isla. */}
+      {/* R126 · esto ya NO reemplaza a la isla · es lo que se ve MIENTRAS
+          la isla carga, en celular y en computadora por igual. Es una foto
+          de la isla real sacada de la propia escena · 64 KB · así la
+          primera pantalla no es un cuadro vacío. En R125 esta foto se
+          quedaba para siempre en celular y la isla no se cargaba nunca:
+          eso dejaba sin uso todo lo que la isla sabe hacer (el cofre, el
+          bote, los cocos, el pergamino). Ahora los modelos pesan 3,7 MB en
+          vez de 27,8 MB y la isla vuelve al celular. */}
       <picture>
         <source srcSet="/isla-poster.webp" type="image/webp" />
         <img
           src="/isla-poster.jpg"
           alt="La isla de Náufrago"
-          className="absolute inset-0 h-full w-full object-cover md:hidden"
+          className="absolute inset-0 h-full w-full object-cover"
           fetchPriority="high"
           decoding="async"
         />
       </picture>
-      {/* Solo mientras la isla 3D carga, en pantalla grande. */}
-      <div className="hidden flex-col items-center gap-3 opacity-70 md:flex">
-        <span className="text-6xl" aria-hidden>
-          🏝️
-        </span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan-300">
-          isla en aguas tranquilas
-        </span>
-      </div>
     </div>
   )
 }
 
 /**
- * ¿Conviene cargar la isla 3D en este aparato? · R125.
+ * ¿Conviene cargar la isla 3D en este aparato? · R126.
  *
- * Los modelos pesan 20 MB. En una computadora eso se nota poco; en un
- * celular con datos móviles son 45 MB por visita y un minuto de espera.
- * Y como 3 de cada 4 ventas en línea de Ecuador salen del celular, esa
- * es la mayoría de los clientes.
+ * SER CELULAR YA NO ES MOTIVO PARA SALTARSE LA ISLA. En R125 sí lo era,
+ * porque los modelos pesaban 27,8 MB; se resolvía el peso a costa de
+ * dejar sin uso todo lo que la isla sabe hacer. R126 adelgazó los modelos
+ * a 3,7 MB (scripts/adelgazar-modelos.mjs) · a ese peso el celular la
+ * aguanta, y el cliente que entra desde el teléfono -3 de cada 4 ventas
+ * en línea de Ecuador- ve la misma tienda que el de escritorio.
  *
- * Se salta la isla si el aparato avisa que anda con lo justo (ahorro de
- * datos, conexión lenta, poca memoria) o si es un teléfono. En ese caso
- * se ve la FOTO de la isla: la misma imagen, 64 KB.
+ * Sólo se cae a la foto cuando el propio aparato avisa que no da: modo
+ * ahorro de datos encendido, conexión 2G, o memoria de gama muy baja
+ * (1 GB o menos, donde el navegador mata la pestaña al abrir WebGL).
+ * Ahí la foto no es un recorte de funciones: es lo único que carga.
  */
 function conviene3D(): boolean {
   if (typeof window === "undefined") return false
@@ -116,12 +112,8 @@ function conviene3D(): boolean {
   }
   if (nav.connection?.saveData) return false
   const tipo = nav.connection?.effectiveType
-  if (tipo && /(^|-)(2g|3g)$/.test(tipo)) return false
-  if (typeof nav.deviceMemory === "number" && nav.deviceMemory <= 4) return false
-  // Puntero grueso + pantalla angosta = teléfono.
-  if (window.matchMedia("(pointer: coarse)").matches && window.innerWidth < 1024) {
-    return false
-  }
+  if (tipo && /(^|-)2g$/.test(tipo)) return false
+  if (typeof nav.deviceMemory === "number" && nav.deviceMemory <= 1) return false
   return true
 }
 
@@ -132,7 +124,7 @@ function DeferredScene(props: React.ComponentProps<typeof Scene>) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
     if (mounted) return
-    // R125 · en celular NO se monta nunca · se queda la foto de la isla.
+    // R126 · sólo se queda en la foto el aparato que avisa que no da.
     if (!conviene3D()) return
     let cancelled = false
     const timeoutId = window.setTimeout(() => {
