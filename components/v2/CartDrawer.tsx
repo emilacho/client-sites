@@ -376,6 +376,9 @@ function CartFooter() {
   const { balance: loyaltyBalance } = useLoyaltyBalance(form.phone)
   const [useLoyalty, setUseLoyalty] = useState(false)
   // R96.24 · multi-tier redemption · mutually exclusive con spend directo.
+  const [ubicacion, setUbicacion] = useState<{
+    estado: "inicio" | "buscando" | "listo" | "rechazado" | "sin_soporte"
+  }>({ estado: "inicio" })
   const [selectedReward, setSelectedReward] = useState<LoyaltyReward | null>(null)
   // R96.111 · OTP step-up para canje · pending=esperando código · verifying=POSTing
   const [otpReward, setOtpReward] = useState<LoyaltyReward | null>(null)
@@ -913,6 +916,59 @@ function CartFooter() {
               setForm((f) => ({ ...f, street, lat, lng }))
             }
           />
+          {/* R137 · EL BOTÓN QUE SALVA LA VENTA CUANDO EL MAPA NO CARGA.
+              PedidosYa cotiza por coordenadas, no por texto: sin el punto
+              devuelve "no encuentro esa dirección" y el cliente se queda
+              sin poder pedir. El 29-ago pasó de verdad: la llave de Google
+              tenía bloqueado naufrago.ec, el buscador no arrancaba y NADIE
+              podía cotizar. El aparato sabe dónde está sin depender de
+              Google, y el que pide comida casi siempre está en la
+              dirección de entrega. */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (!navigator.geolocation) {
+                  setUbicacion({ estado: "sin_soporte" })
+                  return
+                }
+                setUbicacion({ estado: "buscando" })
+                navigator.geolocation.getCurrentPosition(
+                  (pos) => {
+                    setForm((f) => ({
+                      ...f,
+                      lat: pos.coords.latitude,
+                      lng: pos.coords.longitude,
+                    }))
+                    setUbicacion({ estado: "listo" })
+                  },
+                  () => setUbicacion({ estado: "rechazado" }),
+                  { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 },
+                )
+              }}
+              className="rounded-full border border-cyan-500/50 px-3 py-1.5 text-xs font-semibold text-cyan-200"
+            >
+              {ubicacion.estado === "buscando" ? "Buscando…" : "📍 Usar mi ubicación"}
+            </button>
+            {form.lat != null && form.lng != null ? (
+              <span className="text-xs text-emerald-400">punto tomado ✓</span>
+            ) : (
+              <span className="text-xs text-slate-500">
+                hace falta para calcular el envío
+              </span>
+            )}
+          </div>
+          {ubicacion.estado === "rechazado" ? (
+            <p className="text-xs text-amber-300">
+              No pudimos leer tu ubicación · dale permiso al navegador, o marca
+              el punto en el mapa.
+            </p>
+          ) : null}
+          {ubicacion.estado === "sin_soporte" ? (
+            <p className="text-xs text-amber-300">
+              Este navegador no comparte ubicación · marca el punto en el mapa.
+            </p>
+          ) : null}
           <input
             placeholder="Piso · depto · referencia (opcional)"
             value={form.detail}
