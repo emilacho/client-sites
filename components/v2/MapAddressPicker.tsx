@@ -388,7 +388,10 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
           </span>
         ) : null}
         {sugerencias.length > 0 ? (
-          <ul className="absolute z-30 mt-1 w-full overflow-hidden rounded-md border border-cyan-500/30 bg-slate-950 shadow-xl">
+          <ul
+            data-sugerencias="direccion"
+            className="absolute z-30 mt-1 w-full overflow-hidden rounded-md border border-cyan-500/30 bg-slate-950 shadow-xl"
+          >
             {sugerencias.map((s, i) => (
               <li key={i}>
                 <button
