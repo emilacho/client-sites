@@ -374,7 +374,11 @@ function LandingInner() {
         <div className="pointer-events-auto grid w-[200px] grid-cols-2 gap-2 md:w-[min(13vh,150px)] md:grid-cols-1 md:gap-3">
           {[
             { label: "Fotos\ndel menú", icon: "📸", onClick: () => setStoriesOpen(true), aria: "Fotos del menú" },
-            { label: "Combos\nNáufrago", icon: "🍱", onClick: () => setCombosOpen(true), aria: "Combos Náufrago" },
+            // R129 · era 🍱, una caja de sushi · no tiene nada que ver con
+            // lo que se vende. Los dos combos son plato de mar + bebida
+            // (encebollado + cola · 2 ceviches + 2 jugos) · el plato hondo
+            // humeante es el encebollado, que es el plato de la casa.
+            { label: "Combos\nNáufrago", icon: "🍲", onClick: () => setCombosOpen(true), aria: "Combos Náufrago" },
             { label: "Reservar\nhora", icon: "⏰", onClick: () => setScheduleOpen(true), aria: "Pedir para un horario específico" },
             { label: "Náufrago\nClub", icon: "✦", onClick: () => setClubOpen(true), aria: "Suscripción Náufrago Club" },
           ].map((b) => (
@@ -410,7 +414,9 @@ function LandingInner() {
                   }}
                 />
               ))}
-              <span className="text-sm leading-none md:text-2xl" aria-hidden>
+              {/* R129 · los dibujos se ven · 14→18 px en celular y 24→36 px
+                  en computadora, donde el cartel es un cuadrado grande. */}
+              <span className="text-lg leading-none md:text-4xl" aria-hidden>
                 {b.icon}
               </span>
               <span
