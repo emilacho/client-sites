@@ -18,15 +18,16 @@ export const dynamic = "force-dynamic"
 
 const CLIENT_SLUG = "naufrago"
 
-/** Los que la cocina todavía tiene que atender, en orden de llegada. */
-const VIVOS = [
-  "PENDING",
-  "ACCEPTED",
-  "PREPARING",
-  "READY",
-  "RIDER_PICKED_UP",
-  "IN_TRANSIT",
-]
+/**
+ * Los que siguen EN LA COCINA · los únicos que ocupan el tablero.
+ *
+ * READY queda AFUERA a propósito: en el KDS de Loyverse, cuando se toca
+ * la cabecera el ticket desaparece del tablero. Acá igual · pasa a la
+ * lista de terminados, que es donde se cobra. Si READY siguiera acá, el
+ * ticket se quedaría pegado en pantalla después de darlo por listo, que
+ * es justo lo que pasó la primera vez que lo probé.
+ */
+const VIVOS = ["PENDING", "ACCEPTED", "PREPARING"]
 
 export async function GET(req: NextRequest) {
   if (!(await cocinaAutorizada(req.headers.get("x-cocina-llave")))) {

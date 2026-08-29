@@ -1,27 +1,43 @@
 "use client"
 /**
- * Pantalla de cocina · R132.
+ * Pantalla de cocina · R132 · rehecha en R133 a imagen de Loyverse KDS.
  *
  * POR QUÉ EXISTE
- * Loyverse no tiene forma de recibir un pedido pendiente: su conexión
- * técnica sólo acepta ventas YA CERRADAS, y su pantalla de cocina
- * únicamente escucha a su propio punto de venta (comprobado · /orders,
- * /tickets y /kds no existen). O sea que el pedido que entra por
- * naufrago.ec no puede aparecer en la pantalla que ya está colgada en la
- * cocina. Esta es esa pantalla, pero nuestra.
+ * Loyverse no puede recibir un pedido pendiente: su conexión técnica sólo
+ * acepta ventas YA CERRADAS y su pantalla de cocina únicamente escucha a
+ * su propio punto de venta (comprobado · /orders, /tickets y /kds no
+ * existen). El pedido que entra por naufrago.ec no puede aparecer en la
+ * pantalla que ya cuelga en la cocina. Esta es esa pantalla, pero nuestra.
  *
- * LA CONDICIÓN DE EMILIO · "no pueden ser dos sistemas"
- * Y no lo son. Acá se COCINA; la plata se cuenta en UN solo lado, que
- * sigue siendo Loyverse: al tocar "entregado y cobrado" la venta se
- * manda al punto de venta. Cada tarjeta muestra si esa venta ya entró a
- * la contabilidad, así que si alguna queda afuera se ve acá y no tres
- * días después cuadrando caja.
+ * NO SON DOS SISTEMAS · condición de Emilio
+ * Acá se COCINA. La plata se sigue contando en UN solo lado: al cobrar,
+ * la venta se manda a Loyverse. Cada ticket muestra si ya entró a la
+ * contabilidad.
+ *
+ * POR QUÉ SE PARECE TANTO A LOYVERSE (pedido de Emilio · 29-ago-2026)
+ * "que se asemeje en lo posible a la de Loyverse, para que los empleados
+ * que ya están adaptados a ese sistema no les toque mucho cambio". Todo
+ * lo que sigue sale de la documentación oficial del KDS de Loyverse, no
+ * de mi gusto ·
+ *   - la cabecera del ticket lleva número, tiempo desde que entró y quién
+ *     lo tomó;
+ *   - esa cabecera cambia de VERDE a AMARILLO a los 4 minutos y a ROJO a
+ *     los 7 (son los valores por defecto de Loyverse);
+ *   - los modificadores y comentarios del plato van debajo del plato, y
+ *     el comentario del pedido va al PIE del ticket;
+ *   - se toca un plato y queda TACHADO · así se marca lo ya cocinado;
+ *   - se toca la CABECERA para dar el ticket por terminado;
+ *   - hay sonido al entrar un pedido nuevo, que se puede apagar.
+ * Lo único que Loyverse no tiene y acá sí: el cobro. En un local el
+ * cajero cobra en la caja; acá la venta es de la web, así que el paso de
+ * cobrar vive abajo, en la lista de los ya terminados, para no ensuciar
+ * el tablero de cocina.
  *
  * CÓMO SE ABRE
- * Una vez, con la llave en la dirección · `/cocina?llave=...`. Queda
- * guardada en la tablet y no se pregunta más. Sin llave no se ve nada.
+ * Una vez con la llave en la dirección · `/cocina?llave=...`. Queda
+ * guardada en la tablet. Sin llave no se ve nada.
  */
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 interface Linea {
   id?: string
@@ -29,6 +45,7 @@ interface Linea {
   qty?: number
   priceUsd?: number
   notes?: string
+  customizations?: Array<{ label?: string }>
 }
 
 interface Pedido {
@@ -50,38 +67,58 @@ interface Pedido {
 }
 
 const LLAVE_GUARDADA = "naufrago_cocina_llave"
+const SONIDO_GUARDADO = "naufrago_cocina_sonido"
 
-/** El botón que corresponde según dónde está el pedido. */
-function siguientePaso(estado: string): { paso: string; texto: string } | null {
-  switch (estado) {
-    case "PENDING":
-      return { paso: "aceptar", texto: "Aceptar pedido" }
-    case "ACCEPTED":
-      return { paso: "preparar", texto: "Empezar a cocinar" }
-    case "PREPARING":
-      return { paso: "listo", texto: "Listo para salir" }
-    case "READY":
-    case "RIDER_PICKED_UP":
-    case "IN_TRANSIT":
-      return { paso: "entregado", texto: "Entregado y cobrado" }
-    default:
-      return null
-  }
-}
-
-const NOMBRE_ESTADO: Record<string, string> = {
-  PENDING: "nuevo",
-  ACCEPTED: "aceptado",
-  PREPARING: "en la cocina",
-  READY: "listo",
-  RIDER_PICKED_UP: "lo llevan",
-  IN_TRANSIT: "en camino",
-  DELIVERED: "entregado",
-  CANCELLED: "cancelado",
-}
+/** Umbrales de Loyverse · amarillo a los 4 minutos, rojo a los 7. */
+const MIN_AMARILLO = 4
+const MIN_ROJO = 7
 
 function minutosDesde(iso: string): number {
   return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000))
+}
+
+function colorCabecera(min: number): string {
+  if (min >= MIN_ROJO) return "bg-red-600 text-white"
+  if (min >= MIN_AMARILLO) return "bg-amber-400 text-slate-900"
+  return "bg-emerald-600 text-white"
+}
+
+/**
+ * Dos tonos cortos, sintetizados en el momento · sin archivo que bajar.
+ * El navegador no deja sonar hasta que alguien toca la pantalla una vez,
+ * por eso el sonido arranca apagado y se enciende con un botón.
+ */
+function useCampana(encendido: boolean) {
+  const ctxRef = useRef<AudioContext | null>(null)
+  const preparar = useCallback(() => {
+    if (ctxRef.current) return
+    try {
+      const Ctor =
+        window.AudioContext ??
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+      if (Ctor) ctxRef.current = new Ctor()
+    } catch {}
+  }, [])
+  const sonar = useCallback(() => {
+    if (!encendido) return
+    const ctx = ctxRef.current
+    if (!ctx) return
+    if (ctx.state === "suspended") ctx.resume().catch(() => {})
+    const ahora = ctx.currentTime
+    for (const [i, hz] of [880, 1320].entries()) {
+      const osc = ctx.createOscillator()
+      const vol = ctx.createGain()
+      osc.type = "sine"
+      osc.frequency.value = hz
+      vol.gain.setValueAtTime(0.0001, ahora + i * 0.18)
+      vol.gain.exponentialRampToValueAtTime(0.35, ahora + i * 0.18 + 0.02)
+      vol.gain.exponentialRampToValueAtTime(0.0001, ahora + i * 0.18 + 0.16)
+      osc.connect(vol).connect(ctx.destination)
+      osc.start(ahora + i * 0.18)
+      osc.stop(ahora + i * 0.18 + 0.18)
+    }
+  }, [encendido])
+  return { preparar, sonar }
 }
 
 export default function PantallaCocina() {
@@ -90,8 +127,11 @@ export default function PantallaCocina() {
   const [error, setError] = useState<string | null>(null)
   const [ultima, setUltima] = useState<Date | null>(null)
   const [ocupado, setOcupado] = useState<string | null>(null)
+  const [cocinados, setCocinados] = useState<Record<string, boolean>>({})
+  const [sonido, setSonido] = useState(false)
+  const conocidos = useRef<Set<string> | null>(null)
+  const { preparar, sonar } = useCampana(sonido)
 
-  // La llave entra una vez por la dirección y se queda en el aparato.
   useEffect(() => {
     const enUrl = new URLSearchParams(window.location.search).get("llave")
     if (enUrl) {
@@ -100,13 +140,16 @@ export default function PantallaCocina() {
       } catch {}
       setLlave(enUrl)
       window.history.replaceState({}, "", "/cocina")
-      return
+    } else {
+      try {
+        setLlave(localStorage.getItem(LLAVE_GUARDADA))
+      } catch {
+        setLlave(null)
+      }
     }
     try {
-      setLlave(localStorage.getItem(LLAVE_GUARDADA))
-    } catch {
-      setLlave(null)
-    }
+      setSonido(localStorage.getItem(SONIDO_GUARDADO) === "1")
+    } catch {}
   }, [])
 
   const traer = useCallback(async () => {
@@ -125,13 +168,24 @@ export default function PantallaCocina() {
         setError("No se pudieron traer los pedidos.")
         return
       }
-      setPedidos(data.pedidos ?? [])
+      const lista: Pedido[] = data.pedidos ?? []
+      // Sonar sólo por pedidos que aparecen DESPUÉS de la primera carga ·
+      // si no, cada vez que alguien abre la pantalla suena por todos.
+      const vivosAhora = lista.filter((p) => p.vivo).map((p) => p.order_code)
+      if (conocidos.current === null) {
+        conocidos.current = new Set(vivosAhora)
+      } else {
+        const nuevos = vivosAhora.filter((c) => !conocidos.current!.has(c))
+        if (nuevos.length > 0) sonar()
+        conocidos.current = new Set(vivosAhora)
+      }
+      setPedidos(lista)
       setUltima(new Date())
       setError(null)
     } catch {
       setError("Sin conexión · reintentando.")
     }
-  }, [llave])
+  }, [llave, sonar])
 
   useEffect(() => {
     if (!llave) return
@@ -140,11 +194,10 @@ export default function PantallaCocina() {
     return () => clearInterval(t)
   }, [llave, traer])
 
-  // Un reloj propio · los minutos de espera tienen que correr solos
-  // aunque no llegue ningún pedido nuevo.
+  // Reloj propio · los minutos corren aunque no entre ningún pedido.
   const [, redibujar] = useState(0)
   useEffect(() => {
-    const t = setInterval(() => redibujar((n) => n + 1), 20000)
+    const t = setInterval(() => redibujar((n) => n + 1), 15000)
     return () => clearInterval(t)
   }, [])
 
@@ -158,23 +211,33 @@ export default function PantallaCocina() {
         body: JSON.stringify({ orderId: pedido.id, paso }),
       })
       const data = await res.json()
-      if (!data.ok) setError(`No se pudo mover el pedido · ${data.error ?? ""}`)
-      else if (paso === "entregado" && data.contabilidad === "falló") {
+      if (!data.ok) setError(`No se pudo mover el ticket · ${data.error ?? ""}`)
+      else if (paso === "entregado" && data.contabilidad === "falló")
         setError(
-          `El pedido ${pedido.order_code} se entregó, pero NO entró a la contabilidad. Queda anotado.`,
+          `${pedido.order_code} se cobró, pero NO entró a la contabilidad. Queda anotado.`,
         )
-      }
       await traer()
     } catch {
-      setError("Sin conexión · el pedido no se movió.")
+      setError("Sin conexión · el ticket no se movió.")
     } finally {
       setOcupado(null)
     }
   }
 
+  function alternarSonido() {
+    preparar()
+    setSonido((s) => {
+      const nuevo = !s
+      try {
+        localStorage.setItem(SONIDO_GUARDADO, nuevo ? "1" : "0")
+      } catch {}
+      return nuevo
+    })
+  }
+
   if (llave === null) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-950 p-8 text-center text-slate-300">
+      <main className="flex min-h-screen items-center justify-center bg-slate-900 p-8 text-center text-slate-300">
         <div>
           <h1 className="mb-2 text-2xl font-bold text-white">Pantalla de cocina</h1>
           <p className="text-sm">
@@ -187,127 +250,167 @@ export default function PantallaCocina() {
   }
 
   const vivos = pedidos.filter((p) => p.vivo)
-  const salidos = pedidos.filter((p) => !p.vivo)
+  const terminados = pedidos.filter((p) => !p.vivo)
+  const porCobrar = terminados.filter((p) => p.contabilidad !== "ok")
 
   return (
-    <main className="min-h-screen bg-slate-950 p-3 text-slate-100">
-      <header className="mb-3 flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-800 pb-2">
-        <h1 className="text-xl font-black tracking-wide">
+    <main className="min-h-screen bg-slate-900 text-slate-100">
+      {/* Barra superior · como la del KDS · cuenta de tickets y ajustes */}
+      <header className="flex flex-wrap items-center justify-between gap-2 bg-slate-950 px-3 py-2">
+        <h1 className="text-base font-black tracking-wide">
           COCINA · <span className="text-cyan-400">naufrago.ec</span>
+          <span className="ml-3 rounded bg-slate-800 px-2 py-0.5 text-sm font-bold">
+            {vivos.length}
+          </span>
         </h1>
-        <span className="text-xs text-slate-400">
-          {vivos.length} en curso · actualizado{" "}
-          {ultima ? ultima.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" }) : "…"}
-        </span>
+        <div className="flex items-center gap-3 text-xs text-slate-400">
+          <span>
+            {ultima
+              ? ultima.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" })
+              : "…"}
+          </span>
+          <button
+            type="button"
+            onClick={alternarSonido}
+            className={`rounded px-2 py-1 font-bold ${
+              sonido ? "bg-emerald-600 text-white" : "bg-slate-700 text-slate-300"
+            }`}
+          >
+            {sonido ? "🔔 sonido" : "🔕 sin sonido"}
+          </button>
+        </div>
       </header>
 
       {error ? (
-        <p className="mb-3 rounded-lg bg-red-950 px-3 py-2 text-sm text-red-200">{error}</p>
+        <p className="bg-red-950 px-3 py-2 text-sm text-red-200">{error}</p>
       ) : null}
-
-      {vivos.length === 0 ? (
-        <p className="py-16 text-center text-slate-500">
-          No hay pedidos de la web esperando.
+      {!sonido ? (
+        <p className="bg-slate-800 px-3 py-1.5 text-center text-xs text-slate-300">
+          Tocá <b>🔕 sin sonido</b> para que la pantalla avise cuando entre un pedido.
         </p>
       ) : null}
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {vivos.map((p) => {
-          const min = minutosDesde(p.created_at)
-          const paso = siguientePaso(p.status)
-          const urgente = min >= 20
-          return (
-            <article
-              key={p.id}
-              className={`rounded-xl border-2 p-3 ${
-                urgente ? "border-red-500 bg-red-950/30" : "border-slate-700 bg-slate-900"
-              }`}
-            >
-              <div className="mb-2 flex items-baseline justify-between gap-2">
-                <span className="font-mono text-sm text-cyan-300">{p.order_code}</span>
-                <span className={`text-sm font-bold ${urgente ? "text-red-300" : "text-slate-400"}`}>
-                  {min} min · {NOMBRE_ESTADO[p.status] ?? p.status}
-                </span>
-              </div>
+      <div className="p-2">
+        {vivos.length === 0 ? (
+          <p className="py-20 text-center text-slate-500">Sin tickets en cocina.</p>
+        ) : null}
 
-              <ul className="mb-2 space-y-1">
-                {(p.cart_lines ?? []).map((l, i) => (
-                  <li key={i} className="text-lg font-bold leading-tight">
-                    <span className="text-cyan-400">{l.qty ?? 1}×</span> {l.name}
-                    {l.notes ? (
-                      <span className="block text-sm font-normal text-amber-300">↳ {l.notes}</span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-
-              {p.customer_notes ? (
-                <p className="mb-2 rounded bg-amber-950/60 px-2 py-1 text-sm text-amber-200">
-                  Nota · {p.customer_notes}
-                </p>
-              ) : null}
-
-              <p className="mb-1 text-sm text-slate-300">
-                {p.customer_name} · {p.customer_phone}
-              </p>
-              <p className="mb-2 text-xs text-slate-400">
-                {p.dropoff_address}
-                {p.dropoff_detail ? ` · ${p.dropoff_detail}` : ""}
-              </p>
-
-              <p className="mb-3 text-base">
-                <span className="font-black text-emerald-400">
-                  COBRAR ${Number(p.total_usd).toFixed(2)}
-                </span>
-                {Number(p.delivery_fee_usd) > 0 ? (
-                  <span className="text-xs text-slate-400">
-                    {" "}
-                    (incluye ${Number(p.delivery_fee_usd).toFixed(2)} de envío)
-                  </span>
-                ) : null}
-              </p>
-
-              {paso ? (
+        {/* Tablero de tickets · columnas, como el KDS */}
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+          {vivos.map((p) => {
+            const min = minutosDesde(p.created_at)
+            return (
+              <article key={p.id} className="overflow-hidden rounded bg-slate-800 shadow-lg">
+                {/* CABECERA · se toca para dar el ticket por terminado */}
                 <button
                   type="button"
                   disabled={ocupado === p.id}
-                  onClick={() => avanzar(p, paso.paso)}
-                  className="w-full rounded-lg bg-cyan-500 px-3 py-3 text-base font-bold text-slate-950 disabled:opacity-50"
+                  onClick={() => avanzar(p, "listo")}
+                  className={`flex w-full items-baseline justify-between gap-2 px-3 py-2 text-left font-bold disabled:opacity-60 ${colorCabecera(min)}`}
                 >
-                  {ocupado === p.id ? "…" : paso.texto}
+                  <span className="font-mono text-base">{p.order_code.replace(/^NF-\d+-/, "")}</span>
+                  <span className="text-sm">{min} min</span>
+                  <span className="text-xs opacity-90">naufrago.ec</span>
                 </button>
-              ) : null}
-            </article>
-          )
-        })}
+
+                <ul className="divide-y divide-slate-700">
+                  {(p.cart_lines ?? []).map((l, i) => {
+                    const clave = `${p.id}:${i}`
+                    const listo = cocinados[clave]
+                    return (
+                      <li key={i}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCocinados((c) => ({ ...c, [clave]: !c[clave] }))
+                          }
+                          className="w-full px-3 py-2 text-left"
+                        >
+                          <span
+                            className={`text-lg font-bold leading-tight ${
+                              listo ? "text-slate-500 line-through" : "text-slate-50"
+                            }`}
+                          >
+                            {l.qty ?? 1} {l.name}
+                          </span>
+                          {/* Modificadores y comentario del plato · debajo del plato */}
+                          {(l.customizations ?? []).map((m, k) => (
+                            <span
+                              key={k}
+                              className={`block text-sm ${listo ? "text-slate-600 line-through" : "text-amber-300"}`}
+                            >
+                              · {m.label}
+                            </span>
+                          ))}
+                          {l.notes ? (
+                            <span
+                              className={`block text-sm ${listo ? "text-slate-600 line-through" : "text-amber-300"}`}
+                            >
+                              · {l.notes}
+                            </span>
+                          ) : null}
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+
+                {/* PIE · el comentario del pedido, como en el KDS */}
+                {p.customer_notes ? (
+                  <p className="bg-slate-700 px-3 py-1.5 text-sm text-amber-200">
+                    {p.customer_notes}
+                  </p>
+                ) : null}
+                <p className="bg-slate-900 px-3 py-1 text-xs text-slate-400">
+                  {p.dropoff_address}
+                  {p.dropoff_detail ? ` · ${p.dropoff_detail}` : ""}
+                </p>
+              </article>
+            )
+          })}
+        </div>
       </div>
 
-      {salidos.length > 0 ? (
-        <section className="mt-6">
-          <h2 className="mb-2 text-xs uppercase tracking-widest text-slate-500">
-            Ya salieron · últimas 24 horas
+      {/* Terminados · acá vive el cobro, que en un local haría la caja */}
+      {terminados.length > 0 ? (
+        <section className="border-t border-slate-800 p-2">
+          <h2 className="mb-2 px-1 text-xs uppercase tracking-widest text-slate-500">
+            Terminados · últimas 24 horas
+            {porCobrar.length > 0 ? (
+              <span className="ml-2 rounded bg-amber-500 px-1.5 py-0.5 text-slate-900">
+                {porCobrar.length} sin cobrar
+              </span>
+            ) : null}
           </h2>
           <ul className="space-y-1">
-            {salidos.map((p) => (
-              <li key={p.id} className="flex items-center justify-between gap-3 text-sm">
-                <span className="font-mono text-slate-400">{p.order_code}</span>
-                <span className="text-slate-500">{NOMBRE_ESTADO[p.status] ?? p.status}</span>
-                <span className="text-slate-400">${Number(p.total_usd).toFixed(2)}</span>
-                <span
-                  className={
-                    p.contabilidad === "ok"
-                      ? "text-emerald-400"
-                      : p.contabilidad === "falló"
-                        ? "text-red-400"
-                        : "text-slate-600"
-                  }
-                >
-                  {p.contabilidad === "ok"
-                    ? "en contabilidad ✓"
-                    : p.contabilidad === "falló"
-                      ? "NO entró a contabilidad"
-                      : "—"}
+            {terminados.map((p) => (
+              <li
+                key={p.id}
+                className="flex flex-wrap items-center gap-2 rounded bg-slate-800 px-3 py-2 text-sm"
+              >
+                <span className="font-mono text-slate-300">
+                  {p.order_code.replace(/^NF-\d+-/, "")}
                 </span>
+                <span className="flex-1 truncate text-slate-500">{p.customer_name}</span>
+                {p.contabilidad === "ok" ? (
+                  <span className="font-bold text-emerald-400">
+                    cobrado ${Number(p.total_usd).toFixed(2)} · en contabilidad ✓
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={ocupado === p.id}
+                    onClick={() => avanzar(p, "entregado")}
+                    className="rounded bg-emerald-500 px-3 py-1.5 font-bold text-slate-950 disabled:opacity-50"
+                  >
+                    {ocupado === p.id
+                      ? "…"
+                      : `Cobrado $${Number(p.total_usd).toFixed(2)}`}
+                  </button>
+                )}
+                {p.contabilidad === "falló" ? (
+                  <span className="text-red-400">no entró a contabilidad</span>
+                ) : null}
               </li>
             ))}
           </ul>
