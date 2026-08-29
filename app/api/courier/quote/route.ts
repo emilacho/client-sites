@@ -90,6 +90,25 @@ export async function POST(request: Request) {
       )
     }
 
+    // R137 · "no encuentro ese punto en el mapa" TAMPOCO es una falla
+    // nuestra, y sobre todo tiene arreglo del lado del cliente: falta el
+    // punto exacto. Pasaba cuando la dirección iba SIN coordenadas, que
+    // es lo que ocurre si el mapa no carga (el 29-ago la llave de Google
+    // rechazaba naufrago.ec y el buscador de direcciones no arrancaba).
+    // El cliente veía "no pudimos calcular el envío", que suena a que se
+    // rompió algo del lado nuestro e invita a reintentar para siempre.
+    if (message.includes("WAYPOINTS_NOT_FOUND")) {
+      return NextResponse.json(
+        {
+          error: "sin_punto_exacto",
+          message:
+            "Necesitamos el punto exacto para calcular el envío. Toca «Usar mi ubicación» o marca el lugar en el mapa, y volvemos a cotizar.",
+          detail: message,
+        },
+        { status: 422 },
+      )
+    }
+
     // R108 · proveedor no implementado → 501 · es "todavía no existe",
     // no "falló". courier_env_missing:* → 503 (falta configurar el
     // servidor) · el resto → 502 (respuesta inesperada del proveedor).
