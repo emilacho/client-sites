@@ -128,6 +128,9 @@ export default function PantallaCocina() {
   const [ultima, setUltima] = useState<Date | null>(null)
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [cocinados, setCocinados] = useState<Record<string, boolean>>({})
+  // R136 · cancelar pide DOS toques. En una cocina, un botón de cancelar
+  // que borra al primer toque se aprieta sin querer con la mano llena.
+  const [porCancelar, setPorCancelar] = useState<string | null>(null)
   const [sonido, setSonido] = useState(false)
   // R135 · una pantalla que muestra datos viejos EN SILENCIO es peor que
   // una apagada: la cocina cree que no entró nada y el cliente espera. Se
@@ -276,7 +279,14 @@ export default function PantallaCocina() {
 
   const vivos = pedidos.filter((p) => p.vivo)
   const terminados = pedidos.filter((p) => !p.vivo)
-  const porCobrar = terminados.filter((p) => p.contabilidad !== "ok")
+  // R136 · un pedido CANCELADO no se cobra nunca. Sin esta línea la
+  // lista le ofrecía el botón "Cobrado $X" a un pedido cancelado y,
+  // peor, lo contaba como pendiente de cobro: un toque y entraba a la
+  // contabilidad una venta que no existió. Lo vi en la captura de la
+  // prueba, no leyendo el código.
+  const porCobrar = terminados.filter(
+    (p) => p.contabilidad !== "ok" && p.status !== "CANCELLED",
+  )
 
   // Se da por caída cuando el aparato avisa que no hay red, o cuando dos
   // consultas seguidas fallan, o cuando pasaron 40 segundos sin que los
@@ -424,10 +434,43 @@ export default function PantallaCocina() {
                     {p.customer_notes}
                   </p>
                 ) : null}
-                <p className="bg-slate-900 px-3 py-1 text-xs text-slate-400">
-                  {p.dropoff_address}
-                  {p.dropoff_detail ? ` · ${p.dropoff_detail}` : ""}
-                </p>
+                <div className="flex items-center justify-between gap-2 bg-slate-900 px-3 py-1">
+                  <p className="truncate text-xs text-slate-400">
+                    {p.dropoff_address}
+                    {p.dropoff_detail ? ` · ${p.dropoff_detail}` : ""}
+                  </p>
+                  {porCancelar === p.id ? (
+                    <span className="flex shrink-0 items-center gap-2 text-xs">
+                      <span className="text-slate-300">¿Cancelar?</span>
+                      <button
+                        type="button"
+                        disabled={ocupado === p.id}
+                        onClick={() => {
+                          setPorCancelar(null)
+                          avanzar(p, "cancelar")
+                        }}
+                        className="rounded bg-red-600 px-2 py-1 font-bold text-white"
+                      >
+                        Sí
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPorCancelar(null)}
+                        className="rounded bg-slate-700 px-2 py-1 text-slate-200"
+                      >
+                        No
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setPorCancelar(p.id)}
+                      className="shrink-0 text-xs text-slate-500 underline decoration-dotted"
+                    >
+                      cancelar
+                    </button>
+                  )}
+                </div>
               </article>
             )
           })}
@@ -455,7 +498,9 @@ export default function PantallaCocina() {
                   {p.order_code.replace(/^NF-\d+-/, "")}
                 </span>
                 <span className="flex-1 truncate text-slate-500">{p.customer_name}</span>
-                {p.contabilidad === "ok" ? (
+                {p.status === "CANCELLED" ? (
+                  <span className="font-bold text-red-400">cancelado</span>
+                ) : p.contabilidad === "ok" ? (
                   <span className="font-bold text-emerald-400">
                     cobrado ${Number(p.total_usd).toFixed(2)} · en contabilidad ✓
                   </span>

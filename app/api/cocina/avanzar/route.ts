@@ -46,6 +46,14 @@ const PASOS = {
     evento: "DELIVERED",
     sello: "delivered_at",
   },
+  // R136 · cancelar. NO manda nada a Loyverse: un pedido cancelado no es
+  // una venta, y meterlo para después anularlo ensucia la contabilidad
+  // con dos movimientos que nunca existieron.
+  cancelar: {
+    estado: "CANCELLED",
+    evento: "CANCELLED",
+    sello: "cancelled_at",
+  },
 } as const
 
 type Paso = keyof typeof PASOS
@@ -87,9 +95,17 @@ export async function POST(req: NextRequest) {
   const destino = PASOS[paso]
   const ahora = new Date().toISOString()
 
+  const cambios: Record<string, unknown> = {
+    status: destino.estado,
+    [destino.sello]: ahora,
+  }
+  if (paso === "cancelar") {
+    cambios.cancellation_reason = "Cancelado desde la pantalla de cocina"
+  }
+
   const { error: errorEscritura } = await supa
     .from("orders")
-    .update({ status: destino.estado, [destino.sello]: ahora })
+    .update(cambios)
     .eq("id", orderId)
 
   if (errorEscritura) {
