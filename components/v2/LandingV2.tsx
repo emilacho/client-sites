@@ -291,7 +291,7 @@ function LandingInner() {
         <button
           type="button"
           onClick={openMenu}
-          className="pointer-events-auto group relative inline-flex w-[200px] items-center justify-center px-5 py-3 transition-all hover:translate-y-[-1px] active:scale-[0.97]"
+          className="pointer-events-auto group relative inline-flex w-[200px] items-center justify-center px-5 py-3 transition-all hover:translate-y-[-1px] active:scale-[0.97] md:w-[300px] md:px-7 md:py-5"
           style={{
             background:
               "linear-gradient(180deg, #542D67 0%, #4B2855 50%, #38154B 100%)",
@@ -350,7 +350,7 @@ function LandingInner() {
               stems gruesos) · cyan-mint #51D4B4 (color del texto baked
               en el GLB original) */}
           <span
-            className="font-[family-name:var(--font-alfa-slab),serif] text-xl tracking-[0.08em]"
+            className="font-[family-name:var(--font-alfa-slab),serif] text-xl tracking-[0.08em] md:text-3xl"
             style={{
               color: "#51D4B4",
               textShadow:
@@ -365,7 +365,11 @@ function LandingInner() {
             Pesca del día · Combo para 2 · Reservar hora · Náufrago Club ·
             cada uno mismo styling wood plank purple gradient · texto Alfa
             Slab cyan-mint glow · solo más chicos (~96px wide · text-sm) */}
-        <div className="pointer-events-auto grid w-[200px] grid-cols-2 gap-2">
+        {/* R127 · en computadora los cuatro carteles crecen para llenar la
+            franja izquierda (300 px de ancho · 104 px de alto cada uno) ·
+            en celular quedan como estaban, que ahí el espacio es del
+            cliente. */}
+        <div className="pointer-events-auto grid w-[200px] grid-cols-2 gap-2 md:w-[300px] md:gap-3">
           {[
             { label: "Fotos\ndel menú", icon: "📸", onClick: () => setStoriesOpen(true), aria: "Fotos del menú" },
             { label: "Combos\nNáufrago", icon: "🍱", onClick: () => setCombosOpen(true), aria: "Combos Náufrago" },
@@ -377,7 +381,7 @@ function LandingInner() {
               type="button"
               onClick={b.onClick}
               aria-label={b.aria}
-              className="group relative inline-flex h-[62px] flex-col items-center justify-center px-2 py-1.5 transition-all hover:translate-y-[-1px] active:scale-[0.97]"
+              className="group relative inline-flex h-[62px] flex-col items-center justify-center px-2 py-1.5 transition-all hover:translate-y-[-1px] active:scale-[0.97] md:h-[104px] md:px-3 md:py-3"
               style={{
                 background:
                   "linear-gradient(180deg, #542D67 0%, #4B2855 50%, #38154B 100%)",
@@ -389,26 +393,26 @@ function LandingInner() {
             >
               {/* Bolts esquinas · más chicos */}
               {[
-                ["left-1 top-1", "rounded-tl"],
-                ["right-1 top-1", "rounded-tr"],
-                ["left-1 bottom-1", "rounded-bl"],
-                ["right-1 bottom-1", "rounded-br"],
+                ["left-1 top-1 md:left-2 md:top-2", "rounded-tl"],
+                ["right-1 top-1 md:right-2 md:top-2", "rounded-tr"],
+                ["left-1 bottom-1 md:left-2 md:bottom-2", "rounded-bl"],
+                ["right-1 bottom-1 md:right-2 md:bottom-2", "rounded-br"],
               ].map(([pos]) => (
                 <span
                   key={pos}
                   aria-hidden
-                  className={`absolute h-1 w-1 rounded-full ${pos}`}
+                  className={`absolute h-1 w-1 rounded-full md:h-1.5 md:w-1.5 ${pos}`}
                   style={{
                     background: "#1A0828",
                     boxShadow: "inset 0 1px 0 rgba(102,55,114,0.4)",
                   }}
                 />
               ))}
-              <span className="text-sm leading-none" aria-hidden>
+              <span className="text-sm leading-none md:text-2xl" aria-hidden>
                 {b.icon}
               </span>
               <span
-                className="mt-0.5 whitespace-pre-line text-center font-[family-name:var(--font-alfa-slab),serif] text-[10px] leading-[1.1] tracking-[0.06em]"
+                className="mt-0.5 whitespace-pre-line text-center font-[family-name:var(--font-alfa-slab),serif] text-[10px] leading-[1.1] tracking-[0.06em] md:mt-1.5 md:text-[15px] md:leading-[1.2]"
                 style={{
                   color: "#51D4B4",
                   textShadow:
@@ -514,7 +518,11 @@ function LandingInner() {
           'Pide lo mismo' condicional. Los 3 CTAs secundarios viven
           arriba en el top-left stack · espacio natural entre ambos
           grupos gracias al justify-end del column flex. */}
-      <div className="pointer-events-none relative z-10 flex min-h-[100svh] flex-col items-start justify-end px-3 pb-3">
+      {/* R127 · en celular la frase se subía por encima de la barra de
+          abajo (WhatsApp · Instagram · FAQ · Privacidad), que es fija y en
+          una pantalla angosta le pasa por encima: se leía media frase. Ya
+          venía tapada desde antes, se ve en la captura de R125. */}
+      <div className="pointer-events-none relative z-10 flex min-h-[100svh] flex-col items-start justify-end px-3 pb-20 md:pb-3">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -524,7 +532,7 @@ function LandingInner() {
              container removed too · text rides drop-shadow legibility
              over the scene) · max-width clamped to 448px (was 672px)
              so the block never overlaps cofre/character on default. */
-          className="pointer-events-auto max-w-md"
+          className="pointer-events-auto max-w-[15rem] sm:max-w-md"
         >
           {/* Round 73 · hero letters retuned to the 2-color palette
               the user supplied · #3D2466 (deep indigo purple) +
@@ -537,8 +545,11 @@ function LandingInner() {
               background). */}
           {/* R97.8.11 · chip 'Olón · ghost kitchen' removido · info
               ahora vive solo en el TopBar centrado · evita duplicación */}
+          {/* R127 · en celular la frase ocupaba media pantalla y le comía
+              el lugar a la isla · baja de 24 a 16 px y el bloque se
+              angosta. De tableta para arriba queda igual que siempre. */}
           <h1
-            className="font-display text-2xl font-semibold leading-tight tracking-tight drop-shadow-[0_4px_20px_rgba(0,0,0,0.7)] md:text-3xl lg:text-4xl"
+            className="font-display text-base font-semibold leading-tight tracking-tight drop-shadow-[0_4px_20px_rgba(0,0,0,0.7)] sm:text-xl md:text-3xl lg:text-4xl"
             style={{ color: "#3D2466" }}
           >
             Cuando tengas esa hambre de...{" "}
