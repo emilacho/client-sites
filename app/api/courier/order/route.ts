@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server"
-import { avisarACocina } from "@/lib/avisar-cocina"
 import { courierOrderRequestSchema } from "@/lib/schemas"
 import { createOrder } from "@/lib/courier/para-rutas"
 import { getSupabaseAdmin } from "@/lib/supabase"
@@ -179,53 +178,21 @@ export async function POST(request: Request) {
     if (inserted) {
       naufragoOrderId = inserted.id
 
-      // R110 · AVISO A LA COCINA · hasta hoy el pedido se guardaba y nadie
-      // en el local se enteraba: el único WhatsApp del recorrido era para
-      // el cliente. Con el reparto conectado eso es un motorizado real
-      // llegando por un pedido que nadie vio.
+      // R134 · ACÁ IBA EL AVISO POR WHATSAPP A LA COCINA (R110) · se
+      // eliminó por decisión de Emilio: la pantalla de pedidos ya muestra
+      // todo lo que ese mensaje decía -qué cocinar, la dirección y cuánto
+      // cobrar- y encima avisa con sonido cuando entra uno nuevo. Dos
+      // avisos para lo mismo es un aviso de más.
       //
-      // R110.1 · SE ESPERA, no se manda y se olvida. El primer intento usó
-      // `void ...` y el aviso NUNCA se ejecutó: en este servidor la función
-      // se corta apenas manda la respuesta y mata lo que quedó pendiente.
-      // Medido · pedido de prueba sin ningún registro de aviso.
-      // Esperar suma ~medio segundo a una petición que ya tarda varios,
-      // y a cambio garantiza que la cocina se entere. Ese cambio conviene.
-      // Sigue sin poder tumbar el pedido: avisarACocina nunca tira
-      // excepción · devuelve el motivo.
-      const avisoCocina = await avisarACocina({
-        orderCode,
-        customerName: customer.name,
-        customerPhone: customer.phone,
-        dropoffAddress: dropoff.street,
-        dropoffDetail: dropoff.detail ?? null,
-        lines: lines.map((l) => ({
-          name: l.name,
-          qty: l.qty,
-          priceUsd: l.priceUsd,
-        })),
-        subtotalUsd: cartTotalUsd,
-        deliveryFeeUsd,
-        totalUsd,
-        notes: notes || null,
-        etaMinutes,
-        paymentMethod: "CASH_ON_DELIVERY",
-      })
-      // El resultado queda CONSULTABLE en el historial del pedido · un
-      // aviso que falla en silencio es peor que no tenerlo: nadie se
-      // entera de que la cocina no se enteró.
-      await supabase
-        .from("order_events")
-        .insert({
-          order_id: inserted.id,
-          event_type: avisoCocina.ok
-            ? "KITCHEN_NOTIFIED"
-            : "KITCHEN_NOTIFY_FAILED",
-          actor: "system",
-          payload: avisoCocina.ok
-            ? { sid: avisoCocina.sid }
-            : { motivo: avisoCocina.motivo },
-        })
-        .then(undefined, () => {})
+      // A CAMBIO, la pantalla pasa a ser el ÚNICO camino: si la tablet
+      // está apagada o sin internet, nadie en el local se entera. Antes el
+      // WhatsApp era la red de abajo.
+      //
+      // El aviso nunca llegó a probarse con un pedido real: en el historial
+      // hay 13 movimientos y ninguno es "cocina avisada". No se está
+      // apagando algo que funcionaba.
+      //
+      // Vuelve en un commit si hace falta · ver R110 en el historial.
 
       // ─── RESTAURADO R110.2 · esto lo borré yo al reescribir el bloque
       // en R110.1 y estuvo ausente dos publicaciones. Sin esto el cliente
