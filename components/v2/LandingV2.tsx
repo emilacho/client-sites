@@ -291,7 +291,7 @@ function LandingInner() {
         <button
           type="button"
           onClick={openMenu}
-          className="pointer-events-auto group relative inline-flex w-[200px] items-center justify-center px-5 py-3 transition-all hover:translate-y-[-1px] active:scale-[0.97] md:w-[300px] md:px-7 md:py-5"
+          className="pointer-events-auto group relative inline-flex w-[200px] items-center justify-center px-5 py-3 transition-all hover:translate-y-[-1px] active:scale-[0.97] md:w-[340px] md:px-8 md:py-8"
           style={{
             background:
               "linear-gradient(180deg, #542D67 0%, #4B2855 50%, #38154B 100%)",
@@ -350,7 +350,7 @@ function LandingInner() {
               stems gruesos) · cyan-mint #51D4B4 (color del texto baked
               en el GLB original) */}
           <span
-            className="font-[family-name:var(--font-alfa-slab),serif] text-xl tracking-[0.08em] md:text-3xl"
+            className="font-[family-name:var(--font-alfa-slab),serif] text-xl tracking-[0.08em] md:text-5xl"
             style={{
               color: "#51D4B4",
               textShadow:
@@ -365,11 +365,13 @@ function LandingInner() {
             Pesca del día · Combo para 2 · Reservar hora · Náufrago Club ·
             cada uno mismo styling wood plank purple gradient · texto Alfa
             Slab cyan-mint glow · solo más chicos (~96px wide · text-sm) */}
-        {/* R127 · en computadora los cuatro carteles crecen para llenar la
-            franja izquierda (300 px de ancho · 104 px de alto cada uno) ·
-            en celular quedan como estaban, que ahí el espacio es del
-            cliente. */}
-        <div className="pointer-events-auto grid w-[200px] grid-cols-2 gap-2 md:w-[300px] md:gap-3">
+        {/* R128 · en computadora los cuatro van uno abajo del otro,
+            cuadrados, formando una columna con el cartel MENÚ arriba. El
+            lado se mide contra el ALTO de la ventana (13%, tope 150 px):
+            con medida fija el cuarto cartel se le montaba a la frase en
+            las pantallas de 768 px de alto, que son la mayoría de las
+            laptops. En celular siguen de a dos, que ahí el alto escasea. */}
+        <div className="pointer-events-auto grid w-[200px] grid-cols-2 gap-2 md:w-[min(13vh,150px)] md:grid-cols-1 md:gap-3">
           {[
             { label: "Fotos\ndel menú", icon: "📸", onClick: () => setStoriesOpen(true), aria: "Fotos del menú" },
             { label: "Combos\nNáufrago", icon: "🍱", onClick: () => setCombosOpen(true), aria: "Combos Náufrago" },
@@ -381,7 +383,7 @@ function LandingInner() {
               type="button"
               onClick={b.onClick}
               aria-label={b.aria}
-              className="group relative inline-flex h-[62px] flex-col items-center justify-center px-2 py-1.5 transition-all hover:translate-y-[-1px] active:scale-[0.97] md:h-[104px] md:px-3 md:py-3"
+              className="group relative inline-flex h-[62px] flex-col items-center justify-center px-2 py-1.5 transition-all hover:translate-y-[-1px] active:scale-[0.97] md:h-[min(13vh,150px)] md:w-[min(13vh,150px)] md:px-3 md:py-3"
               style={{
                 background:
                   "linear-gradient(180deg, #542D67 0%, #4B2855 50%, #38154B 100%)",
