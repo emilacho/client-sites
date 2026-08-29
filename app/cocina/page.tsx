@@ -129,6 +129,13 @@ export default function PantallaCocina() {
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [cocinados, setCocinados] = useState<Record<string, boolean>>({})
   const [sonido, setSonido] = useState(false)
+  // R135 · una pantalla que muestra datos viejos EN SILENCIO es peor que
+  // una apagada: la cocina cree que no entró nada y el cliente espera. Se
+  // cuentan los intentos fallidos y cuándo fue la última vez que los datos
+  // llegaron de verdad.
+  const [fallos, setFallos] = useState(0)
+  const [ultimaBuena, setUltimaBuena] = useState<Date | null>(null)
+  const [enLinea, setEnLinea] = useState(true)
   const conocidos = useRef<Set<string> | null>(null)
   const { preparar, sonar } = useCampana(sonido)
 
@@ -152,6 +159,20 @@ export default function PantallaCocina() {
     } catch {}
   }, [])
 
+  // El aviso del propio aparato · llega al instante, sin esperar a que
+  // falle una consulta.
+  useEffect(() => {
+    setEnLinea(navigator.onLine)
+    const arriba = () => setEnLinea(true)
+    const abajo = () => setEnLinea(false)
+    window.addEventListener("online", arriba)
+    window.addEventListener("offline", abajo)
+    return () => {
+      window.removeEventListener("online", arriba)
+      window.removeEventListener("offline", abajo)
+    }
+  }, [])
+
   const traer = useCallback(async () => {
     if (!llave) return
     try {
@@ -166,6 +187,7 @@ export default function PantallaCocina() {
       const data = await res.json()
       if (!data.ok) {
         setError("No se pudieron traer los pedidos.")
+        setFallos((n) => n + 1)
         return
       }
       const lista: Pedido[] = data.pedidos ?? []
@@ -180,10 +202,13 @@ export default function PantallaCocina() {
         conocidos.current = new Set(vivosAhora)
       }
       setPedidos(lista)
-      setUltima(new Date())
+      const ahora = new Date()
+      setUltima(ahora)
+      setUltimaBuena(ahora)
+      setFallos(0)
       setError(null)
     } catch {
-      setError("Sin conexión · reintentando.")
+      setFallos((n) => n + 1)
     }
   }, [llave, sonar])
 
@@ -197,7 +222,7 @@ export default function PantallaCocina() {
   // Reloj propio · los minutos corren aunque no entre ningún pedido.
   const [, redibujar] = useState(0)
   useEffect(() => {
-    const t = setInterval(() => redibujar((n) => n + 1), 15000)
+    const t = setInterval(() => redibujar((n) => n + 1), 5000)
     return () => clearInterval(t)
   }, [])
 
@@ -253,6 +278,15 @@ export default function PantallaCocina() {
   const terminados = pedidos.filter((p) => !p.vivo)
   const porCobrar = terminados.filter((p) => p.contabilidad !== "ok")
 
+  // Se da por caída cuando el aparato avisa que no hay red, o cuando dos
+  // consultas seguidas fallan, o cuando pasaron 40 segundos sin que los
+  // datos lleguen (la consulta corre cada 8).
+  const segundosSinDatos = ultimaBuena
+    ? Math.floor((Date.now() - ultimaBuena.getTime()) / 1000)
+    : null
+  const caida =
+    !enLinea || fallos >= 2 || (segundosSinDatos !== null && segundosSinDatos > 40)
+
   return (
     <main className="min-h-screen bg-slate-900 text-slate-100">
       {/* Barra superior · como la del KDS · cuenta de tickets y ajustes */}
@@ -264,7 +298,8 @@ export default function PantallaCocina() {
           </span>
         </h1>
         <div className="flex items-center gap-3 text-xs text-slate-400">
-          <span>
+          <span className={caida ? "font-bold text-red-400" : ""}>
+            {caida ? "● sin conexión" : "● en línea"} ·{" "}
             {ultima
               ? ultima.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" })
               : "…"}
@@ -281,6 +316,34 @@ export default function PantallaCocina() {
         </div>
       </header>
 
+      {/* R135 · EL CARTEL DE CAÍDA · ocupa el ancho entero y apaga el
+          tablero. La pantalla es el único camino por el que el local se
+          entera de un pedido (el aviso por WhatsApp se sacó en R134), así
+          que quedarse callada mostrando datos viejos es el peor final
+          posible: la cocina cree que no entró nada. */}
+      {caida ? (
+        <div className="bg-red-600 px-4 py-4 text-center text-white">
+          {/* El parpadeo va SOLO en el triángulo · si parpadea el cartel
+              entero, la mitad del tiempo se ve apagado, que es justo lo
+              contrario de una alarma. Lo vi en la captura de prueba. */}
+          <p className="text-2xl font-black tracking-wide">
+            <span className="animate-pulse">⚠</span> SIN CONEXIÓN · ESTA
+            PANTALLA NO SE ESTÁ ACTUALIZANDO
+          </p>
+          <p className="mt-1 text-base">
+            {enLinea
+              ? "No se puede llegar al servidor · puede haber pedidos nuevos que no ves."
+              : "La tablet se quedó sin internet · revisá el wifi."}
+          </p>
+          <p className="mt-1 text-sm opacity-90">
+            Últimos datos buenos ·{" "}
+            {ultimaBuena
+              ? `${ultimaBuena.toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" })} (hace ${segundosSinDatos} s)`
+              : "todavía ninguno"}
+          </p>
+        </div>
+      ) : null}
+
       {error ? (
         <p className="bg-red-950 px-3 py-2 text-sm text-red-200">{error}</p>
       ) : null}
@@ -290,7 +353,7 @@ export default function PantallaCocina() {
         </p>
       ) : null}
 
-      <div className="p-2">
+      <div className={`p-2 ${caida ? "pointer-events-none opacity-40" : ""}`}>
         {vivos.length === 0 ? (
           <p className="py-20 text-center text-slate-500">Sin tickets en cocina.</p>
         ) : null}
