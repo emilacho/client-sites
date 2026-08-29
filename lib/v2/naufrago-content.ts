@@ -581,28 +581,35 @@ const SUPABASE_BASE =
 const ASSET_BASE = `${SUPABASE_BASE}/storage/v1/object/public/client-websites/naufrago`
 
 export const naufragoAssets = {
-  // Round 96 · `-compact` variants · gltf-transform pipeline ·
-  // resize textures 2K máx + Draco geometry. Generated via
-  // `scripts/compact-glbs.mjs`. Total before/after ·
-  //   island       · 23.87 MB → 419 KB    (-98%)
-  //   character    · 12.64 MB → 9.92 MB   (-23%)
-  //   sign         · 15.83 MB → 2.72 MB   (-83%)
-  //   surfboard    · 12.87 MB → 2.50 MB   (-81%)
-  //   pergamino    · 26.7 MB  → 8.5 MB    (-68% · R84)
-  // Originales sin tocar en el bucket · rollback = revertir URLs.
-  island:    `${ASSET_BASE}/3d-models/island-low-poly-compact.glb`,
-  character: `${ASSET_BASE}/3d-models/character-castaway-confused-scratch-compact.glb`,
-  sign:      `${ASSET_BASE}/3d-models/sign-naufrago-compact.glb`,
-  surfboard: `${ASSET_BASE}/3d-models/surfboard-old-compact.glb`,
-  // Round 96.5 · props secundarios para la isla · Meshy AI ·
-  // pipeline resize+draco compactado (atún 14→2 MB · cangrejo 30
-  // →4 MB · botella 7→0.6 MB). Atún disponible pero no renderizado
-  // todavía · pending decisión Emilio sobre placement.
-  cangrejo:  `${ASSET_BASE}/3d-models/cangrejo-compact.glb`,
-  botella:   `${ASSET_BASE}/3d-models/botella-compact.glb`,
-  atun:      `${ASSET_BASE}/3d-models/atun-compact.glb`,
-  // Pergamino pirata 3D asset (Meshy AI · Draco-compressed).
-  pergamino: "/models/pergamino-pirata.glb",
+  // R126 · variantes `-lite` · generadas por `scripts/adelgazar-modelos.mjs`.
+  // La ronda anterior (R96, `-compact`) sólo achicaba texturas a 2048 y
+  // comprimía la malla · quedaban 27,8 MB por visita y en celular la
+  // página era inusable. Acá se baja la resolución de textura RANURA POR
+  // RANURA (el color se mira · el mapa de relieve y el de metal casi no) y
+  // se simplifica la malla donde sobraban triángulos. Peso por visita ·
+  //   isla        419 KB → 278 KB    igual malla · el relieve del mar queda a 2048
+  //   personaje  9,69 MB →  1,1 MB   una sola textura PNG de 9 MB era el 92%
+  //   letrero    2,66 MB →  622 KB   223.179 → 89.270 triángulos
+  //   tabla      2,45 MB →  394 KB    98.211 → 49.105
+  //   cangrejo   3,54 MB →  436 KB   676.279 →  81.153 · para un bicho de 3 cm
+  //   botella     583 KB →  153 KB
+  //   pergamino  8,52 MB →  567 KB   611.054 → 122.190
+  //   atún       2,03 MB →  355 KB   (pantalla de seguimiento del pedido)
+  //   TOTAL      27,8 MB →  3,8 MB   (-86%)
+  // Nombres de nodos y materiales verificados idénticos uno a uno contra
+  // los `-compact` · la escena busca "Ocean001_57" · "Chest_14" · "Boat_15"
+  // y los cocos por nombre, y el personaje conserva esqueleto y animación.
+  // Originales y `-compact` sin tocar en el bucket · volver atrás = revertir
+  // estas URLs.
+  island:    `${ASSET_BASE}/3d-models/island-low-poly-lite.glb`,
+  character: `${ASSET_BASE}/3d-models/character-castaway-confused-scratch-lite.glb`,
+  sign:      `${ASSET_BASE}/3d-models/sign-naufrago-lite.glb`,
+  surfboard: `${ASSET_BASE}/3d-models/surfboard-old-lite.glb`,
+  cangrejo:  `${ASSET_BASE}/3d-models/cangrejo-lite.glb`,
+  botella:   `${ASSET_BASE}/3d-models/botella-lite.glb`,
+  atun:      `${ASSET_BASE}/3d-models/atun-lite.glb`,
+  // Pergamino pirata (Meshy AI) · servido desde el propio sitio.
+  pergamino: "/models/pergamino-pirata-lite.glb",
   heroImage: `${ASSET_BASE}/v2/hero.png`,
 } as const
 

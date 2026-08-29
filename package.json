@@ -53,13 +53,18 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@gltf-transform/core": "^4.4.2",
+    "@gltf-transform/extensions": "^4.4.2",
+    "@gltf-transform/functions": "^4.4.2",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/three": "^0.184.1",
+    "draco3dgltf": "^1.5.7",
     "eslint": "^9.17.0",
     "eslint-config-next": "^15.1.0",
+    "meshoptimizer": "^1.2.0",
     "playwright": "^1.60.0",
     "pngjs": "^7.0.0",
     "pnpm": "^11.1.2",

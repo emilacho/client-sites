@@ -164,7 +164,7 @@ export function Scene({
           to #06080f at distance > 28u because the skybox lives ~30u
           out from the origin · GLB sky never rendered. Removing the
           two lines lets the asset's native sky + ocean show through.
-          Environment preset="sunset" kept · only used for PBR refl. */}
+          Environment (cielo de atardecer) kept · only used for PBR refl. */}
 
       <ambientLight intensity={0.55} />
       <directionalLight position={[5, 8, 3]} intensity={1.2} castShadow shadow-mapSize={[1024, 1024]} />
@@ -446,7 +446,14 @@ export function Scene({
             still provides real ground shadow under the chest/palms;
             we just lose the soft ambient darkening contact shadow
             that was responsible for the square. */}
-        <Environment preset="sunset" />
+        {/* R126 · el mismo cielo de siempre (el "sunset" de drei es
+            venice_sunset_1k.hdr) pero servido por nosotros y reducido de
+            1024x512 a 256x128 · 1,33 MB → 128 KB. Con `preset` se bajaba
+            de raw.githubusercontent.com: era el archivo más pesado de la
+            página y dependía de que GitHub respondiera. No se ve · sólo
+            alimenta el reflejo de los materiales, y three.js lo desenfoca
+            igual para calcular la luz. Regenerar · scripts/achicar-cielo.mjs */}
+        <Environment files="/hdri/atardecer-256.hdr" />
       </Suspense>
 
       <EffectComposer>
