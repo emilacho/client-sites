@@ -1,9 +1,33 @@
 "use client"
 /**
- * CombosModal · R97.8 · "Combos para compartir"
+ * CombosModal · "Combos para compartir"
  *
- * Pre-armados curados · click "Pedir combo" agrega items directamente al
- * cart. Encebollado + Cola · Ceviche para 2 · etc.
+ * Pre-armados curados · click "Pedir combo" agrega los platos al carrito.
+ *
+ * R130 · EL COMBO NO TIENE DESCUENTO, Y ES A PROPOSITO.
+ *
+ * Hasta R129 esta pantalla anunciaba "$5.25 tachado · $4.75 · ahorras
+ * $0.50" y despues cobraba $5.25: `pickCombo` agrega los platos a precio
+ * de lista y el carrito nunca supo de `discountUsd`. Prometia una cosa y
+ * cobraba otra, que es la peor forma de fallar porque el cliente lo
+ * descubre despues de comprar.
+ *
+ * Se arreglo sacando la promesa, no agregando el descuento. Razones,
+ * medidas el 29-ago-2026 ·
+ *   - Contra los mismos competidores en apps de reparto, Náufrago ya
+ *     esta 17-22% por debajo: encebollado $4.00 contra $5.05, ceviche
+ *     $7.00 contra $8.95, cola $1.25 contra $1.95. El descuento se
+ *     montaba sobre el precio mas bajo de la comparacion.
+ *   - En este mercado el combo se usa para SUBIR el ticket, no para
+ *     bajarlo: El Rincon del Ceviche vende su "Combo Encebollado de
+ *     Albacora" a $8.62. Casa del Encebollado no tiene combos.
+ *   - Los $0.50 del Surfer eran el 9,5% del ticket sobre el plato mas
+ *     barato. Sumados al pergamino (5%) y al tesoro (4%) se llevaban
+ *     cerca de un tercio de la ganancia del pedido.
+ * Misma leccion que el club en R122 · cobrar menos y regalar menos.
+ *
+ * El combo se vende por lo que de verdad ahorra: el trabajo de armarlo.
+ * Decision de Emilio, 29-ago-2026.
  */
 import { useEffect } from "react"
 import { AnimatePresence, motion } from "framer-motion"
@@ -26,7 +50,6 @@ interface Combo {
   emoji: string
   description: string
   items: ComboItem[]
-  discountUsd: number
 }
 
 const COMBOS: Combo[] = [
@@ -39,7 +62,6 @@ const COMBOS: Combo[] = [
       { itemId: "encebollado-naufrago", itemName: "Encebollado Náufrago", priceUsd: 4, qty: 1 },
       { itemId: "cola-pequena", itemName: "Cola pequeña · Coca-Cola", priceUsd: 1.25, qty: 1 },
     ],
-    discountUsd: 0.5,
   },
   {
     id: "combo-pareja",
@@ -50,7 +72,6 @@ const COMBOS: Combo[] = [
       { itemId: "ceviche-naufrago", itemName: "Ceviche Náufrago", priceUsd: 7, qty: 2 },
       { itemId: "jugo-natural", itemName: "Jugo natural del día", priceUsd: 2, qty: 2 },
     ],
-    discountUsd: 1.5,
   },
   // R104.4 · el Combo Familia queda FUERA hasta nueva orden: su gracia era
   // "Encebollado Mixto + Patacones + 2 colas", y sin patacones ya no es ese
@@ -144,11 +165,14 @@ export function CombosModal({ open, onClose }: CombosModalProps) {
 
           <ul className="space-y-2.5">
             {COMBOS.map((combo) => {
-              const subtotal = combo.items.reduce(
+              // El total es la suma de los platos · lo mismo, al centavo,
+              // que va a quedar en la canoa. Si algun dia vuelve un
+              // descuento, tiene que aplicarlo el CARRITO · mostrarlo solo
+              // aca es prometer sin cobrar (era el defecto de R129).
+              const total = combo.items.reduce(
                 (s, it) => s + it.priceUsd * it.qty,
                 0,
               )
-              const final = subtotal - combo.discountUsd
               return (
                 <li
                   key={combo.id}
@@ -184,16 +208,12 @@ export function CombosModal({ open, onClose }: CombosModalProps) {
                   </ul>
                   <div className="flex items-center justify-between border-t border-slate-800 pt-2">
                     <span className="text-[11px]">
-                      <span className="line-through opacity-50">
-                        ${subtotal.toFixed(2)}
-                      </span>
-                      {"  "}
                       <span className="font-bold" style={{ color: CYAN }}>
-                        ${final.toFixed(2)}
+                        ${total.toFixed(2)}
                       </span>
                       {"  "}
                       <span className="text-[10px] opacity-60">
-                        · ahorras ${combo.discountUsd.toFixed(2)}
+                        · listo para pedir
                       </span>
                     </span>
                     <button
