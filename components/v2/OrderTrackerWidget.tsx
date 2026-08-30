@@ -351,7 +351,9 @@ export function OrderTrackerWidget() {
   // Wave shift · subtle horizontal motion 0-4px over 8s loop
   const waveShift = Math.sin(now * 0.4) * 2
   // Mountain breath · scale 1.0 → 1.025 over 4s loop
-  const mtnBreath = 1 + (Math.sin(now * 0.5) + 1) * 0.012
+  // El latido suave de la cocina · antes se llamaba "mtnBreath"
+  // (respiración de la montaña) cuando ahí había una montaña suiza.
+  const latidoCocina = 1 + (Math.sin(now * 0.5) + 1) * 0.012
 
   const isNearing = snap?.delivery_substatus === "NEARING_DESTINATION"
   const isAt = snap?.delivery_substatus === "AT_DESTINATION"
@@ -573,18 +575,29 @@ export function OrderTrackerWidget() {
                 strokeLinecap="round"
               />
 
-              {/* Pickup · Täsch · with mountain breath */}
+              {/* R142 · DE DÓNDE SALE EL PEDIDO · acá decía "TÄSCH" con un
+                  emoji de montaña. Täsch es un pueblo de los Alpes suizos:
+                  quedó del cliente de prueba con el que se armó el mapa
+                  (los pedidos de mayo iban a Zermatt). O sea que el cliente
+                  de Guayaquil veía su encebollado saliendo de una montaña
+                  en Suiza. Ahora dice lo que es: la cocina, con la olla que
+                  ya usa el botón de combos. */}
               <g>
                 <g style={{
-                  transform: `scale(${mtnBreath})`,
+                  transform: `scale(${latidoCocina})`,
                   transformOrigin: `${PICKUP_X}px ${PICKUP_Y}px`,
                   transition: "transform 0.2s linear",
                 }}>
                   <circle cx={PICKUP_X} cy={PICKUP_Y} r="16" fill={SAND} stroke={PURPLE} strokeWidth="2" />
-                  <text x={PICKUP_X} y={PICKUP_Y + 7} textAnchor="middle" fontSize="22">🏔</text>
+                  <text x={PICKUP_X} y={PICKUP_Y + 7} textAnchor="middle" fontSize="22">🍲</text>
                 </g>
-                <text x={PICKUP_X} y={PICKUP_Y + 34} textAnchor="middle" fontSize="10" fontWeight="700" fill={PURPLE} fontFamily="ui-monospace, Menlo, monospace">
-                  TÄSCH
+                {/* Dos renglones · "COCINA NÁUFRAGO" en una sola línea se
+                    sale por la izquierda del dibujo (el punto está en x=50). */}
+                <text x={PICKUP_X} y={PICKUP_Y + 33} textAnchor="middle" fontSize="10" fontWeight="700" fill={PURPLE} fontFamily="ui-monospace, Menlo, monospace">
+                  COCINA
+                </text>
+                <text x={PICKUP_X} y={PICKUP_Y + 44} textAnchor="middle" fontSize="10" fontWeight="700" fill={PURPLE} fontFamily="ui-monospace, Menlo, monospace">
+                  NÁUFRAGO
                 </text>
               </g>
 
@@ -759,7 +772,18 @@ export function OrderTrackerWidget() {
           {/* ETA */}
           {snap ? (
             <div className="flex items-baseline justify-between gap-2">
-              {etaMin !== null && etaMin >= 0 ? (
+              {/* R142 · el pedido ENTREGADO mostraba igual la cuenta
+                  regresiva. El pedido real de anoche llegó y el mapa
+                  seguía diciendo "44 min" en letra gigante, porque el
+                  tiempo estimado que dejó el repartidor sigue guardado y
+                  esta rama se preguntaba primero por él. Se pregunta
+                  primero si ya llegó · un pedido entregado no tiene
+                  cuenta regresiva. */}
+              {isDelivered ? (
+                <span className="font-[family-name:var(--font-bebas),sans-serif] text-2xl font-bold leading-none">
+                  ¡Buen provecho! 🌊
+                </span>
+              ) : etaMin !== null && etaMin >= 0 ? (
                 <div>
                   <span className="font-[family-name:var(--font-bebas),sans-serif] text-3xl font-bold leading-none tracking-wider">
                     {etaMin === 0 ? "Llegando" : `${etaMin}`}
