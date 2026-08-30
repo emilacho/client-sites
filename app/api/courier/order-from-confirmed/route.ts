@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server"
+import { llamadaInterna } from "@/lib/llave-interna"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import {
   getDeliveryQuote,
@@ -35,6 +36,18 @@ const ORIGIN =
   "https://naufrago.delivery"
 
 export async function POST(req: NextRequest) {
+  // R146 · esta ruta despacha un motorizado REAL, y desde R144 con
+  // orden de cobrar. Sólo la llama otra parte de nuestro sistema ·
+  // nunca un navegador. Antes estaba abierta: con un código de pedido
+  // válido cualquiera mandaba un motorizado a la puerta de un cliente,
+  // y cada uno de esos envíos se factura.
+  //
+  // Contesta 404 y no 401 a propósito: al que no tiene la llave no se
+  // le confirma siquiera que la ruta existe.
+  if (!llamadaInterna(req)) {
+    return Response.json({ error: "not_found" }, { status: 404 })
+  }
+
   let body: Body
   try {
     body = (await req.json()) as Body

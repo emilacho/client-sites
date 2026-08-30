@@ -1,4 +1,6 @@
 import type { NextRequest } from "next/server"
+import { cabecerasInternas } from "@/lib/llave-interna"
+import { origenPropio } from "@/lib/origen"
 import { getSupabaseAdmin } from "@/lib/supabase"
 
 /**
@@ -211,11 +213,10 @@ async function handleDetailShare(orderCode: string, body: string) {
   // Dispatch flow downstream · cotizar PedidosYa + dispatch motorizado.
   // Llamado fire-and-forget al endpoint courier/order que ya existe ·
   // este se encarga de pedir cotización y disparar el delivery.
-  const origin =
-    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  const origin = origenPropio()
   void fetch(`${origin}/api/courier/order-from-confirmed`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...cabecerasInternas() },
     body: JSON.stringify({ orderCode }),
     keepalive: true,
   }).catch(() => {})

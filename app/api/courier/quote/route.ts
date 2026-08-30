@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 import { courierQuoteRequestSchema } from "@/lib/schemas"
 import { getDeliveryQuote } from "@/lib/courier/para-rutas"
 
@@ -19,6 +20,32 @@ export const runtime = "nodejs"
  * to estimate the rider for a multi-line food order.
  */
 export async function POST(request: Request) {
+  // R146 · freno de velocidad. Cada llamada de acá va a PedidosYa de
+  // verdad: consume cuota y su propia documentación avisa que bloquean
+  // 10 minutos por exceso de llamadas. Sin freno, un guión repitiendo
+  // deja al local sin poder cotizar ni despachar.
+  //
+  // El freno ya existía en la casa y Upstash ya está pagado · sólo no
+  // se estaba usando en las dos rutas que cuestan plata.
+  {
+    const rl = await checkRateLimit(getClientIp(request), {
+      limit: 20,
+      windowSec: 60,
+      bucket: "courier_quote",
+    })
+    if (!rl.ok) {
+      return NextResponse.json(
+        {
+          error: "rate_limited",
+          message:
+            "Demasiados intentos seguidos. Espera un momento y vuelve a probar.",
+          retryIn: rl.resetIn,
+        },
+        { status: 429 },
+      )
+    }
+  }
+
   let body: unknown
   try {
     body = await request.json()
