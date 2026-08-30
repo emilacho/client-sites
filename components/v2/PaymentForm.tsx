@@ -23,6 +23,7 @@
  */
 import { useEffect, useState } from "react"
 import { Loader2 } from "lucide-react"
+import { useCart } from "@/lib/v2/cart-context"
 
 const PURPLE_DARK = "#1F1138"
 const CYAN = "#4DD4D8"
@@ -495,6 +496,82 @@ function GooglePayTabLogo() {
   )
 }
 
+// ─── Tip chips · inline en payment ──────────────────────────────────
+function TipChipsInline({
+  value,
+  onChange,
+}: {
+  value: number
+  onChange: (n: number) => void
+}) {
+  const presets = [0, 1, 2]
+  const [customOpen, setCustomOpen] = useState(
+    !presets.includes(Math.round(value)),
+  )
+  const [customStr, setCustomStr] = useState(
+    !presets.includes(Math.round(value)) && value > 0
+      ? value.toFixed(2)
+      : "",
+  )
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {presets.map((p) => {
+        const isSelected = Math.abs(value - p) < 0.005 && !customOpen
+        return (
+          <button
+            key={p}
+            type="button"
+            onClick={() => {
+              setCustomOpen(false)
+              setCustomStr("")
+              onChange(p)
+            }}
+            className={[
+              "rounded-full border px-3 py-1 text-[11px] font-semibold transition-all",
+              isSelected
+                ? "border-cyan-400 bg-cyan-500/20 text-cyan-100"
+                : "border-slate-700 bg-slate-950 text-slate-400",
+            ].join(" ")}
+          >
+            {p === 0 ? "Sin propina" : `$${p}`}
+          </button>
+        )
+      })}
+      <button
+        type="button"
+        onClick={() => setCustomOpen(true)}
+        className={[
+          "rounded-full border px-3 py-1 text-[11px] font-semibold transition-all",
+          customOpen
+            ? "border-cyan-400 bg-cyan-500/20 text-cyan-100"
+            : "border-slate-700 bg-slate-950 text-slate-400",
+        ].join(" ")}
+      >
+        Otra
+      </button>
+      {customOpen ? (
+        <div className="flex items-center gap-1">
+          <span className="text-[11px] text-slate-400">$</span>
+          <input
+            type="number"
+            min={0}
+            max={50}
+            step={0.5}
+            value={customStr}
+            onChange={(e) => {
+              setCustomStr(e.target.value)
+              const n = Number(e.target.value)
+              if (!isNaN(n) && n >= 0) onChange(n)
+            }}
+            placeholder="0.00"
+            className="w-16 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] text-slate-100"
+          />
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 // ─── Card form sub-component ────────────────────────────────────────
 function CardForm({
   savedCards,
@@ -935,6 +1012,7 @@ export function PaymentForm({
   // priceUsd + etaMinutes son reservados para futuras integraciones
   // (mostrar resumen de envío adicional) · por ahora no se usan acá ·
   // viven en el resumen del cart drawer arriba
+  const cart = useCart()
   const [method, setMethod] = useState<PaymentMethod>("card")
 
   // ── Card state ────────────────────────────────────────────────────
@@ -1195,6 +1273,14 @@ export function PaymentForm({
           }
         />
       ) : null}
+
+      {/* Propina motorizado · pattern Domino's · integrada en payment */}
+      <div>
+        <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-widest text-slate-400">
+          Propina al motorizado · opcional
+        </span>
+        <TipChipsInline value={cart.tipUsd} onChange={cart.setTip} />
+      </div>
 
       {/* Email receipt opcional */}
       <div>

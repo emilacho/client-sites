@@ -636,6 +636,7 @@ export interface AppliedDiscountSummary {
 export function buildWhatsAppMessage(
   lines: CartLine[],
   discount?: AppliedDiscountSummary | null,
+  tipUsd?: number,
 ): string {
   if (lines.length === 0) {
     return "Hola, quiero pedir."
@@ -653,6 +654,7 @@ export function buildWhatsAppMessage(
     })
     .join("\n")
   const subtotal = lines.reduce((s, l) => s + l.priceUsd * l.qty, 0)
+  const tip = tipUsd && tipUsd > 0 ? tipUsd : 0
   const lines_msg = [
     "¡Hola Náufrago! Quiero pedir lo siguiente:",
     "",
@@ -663,13 +665,16 @@ export function buildWhatsAppMessage(
   const discountUsd = hasDiscount
     ? Math.round(subtotal * (discount!.percent / 100) * 100) / 100
     : 0
-  const total = Math.max(0, subtotal - discountUsd).toFixed(2)
-  if (hasDiscount) {
+  const total = Math.max(0, subtotal - discountUsd + tip).toFixed(2)
+  if (hasDiscount || tip > 0) {
     lines_msg.push(`Subtotal: $${subtotal.toFixed(2)}`)
     if (hasDiscount) {
       lines_msg.push(
         `Descuento (${discount!.code} · ${discount!.percent}%): −$${discountUsd.toFixed(2)}`,
       )
+    }
+    if (tip > 0) {
+      lines_msg.push(`Propina motorizado: $${tip.toFixed(2)}`)
     }
     lines_msg.push(`Total: $${total}`)
   } else {
@@ -682,7 +687,8 @@ export function buildWhatsAppMessage(
 export function buildWhatsAppLink(
   lines: CartLine[],
   discount?: AppliedDiscountSummary | null,
+  tipUsd?: number,
 ): string {
-  const msg = buildWhatsAppMessage(lines, discount)
+  const msg = buildWhatsAppMessage(lines, discount, tipUsd)
   return `https://wa.me/${WHATSAPP_E164}?text=${encodeURIComponent(msg)}`
 }
