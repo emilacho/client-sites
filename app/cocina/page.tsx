@@ -99,8 +99,7 @@ function useCampana(encendido: boolean) {
       if (Ctor) ctxRef.current = new Ctor()
     } catch {}
   }, [])
-  const sonar = useCallback(() => {
-    if (!encendido) return
+  const tocar = useCallback(() => {
     const ctx = ctxRef.current
     if (!ctx) return
     if (ctx.state === "suspended") ctx.resume().catch(() => {})
@@ -117,8 +116,13 @@ function useCampana(encendido: boolean) {
       osc.start(ahora + i * 0.18)
       osc.stop(ahora + i * 0.18 + 0.18)
     }
-  }, [encendido])
-  return { preparar, sonar }
+  }, [])
+  // `sonar` respeta el interruptor · `sonarAhora` suena igual, y sirve
+  // para la prueba del momento en que se enciende.
+  const sonar = useCallback(() => {
+    if (encendido) tocar()
+  }, [encendido, tocar])
+  return { preparar, sonar, sonarAhora: tocar }
 }
 
 export default function PantallaCocina() {
@@ -140,7 +144,7 @@ export default function PantallaCocina() {
   const [ultimaBuena, setUltimaBuena] = useState<Date | null>(null)
   const [enLinea, setEnLinea] = useState(true)
   const conocidos = useRef<Set<string> | null>(null)
-  const { preparar, sonar } = useCampana(sonido)
+  const { preparar, sonar, sonarAhora } = useCampana(sonido)
 
   useEffect(() => {
     const enUrl = new URLSearchParams(window.location.search).get("llave")
@@ -252,15 +256,25 @@ export default function PantallaCocina() {
     }
   }
 
+  /**
+   * R140 · el botón decía sólo "🔕 sin sonido" y no se entendía si eso
+   * era el estado o lo que iba a pasar al tocarlo. Emilio lo probó en el
+   * local y la tablet no sonó: creyó que estaba encendido. Ahora dice las
+   * dos cosas -cómo está y qué hace el toque- y sobre todo SUENA al
+   * encenderlo, que es la única prueba que vale: si se escucha, quedó.
+   */
   function alternarSonido() {
     preparar()
-    setSonido((s) => {
-      const nuevo = !s
-      try {
-        localStorage.setItem(SONIDO_GUARDADO, nuevo ? "1" : "0")
-      } catch {}
-      return nuevo
-    })
+    const nuevo = !sonido
+    setSonido(nuevo)
+    try {
+      localStorage.setItem(SONIDO_GUARDADO, nuevo ? "1" : "0")
+    } catch {}
+    if (nuevo) {
+      // El navegador recién deja sonar dentro de un toque de persona ·
+      // por eso la prueba va acá adentro y no en un efecto aparte.
+      setTimeout(() => sonarAhora(), 60)
+    }
   }
 
   if (llave === null) {
@@ -317,11 +331,13 @@ export default function PantallaCocina() {
           <button
             type="button"
             onClick={alternarSonido}
-            className={`rounded px-2 py-1 font-bold ${
-              sonido ? "bg-emerald-600 text-white" : "bg-slate-700 text-slate-300"
+            className={`rounded px-3 py-1.5 font-bold ${
+              sonido
+                ? "bg-emerald-600 text-white"
+                : "bg-amber-500 text-slate-900"
             }`}
           >
-            {sonido ? "🔔 sonido" : "🔕 sin sonido"}
+            {sonido ? "🔔 Sonido ENCENDIDO" : "🔕 Sonido APAGADO · tocá para encender"}
           </button>
         </div>
       </header>
@@ -358,8 +374,9 @@ export default function PantallaCocina() {
         <p className="bg-red-950 px-3 py-2 text-sm text-red-200">{error}</p>
       ) : null}
       {!sonido ? (
-        <p className="bg-slate-800 px-3 py-1.5 text-center text-xs text-slate-300">
-          Tocá <b>🔕 sin sonido</b> para que la pantalla avise cuando entre un pedido.
+        <p className="bg-amber-500 px-3 py-2 text-center text-sm font-bold text-slate-900">
+          ⚠ Esta pantalla NO va a avisar cuando entre un pedido · tocá el botón
+          naranja de arriba y vas a escuchar dos tonos.
         </p>
       ) : null}
 
