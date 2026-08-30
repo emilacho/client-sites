@@ -553,6 +553,12 @@ function CartFooter() {
             notes: l.notes,
           })),
           tipUsd: cart.tipUsd > 0 ? cart.tipUsd : undefined,
+          // R144 · lo que el cliente VIO como envío y el cupón que
+          // aplicó. El servidor no los cree a ciegas: re-calcula el
+          // descuento y re-cotiza el envío · esto es respaldo y
+          // contraste, no la fuente.
+          quotedDeliveryFeeUsd: priceUsd,
+          discountCode: cart.discount?.code || undefined,
           loyaltySpendPerlas:
             loyaltySpendPerlas > 0 ? loyaltySpendPerlas : undefined,
           loyaltyRewardId: selectedReward?.id,

@@ -69,6 +69,8 @@ export interface CreateOrderParams {
   notes?: string
   /** Nuestro código de pedido · viaja a PedidosYa para cruzarlo en su panel. */
   externalReference?: string
+  /** R144 · lo que el motorizado cobra en la puerta · sin propina. */
+  collectMoneyUsd?: number
 }
 
 export interface CreateOrderResult {
@@ -150,6 +152,7 @@ export async function createOrder(
     })),
     notes: params.notes ?? null,
     externalReference: params.externalReference,
+    collectMoneyUsd: params.collectMoneyUsd,
   })
   return {
     orderId: r.providerOrderId,

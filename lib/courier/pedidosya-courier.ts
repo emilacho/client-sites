@@ -428,6 +428,14 @@ export const pedidosYaCourier: CourierProvider = {
             params.customer.phone,
           ),
           instructions: params.notes || undefined,
+          // R144 · cobro en la puerta. Probado contra la cuenta real
+          // 30-ago: PedidosYa acepta el campo y lo devuelve de vuelta,
+          // y valida el techo (rechaza con COLLECT_MONEY_EXCEEDED). Si
+          // la función estuviera apagada devolvería otro error distinto
+          // (NOT_SUPPORTED_COLLECT_MONEY) · no es el caso.
+          ...(params.collectMoneyUsd && params.collectMoneyUsd > 0
+            ? { collectMoney: Number(params.collectMoneyUsd.toFixed(2)) }
+            : {}),
         },
       ],
     }

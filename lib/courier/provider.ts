@@ -88,6 +88,12 @@ export interface DispatchParams {
   /** Our internal order code · passed to the provider for
    *  cross-referencing in their dashboard. */
   externalReference?: string
+  /** R144 · monto que el motorizado debe cobrarle al cliente en la
+   *  puerta. Ausente o 0 = no cobra nada (el pedido ya se pagó).
+   *  NUNCA incluye la propina: esa plata la recauda el proveedor y
+   *  nos la liquida a nosotros, así que le quedaríamos debiendo la
+   *  propina al motorizado. La propina va aparte, en mano. */
+  collectMoneyUsd?: number
 }
 
 export interface DispatchResult {

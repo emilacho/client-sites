@@ -73,6 +73,13 @@ export const courierOrderRequestSchema = z.object({
   lines: z.array(cartLineSchema).min(1).max(99),
   // Optional delivery instructions visible to the rider.
   notes: z.string().max(500).optional().or(z.literal("")),
+  /** R144 · el precio del envío que el cliente VIO al cotizar. El
+   *  servidor no lo cree a ciegas: lo contrasta contra una cotización
+   *  propia antes de ordenarle al motorizado cuánto cobrar. */
+  quotedDeliveryFeeUsd: z.number().min(0).max(100).optional(),
+  /** R144 · cupón aplicado · el servidor re-calcula el descuento, no
+   *  acepta el monto del navegador. */
+  discountCode: z.string().max(40).optional().or(z.literal("")),
 })
 export type CourierOrderRequest = z.infer<typeof courierOrderRequestSchema>
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { courierOrderRequestSchema } from "@/lib/schemas"
-import { createOrder } from "@/lib/courier/para-rutas"
+import { createOrder, getDeliveryQuote } from "@/lib/courier/para-rutas"
+import { computeDiscount, computeSubtotalUsd } from "@/lib/checkout/pricing"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { cliente } from "@/cliente.config"
 
@@ -67,6 +68,40 @@ export async function POST(request: Request) {
   }
   const { quoteToken, dropoff, customer, lines, notes } = parsed.data
 
+  // ── R144 · cuánto tiene que cobrar el motorizado en la puerta ──────
+  // La comida y el descuento los recalcula el servidor · el navegador
+  // es sólo pantalla. El envío sale de una cotización propia hecha
+  // ahora, no del número que mandó el teléfono.
+  //
+  // La propina NO entra acá a propósito: esa plata la recaudaría
+  // PedidosYa y nos la liquidaría a nosotros, con lo cual le
+  // quedaríamos debiendo la propina al motorizado. Va en mano.
+  const comidaUsd = computeSubtotalUsd(
+    lines.map((l) => ({ id: l.name, name: l.name, priceUsd: l.priceUsd, qty: l.qty })),
+  )
+  const descuento = computeDiscount(comidaUsd, parsed.data.discountCode || null)
+
+  let envioParaCobrar: number | null = null
+  try {
+    const c = await getDeliveryQuote({
+      dropoff,
+      cartTotalUsd: comidaUsd,
+      itemCount: lines.reduce((n, l) => n + l.qty, 0),
+    })
+    envioParaCobrar = c.priceUsd
+  } catch {
+    // Si nuestra propia cotización falla, usamos la que vio el cliente
+    // (el esquema ya la topea en $100). Peor sería no cobrar nada.
+    envioParaCobrar = parsed.data.quotedDeliveryFeeUsd ?? null
+  }
+
+  const aCobrarEnLaPuerta =
+    envioParaCobrar === null
+      ? 0
+      : Number(
+          Math.max(0, comidaUsd - descuento.amountUsd + envioParaCobrar).toFixed(2),
+        )
+
   let courierResult
   try {
     courierResult = await createOrder({
@@ -75,9 +110,25 @@ export async function POST(request: Request) {
       customer,
       lines: lines.map((l) => ({ name: l.name, qty: l.qty, priceUsd: l.priceUsd })),
       notes,
+      collectMoneyUsd: aCobrarEnLaPuerta,
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
+    // R144 · el proveedor topea cuánto puede cobrar un motorizado en
+    // efectivo (probado 30-ago: $100 pasa, $200 no). Si el pedido lo
+    // supera, el cliente merece una frase que se entienda, no el
+    // código crudo del proveedor.
+    if (message.includes("COLLECT_MONEY_EXCEEDED")) {
+      return NextResponse.json(
+        {
+          error: "cobro_excede_maximo",
+          message:
+            "Este pedido supera el máximo que el motorizado puede cobrar en efectivo. Escríbenos por WhatsApp y lo coordinamos.",
+          detail: message,
+        },
+        { status: 400 },
+      )
+    }
     const status = message.startsWith("courier_env_missing:") ? 503 : 502
     return NextResponse.json(
       { error: "order_failed", detail: message },
