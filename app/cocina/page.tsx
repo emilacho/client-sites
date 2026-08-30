@@ -61,7 +61,9 @@ interface Pedido {
   customer_notes: string | null
   total_usd: number
   delivery_fee_usd: number
+  tip_usd: number
   payment_method: string
+  payment_status: string
   vivo: boolean
   contabilidad: "ok" | "falló" | null
 }
@@ -451,6 +453,7 @@ export default function PantallaCocina() {
                     {p.customer_notes}
                   </p>
                 ) : null}
+                <FranjaDePlata pedido={p} />
                 <div className="flex items-center justify-between gap-2 bg-slate-900 px-3 py-1">
                   <p className="truncate text-xs text-slate-400">
                     {p.dropoff_address}
@@ -542,5 +545,67 @@ export default function PantallaCocina() {
         </section>
       ) : null}
     </main>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   R145 · LA FRANJA DE LA PLATA
+
+   Emilio: "que quede clara esa info al momento de mostrarle a los
+   empleados del local para que no se cree confusion".
+
+   Dos cosas distintas que se confunden facil:
+     · el pedido  · lo cobra el MOTORIZADO en la puerta, no el local
+     · la propina · es del motorizado, nunca del local
+
+   Y la propina llega de dos maneras segun como se pago:
+     · en efectivo    · el cliente se la da en mano · el local NO hace nada
+     · por internet   · ya se le cobro al cliente · el local se la ENTREGA
+                        en efectivo cuando el motorizado pasa a retirar
+
+   La segunda frase se decide por si la plata ENTRO de verdad
+   (payment_status), NO por lo que el cliente eligio en la pantalla. Si
+   se decidiera por lo elegido, un pedido marcado "tarjeta" que nunca se
+   cobro haria que el local regale la propina de su bolsillo.
+   ───────────────────────────────────────────────────────────────── */
+function FranjaDePlata({ pedido }: { pedido: Pedido }) {
+  const propina = Number(pedido.tip_usd ?? 0)
+  const total = Number(pedido.total_usd)
+  const yaPagado = pedido.payment_status === "CAPTURED"
+
+  return (
+    <div className="space-y-px">
+      <p className="bg-slate-900 px-3 py-1.5 text-sm text-slate-300">
+        {yaPagado ? (
+          <>
+            <span className="font-bold text-emerald-300">Ya está pagado</span>
+            <span className="text-slate-400"> · no cobres nada</span>
+          </>
+        ) : (
+          <>
+            <span className="font-bold text-slate-100">
+              El motorizado le cobra ${total.toFixed(2)} al cliente
+            </span>
+            <span className="text-slate-400"> · vos no cobras nada</span>
+          </>
+        )}
+      </p>
+
+      {propina > 0 ? (
+        yaPagado ? (
+          /* La unica linea de esta pantalla que pide una ACCION con
+             plata en la mano. Va en ambar y con verbo al frente. */
+          <p className="bg-amber-500 px-3 py-2 text-sm font-bold text-slate-950">
+            Dale ${propina.toFixed(2)} en efectivo al motorizado · es su
+            propina, ya se la cobramos al cliente
+          </p>
+        ) : (
+          <p className="bg-slate-900 px-3 py-1.5 text-sm text-slate-400">
+            Aparte, el cliente le da ${propina.toFixed(2)} de propina en mano ·
+            <span className="text-slate-300"> vos no haces nada</span>
+          </p>
+        )
+      ) : null}
+    </div>
   )
 }

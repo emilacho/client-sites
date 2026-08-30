@@ -208,6 +208,10 @@ export async function POST(request: Request) {
         subtotal_usd: cartTotalUsd,
         delivery_fee_usd: deliveryFeeUsd,
         total_usd: totalUsd,
+        // R145 · la propina va aparte, NO dentro del total: no es plata
+        // del local. Mezclarla inflaría los ingresos y la contabilidad
+        // no cerraría contra la caja.
+        tip_usd: parsed.data.tipUsd ?? 0,
         delivery_eta_minutes: etaMinutes,
         delivery_provider: "PEDIDOSYA_COURIER",
         delivery_provider_order_id: courierResult.orderId,

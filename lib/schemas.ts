@@ -80,6 +80,10 @@ export const courierOrderRequestSchema = z.object({
   /** R144 · cupón aplicado · el servidor re-calcula el descuento, no
    *  acepta el monto del navegador. */
   discountCode: z.string().max(40).optional().or(z.literal("")),
+  /** R145 · propina para el motorizado. Queda escrita aparte · NO entra
+   *  en el total del local ni en lo que se le ordena cobrar al
+   *  repartidor. Tope $50 · una propina mayor es un dedo equivocado. */
+  tipUsd: z.number().min(0).max(50).optional(),
 })
 export type CourierOrderRequest = z.infer<typeof courierOrderRequestSchema>
 
