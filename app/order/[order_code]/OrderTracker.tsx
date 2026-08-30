@@ -63,6 +63,9 @@ export interface OrderSnapshot {
     rating?: number
     tenureMonths?: number
   } | null
+  /** R141 · lo devuelve la API desde siempre · faltaba declararlo acá.
+   *  Se usa para decirle al cliente cancelado si le cobraron algo. */
+  payment_method: string | null
   customer_notes: string | null
   created_at: string
   rider_picked_up_at: string | null
@@ -174,6 +177,12 @@ export function OrderTracker({ initial, orderCode }: Props) {
         {/* R96.127 · push permission · diferido hasta primer DELIVERED ·
             best moment (positive experience just happened) · NO en cada
             visita al tracker (quema conversión). Skip en pre-delivered. */}
+        {/* R141 · el detalle del pedido se mostraba en TODAS las etapas
+            menos en la última. Justo al entregar -que es cuando el
+            cliente quiere ver qué pagó- la pantalla le dejaba una llave
+            dorada y unas estrellas, y nada más. Era un `si entregado,
+            calificación; si no, resumen`. Ahora el resumen está siempre,
+            y en la entrega se le suma lo demás. */}
         {stage === "delivered" ? (
           <>
             <ReviewCard orderCode={orderCode} />
@@ -181,9 +190,8 @@ export function OrderTracker({ initial, orderCode }: Props) {
             <PreferencesPrompt phone={snap.customer_phone} />
             <ReorderCta />
           </>
-        ) : (
-          <OrderSummary snap={snap} />
-        )}
+        ) : null}
+        <OrderSummary snap={snap} />
       </div>
     </main>
   )
@@ -535,12 +543,7 @@ function DeliveryProofPhoto({
   url: string
   at?: string | null
 }) {
-  const timeText = at
-    ? new Date(at).toLocaleTimeString("es-EC", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : null
+  const timeText = horaEcuador(at)
   return (
     <div
       className="my-5 overflow-hidden rounded-2xl"
@@ -753,27 +756,22 @@ function Row({
   )
 }
 
+/**
+ * R141 · ACÁ HABÍA UNA SEGUNDA FILA DE ESTRELLAS Y NO SERVÍA PARA NADA.
+ *
+ * Decía "¿Cómo estuvo el tesoro?" y mostraba cinco estrellas sin ningún
+ * comportamiento: no se pintaban al tocarlas, no guardaban, no enviaban.
+ * Y estaba a dos centímetros de la calificación de verdad, que sí guarda.
+ * O sea que un cliente podía calificarte cinco estrellas creyendo que las
+ * mandaba, y no llegaba nada. Peor que no pedir opinión: pedirla y
+ * tirarla a la basura.
+ *
+ * Queda sólo el botón de volver a pedir. La calificación vive UNA sola
+ * vez, arriba, en ReviewCard.
+ */
 function ReorderCta() {
   return (
     <div className="my-4 space-y-3">
-      <p
-        className="text-center font-[family-name:var(--font-caveat)] text-lg"
-        style={{ color: PURPLE }}
-      >
-        ¿Cómo estuvo el tesoro?
-      </p>
-      <div className="flex justify-center gap-1.5">
-        {[1, 2, 3, 4, 5].map((n) => (
-          <button
-            key={n}
-            type="button"
-            className="text-3xl transition-transform hover:scale-110"
-            aria-label={`${n} estrella${n === 1 ? "" : "s"}`}
-          >
-            ☆
-          </button>
-        ))}
-      </div>
       <Link
         href="/"
         className="block rounded-xl px-4 py-3 text-center text-sm font-semibold"
@@ -785,25 +783,66 @@ function ReorderCta() {
   )
 }
 
+/**
+ * R141 · el motivo de la cancelación se imprimía CRUDO, tal como está
+ * guardado en la base. Nuestra pantalla de cocina escribe "Cancelado
+ * desde la pantalla de cocina": eso es una nota interna y el cliente la
+ * leía como si fuera una explicación. Acá se traduce a algo que un
+ * cliente entienda, y se le dice lo único que de verdad le importa: si
+ * tiene que pagar algo y cómo hablar con alguien.
+ */
+function motivoParaElCliente(razon: string | null): string {
+  if (!razon) return "El pedido se canceló."
+  const r = razon.toLowerCase()
+  if (r.includes("cocina") || r.includes("local"))
+    return "El local canceló el pedido."
+  if (r.includes("cliente")) return "El pedido se canceló a pedido tuyo."
+  if (r.includes("courier") || r.includes("rider") || r.includes("repartidor"))
+    return "No conseguimos motorizado para llevarlo."
+  return "El pedido se canceló."
+}
+
 function CancelledBanner({ snap }: { snap: OrderSnapshot }) {
+  const sinCobro = snap.payment_method === "CASH_ON_DELIVERY"
+  const wa = `https://wa.me/593997744288?text=${encodeURIComponent(
+    `Hola, mi pedido ${snap.order_code} figura cancelado. ¿Me ayudan?`,
+  )}`
   return (
     <main className="min-h-screen bg-white">
-      <div className="mx-auto max-w-md px-5 py-12 text-center">
+      <div className="mx-auto max-w-md px-5 py-12">
         <h1
-          className="font-[family-name:var(--font-bebas)] text-4xl"
+          className="text-center font-[family-name:var(--font-bebas)] text-4xl"
           style={{ color: "#B22" }}
         >
           Pedido cancelado
         </h1>
         <p
-          className="mt-3 font-[family-name:var(--font-caveat)] text-xl"
+          className="mt-3 text-center font-[family-name:var(--font-caveat)] text-xl"
           style={{ color: PURPLE }}
         >
-          {snap.cancellation_reason ?? "Cancelado · sin razón registrada"}
+          {motivoParaElCliente(snap.cancellation_reason)}
         </p>
+        <p className="mt-2 text-center text-sm text-neutral-600">
+          {sinCobro
+            ? "No se te cobró nada · el pago era contra entrega."
+            : "Si ya pagaste, escribinos y lo resolvemos."}
+        </p>
+
+        {/* Que vea QUÉ se canceló · sin esto queda con la duda. */}
+        <OrderSummary snap={snap} />
+
+        <a
+          href={wa}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-6 block rounded-xl px-5 py-3 text-center text-sm font-semibold"
+          style={{ background: "#25D366", color: "#0B3B22" }}
+        >
+          Escribinos por WhatsApp
+        </a>
         <Link
           href="/"
-          className="mt-6 inline-block rounded-xl px-5 py-3 text-sm font-semibold"
+          className="mt-3 block rounded-xl px-5 py-3 text-center text-sm font-semibold"
           style={{ background: PURPLE, color: "#FFFFFF" }}
         >
           Volver al inicio
@@ -813,10 +852,30 @@ function CancelledBanner({ snap }: { snap: OrderSnapshot }) {
   )
 }
 
+/**
+ * R141 · LA HORA, SIEMPRE EN HORA DE ECUADOR.
+ *
+ * Antes se formateaba sin decir la zona horaria, así que salía la del
+ * reloj de quien la dibujaba. Esta página se dibuja DOS veces: primero en
+ * el servidor -que vive en otro huso- y después en el teléfono del
+ * cliente. Resultado: la hora podía estar mal, y encima las dos versiones
+ * no coincidían, que es el error que aparecía en la consola (React #418).
+ * Fijando la zona, el servidor y el teléfono escriben lo mismo, y ese
+ * mismo es la hora del local.
+ */
+function horaEcuador(iso: string | null | undefined): string | null {
+  if (!iso) return null
+  return new Date(iso).toLocaleTimeString("es-EC", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "America/Guayaquil",
+  })
+}
+
 function computeEtaText(snap: OrderSnapshot): string {
   if (snap.status === "DELIVERED") {
     return snap.delivered_at
-      ? `Entregado a las ${new Date(snap.delivered_at).toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" })}`
+      ? `Entregado a las ${horaEcuador(snap.delivered_at)}`
       : "Entregado"
   }
   // For en-route, use ETA based on rider_picked_up_at + delivery_eta_minutes
@@ -832,12 +891,14 @@ function computeEtaText(snap: OrderSnapshot): string {
     }
     return `Llega en ~${etaMin} min`
   }
-  // Pre-rider stages · estimate from created_at + 25 min default
+  // Antes de que el motorizado salga · el número incluye la cocina MÁS
+  // el viaje, así que decía "Listo en ~X min" prometiendo comida lista
+  // cuando en realidad es cuándo LLEGA. R141 · se dice lo que es.
   const created = new Date(snap.created_at).getTime()
   const totalEta = (snap.delivery_eta_minutes ?? 20) + 8
   const arrivalMs = created + totalEta * 60_000
   const remaining = Math.max(0, Math.round((arrivalMs - Date.now()) / 60_000))
-  return `Listo en ~${remaining} min`
+  return `Llega en ~${remaining} min`
 }
 
 /* R96.127 · PushCta diferido al primer DELIVERED · copy reframed

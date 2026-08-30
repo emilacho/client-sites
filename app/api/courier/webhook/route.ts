@@ -218,10 +218,18 @@ export async function POST(request: Request) {
             : typeof p.lng === "number"
               ? p.lng
               : null
-        if (photoUrl) orderUpdate.delivery_photo_url = photoUrl
+        // R141 · la HORA de la foto sólo se guarda si hay FOTO. Estaba
+        // fuera del `if` y se escribía siempre, así que quedaban pedidos
+        // con "foto de entrega a las 00:46" y la foto en blanco · el
+        // pedido real del 30-ago quedó justo así. No se ve en pantalla,
+        // pero es un dato que miente, y cualquier cuenta de "entregas con
+        // foto" saldría mal.
+        if (photoUrl) {
+          orderUpdate.delivery_photo_url = photoUrl
+          orderUpdate.delivery_photo_at = new Date().toISOString()
+        }
         if (lat !== null) orderUpdate.delivery_photo_lat = lat
         if (lng !== null) orderUpdate.delivery_photo_lng = lng
-        orderUpdate.delivery_photo_at = new Date().toISOString()
       }
       await supabase
         .from("orders")
