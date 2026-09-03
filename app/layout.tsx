@@ -12,6 +12,7 @@ import { cliente } from "@/cliente.config"
 import { restaurantSchema, localBusinessSchema } from "@/lib/structured-data"
 import { JsonLdScript } from "@/lib/structured-data-script"
 import PageViewTracker from "@/components/v2/PageViewTracker"
+import { CazadorDeErrores } from "@/components/v2/CazadorDeErrores"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
@@ -147,6 +148,8 @@ export default function RootLayout({
         className={`${inter.variable} ${displaySerif.variable} ${marker.variable} ${bebas.variable} ${handwritten.variable} ${caveat.variable} ${alfaSlab.variable} font-sans antialiased`}
       >
         <PageViewTracker />
+        {/* R150 · escucha los errores del navegador y los reporta · no dibuja nada */}
+        <CazadorDeErrores />
         {children}
       </body>
     </html>
