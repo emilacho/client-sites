@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server"
 import { getSupabaseAdmin } from "@/lib/supabase"
+import { telefonoCanonico } from "@/lib/telefono"
 
 /**
  * POST /api/voice-order/initiate · R97.1 · Fase 1
@@ -29,13 +30,6 @@ interface Body {
   source?: unknown
 }
 
-function normalizeE164(raw: string): string | null {
-  const digits = raw.replace(/\D/g, "")
-  if (digits.length < 8 || digits.length > 15) return null
-  if (digits.startsWith("0")) return `593${digits.slice(1)}`
-  if (digits.length === 9 && digits.startsWith("9")) return `593${digits}`
-  return digits
-}
 
 export async function POST(req: NextRequest) {
   let body: Body
@@ -56,7 +50,7 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     )
   }
-  const phone = normalizeE164(rawPhone)
+  const phone = telefonoCanonico(rawPhone)
   if (!phone) {
     return Response.json(
       { ok: false, error: "invalid_phone" },

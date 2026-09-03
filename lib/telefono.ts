@@ -18,10 +18,16 @@ import "server-only"
  * devuelve el teléfono del pedido para buscar la ficha del cliente:
  * con formatos distintos, esa búsqueda no encuentra nunca nada.
  *
- * DEUDA DECLARADA
- * Las dieciséis copias siguen ahí. Hoy dicen todas lo mismo, así que no
- * hay bicho vivo · pero cualquiera que cambie una sola las desalinea.
- * Migrarlas es un trabajo aparte, no de este arreglo.
+ * LAS DIECISÉIS COPIAS · saldado en R153
+ * Eran dieciséis libretas con la misma regla escrita a mano. Se
+ * compararon una por una antes de tocarlas: quince idénticas al
+ * carácter, y la de `subscribers/signup` distinta sólo por llevar
+ * comentarios adentro. Ninguna se comportaba diferente, así que
+ * unificarlas no cambió nada · sólo quitó la trampa de que alguien
+ * corrigiera una y desalineara las otras quince en silencio.
+ *
+ * Si mañana hay que aceptar números de otro país, se cambia ACÁ y las
+ * dieciséis quedan alineadas solas.
  */
 
 /**

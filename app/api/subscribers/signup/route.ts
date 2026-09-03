@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server"
 import { getSupabaseAdmin } from "@/lib/supabase"
+import { telefonoCanonico } from "@/lib/telefono"
 
 /**
  * POST /api/subscribers/signup · R96.10 · lite opt-in.
@@ -24,15 +25,6 @@ interface SignupBody {
   source?: unknown
 }
 
-function normalizeWhatsapp(raw: string): string | null {
-  const digits = raw.replace(/\D/g, "")
-  if (digits.length < 8 || digits.length > 15) return null
-  // EC default · si arranca con 0 (formato local "0997...") · reemplazo
-  // con 593. Si arranca con 593 · ya está. Otros casos · respeto digits.
-  if (digits.startsWith("0")) return `593${digits.slice(1)}`
-  if (digits.length === 9 && digits.startsWith("9")) return `593${digits}`
-  return digits
-}
 
 function isEmail(v: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
@@ -56,7 +48,7 @@ export async function POST(req: NextRequest) {
   if (name.length < 2 || name.length > 80) {
     return Response.json({ ok: false, error: "invalid_name" }, { status: 400 })
   }
-  const whatsapp = normalizeWhatsapp(whatsappRaw)
+  const whatsapp = telefonoCanonico(whatsappRaw)
   if (!whatsapp) {
     return Response.json({ ok: false, error: "invalid_whatsapp" }, { status: 400 })
   }

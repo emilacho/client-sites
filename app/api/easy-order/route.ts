@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server"
 import { getSupabaseAdmin } from "@/lib/supabase"
+import { telefonoCanonico } from "@/lib/telefono"
 
 /**
  * GET /api/easy-order?whatsapp=... · R96.106
@@ -13,20 +14,13 @@ export const runtime = "nodejs"
 
 const CLIENT_SLUG = "naufrago"
 
-function normalizeWhatsapp(raw: string): string | null {
-  const digits = raw.replace(/\D/g, "")
-  if (digits.length < 8 || digits.length > 15) return null
-  if (digits.startsWith("0")) return `593${digits.slice(1)}`
-  if (digits.length === 9 && digits.startsWith("9")) return `593${digits}`
-  return digits
-}
 
 export async function GET(req: NextRequest) {
   const whatsappRaw = req.nextUrl.searchParams.get("whatsapp")
   if (!whatsappRaw) {
     return Response.json({ ok: false, error: "missing_whatsapp" }, { status: 400 })
   }
-  const whatsapp = normalizeWhatsapp(whatsappRaw)
+  const whatsapp = telefonoCanonico(whatsappRaw)
   if (!whatsapp) {
     return Response.json({ ok: false, error: "invalid_whatsapp" }, { status: 400 })
   }

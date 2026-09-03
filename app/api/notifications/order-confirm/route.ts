@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server"
+import { telefonoCanonico } from "@/lib/telefono"
 
 /**
  * POST /api/notifications/order-confirm · R96.14 · WhatsApp confirm
@@ -26,13 +27,6 @@ interface Body {
   itemCount?: unknown
 }
 
-function normalizeE164(raw: string): string | null {
-  const digits = raw.replace(/\D/g, "")
-  if (digits.length < 8 || digits.length > 15) return null
-  if (digits.startsWith("0")) return `593${digits.slice(1)}`
-  if (digits.length === 9 && digits.startsWith("9")) return `593${digits}`
-  return digits
-}
 
 function buildMessage(p: {
   orderCode: string
@@ -73,7 +67,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const customerPhone = normalizeE164(customerPhoneRaw)
+  const customerPhone = telefonoCanonico(customerPhoneRaw)
   if (!customerPhone) {
     return Response.json(
       { ok: false, error: "invalid_phone" },

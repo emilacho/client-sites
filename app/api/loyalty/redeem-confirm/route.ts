@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server"
 import { createHash } from "node:crypto"
 import { getSupabaseAdmin } from "@/lib/supabase"
+import { telefonoCanonico } from "@/lib/telefono"
 
 /**
  * POST /api/loyalty/redeem-confirm · R96.111
@@ -21,13 +22,6 @@ const PURPOSE = "loyalty_redeem"
 const MAX_ATTEMPTS = 3
 const OTP_SALT = process.env.OTP_SALT ?? "naufrago-otp-2026"
 
-function normalizeE164(raw: string): string | null {
-  const digits = raw.replace(/\D/g, "")
-  if (digits.length < 8 || digits.length > 15) return null
-  if (digits.startsWith("0")) return `593${digits.slice(1)}`
-  if (digits.length === 9 && digits.startsWith("9")) return `593${digits}`
-  return digits
-}
 
 function hashCode(code: string): string {
   return createHash("sha256").update(`${OTP_SALT}|${code}`).digest("hex")
@@ -42,7 +36,7 @@ export async function POST(req: NextRequest) {
   }
 
   const whatsappRaw = typeof body.whatsapp === "string" ? body.whatsapp : ""
-  const phone = normalizeE164(whatsappRaw)
+  const phone = telefonoCanonico(whatsappRaw)
   if (!phone) {
     return Response.json({ ok: false, reason: "invalid_whatsapp" }, { status: 400 })
   }

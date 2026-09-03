@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server"
 import { getSupabaseAdmin } from "@/lib/supabase"
+import { telefonoCanonico } from "@/lib/telefono"
 
 /**
  * POST /api/easy-order/save · R96.106
@@ -15,13 +16,6 @@ export const runtime = "nodejs"
 
 const CLIENT_SLUG = "naufrago"
 
-function normalizeWhatsapp(raw: string): string | null {
-  const digits = raw.replace(/\D/g, "")
-  if (digits.length < 8 || digits.length > 15) return null
-  if (digits.startsWith("0")) return `593${digits.slice(1)}`
-  if (digits.length === 9 && digits.startsWith("9")) return `593${digits}`
-  return digits
-}
 
 interface SaveBody {
   whatsapp?: unknown
@@ -44,7 +38,7 @@ export async function POST(req: NextRequest) {
   }
 
   const whatsappRaw = typeof body.whatsapp === "string" ? body.whatsapp : ""
-  const whatsapp = whatsappRaw ? normalizeWhatsapp(whatsappRaw) : null
+  const whatsapp = whatsappRaw ? telefonoCanonico(whatsappRaw) : null
   if (!whatsapp) {
     return Response.json({ ok: false, error: "invalid_whatsapp" }, { status: 400 })
   }
