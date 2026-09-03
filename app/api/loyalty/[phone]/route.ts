@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 import { getSupabaseAdmin } from "@/lib/supabase"
+import { quienPregunta } from "@/lib/quien-pregunta"
 
 /**
  * GET /api/loyalty/[phone] · R96.21 · balance lookup público.
@@ -25,6 +27,23 @@ export async function GET(
   _req: Request,
   ctx: { params: Promise<{ phone: string }> },
 ) {
+  // R151 · freno por origen. Estas rutas entregan datos de una persona
+  // a quien acierte un código o un teléfono · sin freno, probar millones
+  // de combinaciones no cuesta nada.
+  {
+    const rl = await checkRateLimit(getClientIp(_req), {
+      limit: 15,
+      windowSec: 60,
+      bucket: "saldo_perlas",
+    })
+    if (!rl.ok) {
+      return Response.json(
+        { ok: false, error: "rate_limited", retryIn: rl.resetIn },
+        { status: 429 },
+      )
+    }
+  }
+
   const { phone } = await ctx.params
   const normalized = normalizeE164(decodeURIComponent(phone))
   if (!normalized) {
@@ -48,23 +67,27 @@ export async function GET(
         { status: 500 },
       )
     }
-    if (!data) {
-      return NextResponse.json({
-        ok: true,
-        phone: normalized,
-        perlas: 0,
-        earnedTotal: 0,
-        spentTotal: 0,
-        updatedAt: null,
-      })
-    }
+    // R151 · esta ruta tiene que seguir andando SIN sesión: el cliente
+    // escribe su teléfono en el pedido y la pantalla le muestra su
+    // tesoro antes de entrar a ninguna cuenta. No se puede cerrar sin
+    // romper eso.
+    //
+    // Lo que sí se puede es dejar de regalar lo sensible. El saldo
+    // actual hace falta para poder canjearlo · el HISTÓRICO de cuánto
+    // gastó esa persona en su vida no hace falta para nada en la
+    // pantalla, y era lo peor de entregar a quien adivine un número.
+    // Sólo sale si demuestra que la cuenta es suya.
+    const suyo = await quienPregunta(_req)
+    const esElDueno = suyo?.whatsapp === normalized
+    const historico = esElDueno
+      ? { earnedTotal: data?.earned_total ?? 0, spentTotal: data?.spent_total ?? 0 }
+      : {}
     return NextResponse.json({
       ok: true,
       phone: normalized,
-      perlas: data.perlas,
-      earnedTotal: data.earned_total,
-      spentTotal: data.spent_total,
-      updatedAt: data.updated_at,
+      perlas: data?.perlas ?? 0,
+      ...historico,
+      updatedAt: data?.updated_at ?? null,
     })
   } catch (err) {
     return NextResponse.json(

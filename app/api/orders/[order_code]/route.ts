@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server"
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
+import { telefonoTapado } from "@/lib/quien-pregunta"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import {
   stageForStatus,
@@ -110,6 +112,23 @@ export async function GET(
   _request: Request,
   context: { params: Promise<{ order_code: string }> },
 ) {
+  // R151 · freno por origen. Estas rutas entregan datos de una persona
+  // a quien acierte un código o un teléfono · sin freno, probar millones
+  // de combinaciones no cuesta nada.
+  {
+    const rl = await checkRateLimit(getClientIp(_request), {
+      limit: 40,
+      windowSec: 60,
+      bucket: "seguimiento_pedido",
+    })
+    if (!rl.ok) {
+      return Response.json(
+        { ok: false, error: "rate_limited", retryIn: rl.resetIn },
+        { status: 429 },
+      )
+    }
+  }
+
   const { order_code } = await context.params
   if (!order_code || !/^NF-\d{4}-[A-Z0-9]{6}$/i.test(order_code)) {
     return NextResponse.json(
@@ -151,7 +170,12 @@ export async function GET(
     stage_index: stageIndex,
     canoa_pct: canoaPct,
     customer_name: row.customer_name,
-    customer_phone: row.customer_phone,
+    // R151 · el teléfono ya no sale entero. Esta ruta es pública -así
+    // funciona cualquier seguimiento de pedido- y con un código de 6
+    // caracteres entregaba nombre y número completo. Nada de la pantalla
+    // lo usaba: el único que lo necesitaba mandaba el teléfono de vuelta
+    // al servidor para leer preferencias, y eso ahora va por el código.
+    customer_phone: telefonoTapado(row.customer_phone),
     cart_lines: row.cart_lines,
     subtotal_usd: row.subtotal_usd,
     discount_code: row.discount_code,

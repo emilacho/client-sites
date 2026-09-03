@@ -1,5 +1,7 @@
 import type { NextRequest } from "next/server"
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 import { getSupabaseAdmin } from "@/lib/supabase"
+import { quienPregunta } from "@/lib/quien-pregunta"
 
 /**
  * GET /api/subscribers/lookup?whatsapp=... · R96.144
@@ -13,23 +15,34 @@ export const dynamic = "force-dynamic"
 
 const CLIENT_SLUG = "naufrago"
 
-function normalizeWhatsapp(raw: string): string | null {
-  const digits = raw.replace(/\D/g, "")
-  if (digits.length < 8 || digits.length > 15) return null
-  if (digits.startsWith("0")) return `593${digits.slice(1)}`
-  if (digits.length === 9 && digits.startsWith("9")) return `593${digits}`
-  return digits
-}
 
 export async function GET(req: NextRequest) {
-  const whatsappRaw = req.nextUrl.searchParams.get("whatsapp")
-  if (!whatsappRaw) {
-    return Response.json({ ok: false, error: "missing_whatsapp" }, { status: 400 })
+  // R151 · freno por origen. Estas rutas entregan datos de una persona
+  // a quien acierte un código o un teléfono · sin freno, probar millones
+  // de combinaciones no cuesta nada.
+  {
+    const rl = await checkRateLimit(getClientIp(req), {
+      limit: 20,
+      windowSec: 60,
+      bucket: "preferencias_aviso",
+    })
+    if (!rl.ok) {
+      return Response.json(
+        { ok: false, error: "rate_limited", retryIn: rl.resetIn },
+        { status: 429 },
+      )
+    }
   }
-  const whatsapp = normalizeWhatsapp(whatsappRaw)
-  if (!whatsapp) {
-    return Response.json({ ok: false, error: "invalid_whatsapp" }, { status: 400 })
+
+  // R151 · antes bastaba con poner el número de otro para saber si esa
+  // persona es cliente y si acepta promociones. Esta pantalla vive
+  // dentro de «Mi cuenta», donde el cliente YA está identificado ·
+  // ahora se usa esa sesión y el teléfono lo resuelve el servidor.
+  const quien = await quienPregunta(req)
+  if (!quien) {
+    return Response.json({ ok: false, error: "no_autorizado" }, { status: 401 })
   }
+  const whatsapp = quien.whatsapp
   try {
     const supa = getSupabaseAdmin()
     const { data } = await supa
