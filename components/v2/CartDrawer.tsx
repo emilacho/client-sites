@@ -23,7 +23,13 @@ import { ArrowLeft, Loader2, MessageSquare, Minus, Plus, Trash2, Utensils, X } f
 import { CanoeIcon } from "./CanoeIcon"
 import { PlatoThumb } from "./PlatoThumb"
 import { motion, AnimatePresence } from "framer-motion"
-import { perlasQueGana, tesoroUsd } from "@/lib/perlas"
+import {
+  perlasQueGana,
+  tesoroUsd,
+  PERLAS_PARA_EL_PREMIO,
+  PREMIOS_DEL_TESORO,
+  perlasQueFaltan,
+} from "@/lib/perlas"
 import { useCart } from "@/lib/v2/cart-context"
 import { buildWhatsAppLink, MENU_ITEMS } from "@/lib/v2/naufrago-content"
 import { saveLastOrder } from "@/lib/v2/use-last-order"
@@ -31,10 +37,7 @@ import MapAddressPicker from "./MapAddressPicker"
 import { PaymentForm } from "./PaymentForm"
 import { track } from "@/lib/v2/posthog-track"
 import {
-  LOYALTY_REWARDS,
-  perlasToUsd,
   useLoyaltyBalance,
-  type LoyaltyReward,
 } from "@/lib/v2/use-loyalty-balance"
 
 /** WhatsApp brand glyph · simpleicons.org path · pure white fill. */
@@ -374,39 +377,22 @@ function CartFooter() {
   })
   // R96.21 · loyalty perlas · lookup balance by form.phone debounced.
   const { balance: loyaltyBalance } = useLoyaltyBalance(form.phone)
-  const [useLoyalty, setUseLoyalty] = useState(false)
   // R96.24 · multi-tier redemption · mutually exclusive con spend directo.
   const [ubicacion, setUbicacion] = useState<{
     estado: "inicio" | "buscando" | "listo" | "rechazado" | "sin_soporte"
   }>({ estado: "inicio" })
-  const [selectedReward, setSelectedReward] = useState<LoyaltyReward | null>(null)
+  // R157 · el premio del tesoro · qué eligió y si el cuadro está abierto.
+  const [premioReclamado, setPremioReclamado] = useState<string | null>(null)
+  const [eligiendoPremio, setEligiendoPremio] = useState(false)
   // R148 · lo que el servidor dice que se puede cobrar. Arranca vacío:
   // hasta que conteste, no se ofrece nada.
   const [metodosDePago, setMetodosDePago] = useState<string[]>([])
   // R96.111 · OTP step-up para canje · pending=esperando código · verifying=POSTing
-  const [otpReward, setOtpReward] = useState<LoyaltyReward | null>(null)
-  const [otpCode, setOtpCode] = useState("")
-  const [otpState, setOtpState] = useState<
-    "idle" | "requesting" | "pending" | "verifying" | "error"
-  >("idle")
-  const [otpError, setOtpError] = useState<string | null>(null)
-  // Spend directo · solo activo si useLoyalty=true Y selectedReward=null
-  const directSpendActive = useLoyalty && !selectedReward
-  const loyaltySpendCap = Math.floor((cart.subtotal * 0.5) / 0.01)
-  const loyaltySpendPerlas =
-    directSpendActive && loyaltyBalance
-      ? Math.min(loyaltyBalance.perlas, loyaltySpendCap)
-      : 0
-  const loyaltySpendUsd = perlasToUsd(loyaltySpendPerlas)
-  // Reward applied · impact en total via percentOff (free_item NO afecta
-  // el total visible · queda como nota al pedido).
-  const rewardPercentOffUsd =
-    selectedReward?.type === "percent_off" && selectedReward.percentOff
-      ? Math.round(cart.subtotal * (selectedReward.percentOff / 100) * 100) / 100
-      : 0
-  // free_item · no afecta total visible (el item se agrega gratis kitchen-side ·
-  // no se carga al cart porque cost=0 confunde el flow del cliente · solo
-  // queda como nota al pedido).
+  // R157 · el premio del tesoro es un PRODUCTO gratis · no toca el total.
+  // Acá vivían dos cosas que sí lo tocaban -un "descuento directo" en
+  // perlas y premios en porcentaje- y ninguna llegaba al servidor: la
+  // pantalla restaba y el pedido se guardaba por el total completo. Se
+  // le mostraba al cliente un precio y se le cobraba otro.
 
   const shippingPrice =
     shipping.kind === "quoted" ||
@@ -417,18 +403,9 @@ function CartFooter() {
       ? shipping.priceUsd
       : 0
   const total =
-    cart.subtotal -
-    cart.discountUsd +
-    shippingPrice +
-    cart.tipUsd -
-    loyaltySpendUsd -
-    rewardPercentOffUsd
+    cart.subtotal - cart.discountUsd + shippingPrice + cart.tipUsd
   const showBreakdown =
-    cart.discountUsd > 0 ||
-    shippingPrice > 0 ||
-    cart.tipUsd > 0 ||
-    loyaltySpendUsd > 0 ||
-    selectedReward !== null
+    cart.discountUsd > 0 || shippingPrice > 0 || cart.tipUsd > 0
   const buttonsDisabled = cart.lines.length === 0
 
   async function requestQuote(e: React.FormEvent) {
@@ -572,9 +549,11 @@ function CartFooter() {
           // contraste, no la fuente.
           quotedDeliveryFeeUsd: priceUsd,
           discountCode: cart.discount?.code || undefined,
-          loyaltySpendPerlas:
-            loyaltySpendPerlas > 0 ? loyaltySpendPerlas : undefined,
-          loyaltyRewardId: selectedReward?.id,
+          // R157 · el premio y de dónde salió · el servidor comprueba que
+          // se lo haya ganado antes de aceptar la línea gratis.
+          premio: premioReclamado
+            ? { id: premioReclamado, origen: "perlas" as const }
+            : undefined,
           notes: form.notes || undefined,
         }),
       })
@@ -594,7 +573,7 @@ function CartFooter() {
         total: total,
         item_count: cart.itemCount,
         method: "pedidosya",
-        has_loyalty_redemption: !!selectedReward,
+        has_loyalty_redemption: !!premioReclamado,
         has_discount_code: !!cart.discount,
       })
       // R96.106 · save Easy Order ("Hambre de Náufrago") · cross-device.
@@ -755,25 +734,8 @@ function CartFooter() {
               <span className="tabular-nums">${cart.tipUsd.toFixed(2)}</span>
             </div>
           ) : null}
-          {loyaltySpendUsd > 0 ? (
-            <div className="flex items-baseline justify-between text-xs" style={{ color: "#A78BFA" }}>
-              <span>Tesoro usado</span>
-              <span className="tabular-nums">−${loyaltySpendUsd.toFixed(2)}</span>
-            </div>
-          ) : null}
-          {selectedReward ? (
-            <div className="flex items-baseline justify-between text-xs" style={{ color: "#A78BFA" }}>
-              <span>
-                Reward · {selectedReward.label}{" "}
-                <span className="text-violet-400/70">({selectedReward.cost}p)</span>
-              </span>
-              <span className="tabular-nums">
-                {rewardPercentOffUsd > 0
-                  ? `−$${rewardPercentOffUsd.toFixed(2)}`
-                  : "gratis"}
-              </span>
-            </div>
-          ) : null}
+          {/* R157 · el premio no aparece como descuento porque no lo es:
+              es un producto gratis que va como una línea más del pedido. */}
           <div className="flex items-baseline justify-between pt-1">
             <span className="text-sm text-slate-300">Total</span>
             <span className="font-display text-xl font-semibold tabular-nums text-cyan-200">
@@ -854,7 +816,7 @@ function CartFooter() {
                 total,
                 item_count: cart.itemCount,
                 method: "whatsapp",
-                has_loyalty_redemption: !!selectedReward,
+                has_loyalty_redemption: !!premioReclamado,
                 has_discount_code: !!cart.discount,
               })
             }}
@@ -1024,123 +986,73 @@ function CartFooter() {
             />
             <span>Quiero recibir promos por WhatsApp</span>
           </label>
-          {loyaltyBalance && loyaltyBalance.perlas > 0 ? (
+          {/* R157 · EL TESORO · un solo premio, elegido al reclamar.
+
+              Antes acá había dos cosas que descontaban DINERO -un
+              "descuento directo" y un catálogo de premios en porcentaje-
+              y ninguna funcionaba: la pantalla restaba del total y el
+              servidor lo ignoraba. El cliente veía un precio y se le
+              cobraba otro.
+
+              Emilio (04-sep): que acumulen para ganar un chifle, un pan
+              o una cola. Un producto gratis no toca el total, así que no
+              hay nada que cuadrar. */}
+          {loyaltyBalance ? (
             <div className="space-y-2 rounded-md border border-violet-500/40 bg-violet-500/10 p-3 text-xs text-violet-100">
               <div className="flex items-baseline justify-between gap-2">
-                <div className="flex flex-col gap-0.5">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-violet-300">
-                    Tesoro de náufrago
-                  </span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-violet-300">
+                  Tesoro de náufrago
+                </span>
+                <span className="tabular-nums text-violet-200">
+                  {loyaltyBalance.perlas} / {PERLAS_PARA_EL_PREMIO} perlas
+                </span>
+              </div>
+
+              {/* La barra · se ve de un vistazo cuánto falta. */}
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-900">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-violet-400 to-cyan-300 transition-all"
+                  style={{
+                    width: `${Math.min(100, (loyaltyBalance.perlas / PERLAS_PARA_EL_PREMIO) * 100)}%`,
+                  }}
+                />
+              </div>
+
+              {premioReclamado ? (
+                <div className="flex items-center justify-between gap-2">
                   <span>
-                    Tienes <strong>${tesoroUsd(loyaltyBalance.perlas)}</strong>{" "}
-                    acumulados
+                    Premio elegido ·{" "}
+                    <strong>
+                      {PREMIOS_DEL_TESORO.find((x) => x.id === premioReclamado)?.emoji}{" "}
+                      {PREMIOS_DEL_TESORO.find((x) => x.id === premioReclamado)?.label}
+                    </strong>
                   </span>
-                </div>
-                <label className="flex cursor-pointer items-center gap-2 text-[11px]">
-                  <span className="text-violet-300/80">Descuento directo</span>
-                  <input
-                    type="checkbox"
-                    checked={directSpendActive}
-                    disabled={!!selectedReward}
-                    onChange={(e) => {
-                      setUseLoyalty(e.target.checked)
-                      if (e.target.checked) setSelectedReward(null)
+                  <button
+                    type="button"
+                    onClick={() => {
+                      cart.remove(premioReclamado)
+                      setPremioReclamado(null)
                     }}
-                    className="h-4 w-4 accent-cyan-400 disabled:opacity-40"
-                  />
-                </label>
-              </div>
-              {/* R96.24 · multi-tier redemption catalog · cada reward
-                  un botón · click toggle · selección mutually exclusive
-                  con descuento directo. */}
-              <div className="space-y-1.5 border-t border-violet-500/20 pt-2">
-                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-violet-300">
-                  O canjea un premio
-                </p>
-                <div className="grid grid-cols-1 gap-1">
-                  {LOYALTY_REWARDS.map((r) => {
-                    const affordable = loyaltyBalance.perlas >= r.cost
-                    const selected = selectedReward?.id === r.id
-                    return (
-                      <button
-                        key={r.id}
-                        type="button"
-                        disabled={!affordable && !selected}
-                        onClick={async () => {
-                          if (selected) {
-                            setSelectedReward(null)
-                            return
-                          }
-                          // R96.111 · si hay phone disponible · OTP step-up.
-                          // Si Twilio no configurado · bypass directo.
-                          if (form.phone) {
-                            setOtpReward(r)
-                            setOtpState("requesting")
-                            setOtpError(null)
-                            try {
-                              track("otp_requested", {
-                                purpose: "loyalty_redeem",
-                                reward_id: r.id,
-                              })
-                              const res = await fetch(
-                                "/api/loyalty/redeem-request",
-                                {
-                                  method: "POST",
-                                  headers: { "content-type": "application/json" },
-                                  body: JSON.stringify({ whatsapp: form.phone }),
-                                },
-                              )
-                              const data = await res.json()
-                              if (data.ok && data.sent) {
-                                setOtpState("pending")
-                              } else if (
-                                data.ok &&
-                                data.reason === "twilio_not_configured"
-                              ) {
-                                // bypass · no OTP infra
-                                setOtpReward(null)
-                                setOtpState("idle")
-                                setSelectedReward(r)
-                                setUseLoyalty(false)
-                              } else {
-                                setOtpState("error")
-                                setOtpError("No se pudo enviar el código")
-                              }
-                            } catch {
-                              setOtpState("error")
-                              setOtpError("Error de red")
-                            }
-                          } else {
-                            // Sin phone · solo aplica reward (legacy path)
-                            setSelectedReward(r)
-                            setUseLoyalty(false)
-                          }
-                        }}
-                        className={[
-                          "flex items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 text-left transition-colors",
-                          selected
-                            ? "border-cyan-400 bg-cyan-500/15 text-cyan-100"
-                            : affordable
-                              ? "border-violet-500/30 bg-slate-950/50 text-violet-100 hover:bg-violet-500/15"
-                              : "cursor-not-allowed border-slate-700 bg-slate-900/30 text-slate-500",
-                        ].join(" ")}
-                      >
-                        <span className="flex min-w-0 flex-1 flex-col">
-                          <span className="text-[11px] font-semibold">
-                            {r.label}
-                          </span>
-                          <span className="truncate text-[10px] opacity-80">
-                            {r.description}
-                          </span>
-                        </span>
-                        <span className="shrink-0 font-mono text-[10px]">
-                          {r.cost}p
-                        </span>
-                      </button>
-                    )
-                  })}
+                    className="shrink-0 text-[11px] text-violet-300 underline decoration-dotted"
+                  >
+                    quitar
+                  </button>
                 </div>
-              </div>
+              ) : perlasQueFaltan(loyaltyBalance.perlas) === 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setEligiendoPremio(true)}
+                  className="w-full rounded-md bg-gradient-to-r from-violet-500 to-cyan-500 px-3 py-2 text-[13px] font-bold text-slate-950"
+                >
+                  🎁 Reclamar tu premio
+                </button>
+              ) : (
+                <p className="text-violet-200/90">
+                  Te faltan{" "}
+                  <strong>{perlasQueFaltan(loyaltyBalance.perlas)} perlas</strong>{" "}
+                  para tu premio · chifle, pan o cola gratis
+                </p>
+              )}
             </div>
           ) : null}
           {/* R96.29 · flecha back + submit "Cotizar envío" lado a lado ·
@@ -1287,109 +1199,56 @@ function CartFooter() {
       ) : null}
 
       {/* R96.111 · OTP modal step-up para canje de perlas */}
-      {otpReward ? (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4"
-          onClick={() => {
-            setOtpReward(null)
-            setOtpCode("")
-            setOtpState("idle")
-            setOtpError(null)
-          }}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl border border-cyan-500/30 bg-slate-900 p-5 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-base font-semibold text-cyan-200">
-              Confirma el canje
-            </h3>
-            <p className="mt-1 text-xs text-slate-400">
-              Te enviamos un código de 4 dígitos a tu WhatsApp · ingresalo
-              para canjear <strong>{otpReward.label}</strong> por{" "}
-              {otpReward.cost} perlas.
+      {/* R157 · EL CUADRO PARA ELEGIR EL PREMIO
+
+          Emilio: "cuando toquen el botón de reclamar se les abre un
+          cuadro para seleccionar cualquiera de los 3".
+
+          Acá vivía un paso de código por WhatsApp para autorizar el
+          canje · se sacó con los descuentos en dinero. Para un producto
+          de $0.50 pedirle un código al cliente es más molestia que
+          protección. */}
+      {eligiendoPremio ? (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-950/80 p-4 backdrop-blur-sm sm:items-center">
+          <div className="w-full max-w-sm rounded-xl border border-violet-500/40 bg-slate-900 p-4">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-violet-300">
+              Tu premio del tesoro
             </p>
-            <input
-              type="text"
-              inputMode="numeric"
-              maxLength={4}
-              autoFocus
-              value={otpCode}
-              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
-              placeholder="• • • •"
-              disabled={otpState === "requesting" || otpState === "verifying"}
-              className="mt-3 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-center font-mono text-2xl tracking-[0.5em] text-cyan-200 placeholder:text-slate-600 focus:border-cyan-500 focus:outline-none disabled:opacity-50"
-            />
-            {otpState === "requesting" && (
-              <p className="mt-2 text-xs text-slate-400">Enviando código…</p>
-            )}
-            {otpError && (
-              <p className="mt-2 text-xs text-rose-400">{otpError}</p>
-            )}
-            <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setOtpReward(null)
-                  setOtpCode("")
-                  setOtpState("idle")
-                  setOtpError(null)
-                }}
-                className="flex-1 rounded-md border border-slate-700 px-3 py-2 text-xs text-slate-300 hover:bg-slate-800"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                disabled={otpCode.length !== 4 || otpState === "verifying"}
-                onClick={async () => {
-                  setOtpState("verifying")
-                  setOtpError(null)
-                  try {
-                    const res = await fetch("/api/loyalty/redeem-confirm", {
-                      method: "POST",
-                      headers: { "content-type": "application/json" },
-                      body: JSON.stringify({
-                        whatsapp: form.phone,
-                        code: otpCode,
-                      }),
+            <p className="mt-1 text-sm text-slate-200">
+              Llegaste a las {PERLAS_PARA_EL_PREMIO} perlas · elige uno
+            </p>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {PREMIOS_DEL_TESORO.map((pr) => (
+                <button
+                  key={pr.id}
+                  type="button"
+                  onClick={() => {
+                    // Si ya había elegido otro, se saca antes de poner el nuevo.
+                    if (premioReclamado) cart.remove(premioReclamado)
+                    cart.add({ id: pr.id, name: `${pr.label} (🎁 Premio)`, priceUsd: 0 }, 1)
+                    setPremioReclamado(pr.id)
+                    setEligiendoPremio(false)
+                    track("loyalty_redeemed", {
+                      premio: pr.id,
+                      perlas: PERLAS_PARA_EL_PREMIO,
                     })
-                    const data = await res.json()
-                    if (data.ok) {
-                      track("loyalty_redeemed", {
-                        reward_id: otpReward?.id,
-                        reward_label: otpReward?.label,
-                        cost_perlas: otpReward?.cost,
-                      })
-                      setSelectedReward(otpReward)
-                      setUseLoyalty(false)
-                      setOtpReward(null)
-                      setOtpCode("")
-                      setOtpState("idle")
-                    } else {
-                      setOtpState("pending")
-                      if (data.reason === "wrong_code") {
-                        setOtpError(
-                          `Código incorrecto · ${data.attemptsLeft ?? 0} intentos restantes`,
-                        )
-                      } else if (data.reason === "expired") {
-                        setOtpError("Código expirado · pedí uno nuevo")
-                      } else if (data.reason === "too_many_attempts") {
-                        setOtpError("Demasiados intentos · pedí otro código")
-                      } else {
-                        setOtpError("No se pudo verificar")
-                      }
-                    }
-                  } catch {
-                    setOtpState("pending")
-                    setOtpError("Error de red")
-                  }
-                }}
-                className="flex-1 rounded-md bg-gradient-to-r from-violet-500 to-cyan-500 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40"
-              >
-                {otpState === "verifying" ? "Verificando…" : "Confirmar"}
-              </button>
+                  }}
+                  className="flex flex-col items-center gap-1 rounded-lg border border-violet-500/30 bg-slate-950/60 px-2 py-3 text-violet-100 hover:bg-violet-500/15"
+                >
+                  <span className="text-2xl" aria-hidden>
+                    {pr.emoji}
+                  </span>
+                  <span className="text-[11px] font-semibold">{pr.label}</span>
+                </button>
+              ))}
             </div>
+            <button
+              type="button"
+              onClick={() => setEligiendoPremio(false)}
+              className="mt-3 w-full rounded-md border border-slate-700 px-3 py-2 text-xs text-slate-300"
+            >
+              Ahora no
+            </button>
           </div>
         </div>
       ) : null}

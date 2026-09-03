@@ -128,17 +128,41 @@ describe("los regalos de la ruleta · R154.1 · regresión", () => {
     }
   })
 
-  it("un pedido con comida MÁS su premio pasa", () => {
-    const rev = revisarPrecios([
-      { id: "encebollado-naufrago", priceUsd: 4, qty: 2 },
-      { id: "prize-chifle", priceUsd: 0, qty: 1 },
-    ])
+  it("un pedido con comida MÁS su premio AUTORIZADO pasa", () => {
+    const rev = revisarPrecios(
+      [
+        { id: "encebollado-naufrago", priceUsd: 4, qty: 2 },
+        { id: "prize-chifle", priceUsd: 0, qty: 1 },
+      ],
+      "prize-chifle",
+    )
     expect(rev.ok).toBe(true)
     expect(rev.subtotalUsd).toBe(8) // el regalo no suma
   })
 
-  it("pedir diez regalos no se acepta", () => {
-    const rev = revisarPrecios([{ id: "prize-chifle", priceUsd: 0, qty: 10 }])
+  it("R157 · un regalo SIN ganar no se acepta", () => {
+    const rev = revisarPrecios([
+      { id: "encebollado-naufrago", priceUsd: 4, qty: 2 },
+      { id: "prize-chifle", priceUsd: 0, qty: 1 },
+    ])
+    expect(rev.ok).toBe(false)
+    expect(rev.problemas[0]).toContain("regalo_sin_ganar")
+  })
+
+  it("R157 · ganó el chifle pero pide la cola · no", () => {
+    const rev = revisarPrecios(
+      [{ id: "prize-cola", priceUsd: 0, qty: 1 }],
+      "prize-chifle",
+    )
+    expect(rev.ok).toBe(false)
+    expect(rev.problemas[0]).toContain("regalo_sin_ganar")
+  })
+
+  it("pedir diez del regalo que sí ganó no se acepta", () => {
+    const rev = revisarPrecios(
+      [{ id: "prize-chifle", priceUsd: 0, qty: 10 }],
+      "prize-chifle",
+    )
     expect(rev.ok).toBe(false)
     expect(rev.problemas[0]).toContain("regalo_con_exceso")
   })
@@ -149,7 +173,10 @@ describe("los regalos de la ruleta · R154.1 · regresión", () => {
 
   it("y no se puede cobrar de menos poniéndole precio a un regalo", () => {
     // Si alguien manda el regalo con precio, la casa igual lo cuenta en 0
-    const rev = revisarPrecios([{ id: "prize-chifle", priceUsd: 5, qty: 1 }])
+    const rev = revisarPrecios(
+      [{ id: "prize-chifle", priceUsd: 5, qty: 1 }],
+      "prize-chifle",
+    )
     expect(rev.ok).toBe(false) // el precio no coincide con el de la casa
     expect(rev.subtotalUsd).toBe(0)
   })

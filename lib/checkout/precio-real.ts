@@ -136,14 +136,28 @@ export interface RevisionDePrecios {
  * cliente vio otro número en pantalla, cobrarle uno distinto -para
  * arriba o para abajo- es peor que pedirle que vuelva a armar el pedido.
  */
-export function revisarPrecios(lineas: LineaPedida[]): RevisionDePrecios {
+export function revisarPrecios(
+  lineas: LineaPedida[],
+  /** R157 · el ÚNICO regalo autorizado para este pedido · null = ninguno.
+   *  Antes (R156) los regalos se aceptaban a ciegas para no dejar sin
+   *  pedir a quien ganaba la ruleta · eso quedó anotado como deuda y se
+   *  salda acá: ahora hay que haber girado o haber llegado al tope de
+   *  perlas. */
+  regaloAutorizado: string | null = null,
+): RevisionDePrecios {
   let subtotal = 0
   const problemas: string[] = []
 
   for (const l of lineas) {
-    if (esRegalo(l.id) && l.qty > REGALOS[l.id].topeUnidades) {
-      problemas.push(`regalo_con_exceso:${l.id}:${l.qty}`)
-      continue
+    if (esRegalo(l.id)) {
+      if (l.id !== regaloAutorizado) {
+        problemas.push(`regalo_sin_ganar:${l.id}`)
+        continue
+      }
+      if (l.qty > REGALOS[l.id].topeUnidades) {
+        problemas.push(`regalo_con_exceso:${l.id}:${l.qty}`)
+        continue
+      }
     }
     const { precioUsd, motivo } = precioRealDeLinea(l.id)
     if (precioUsd === null) {

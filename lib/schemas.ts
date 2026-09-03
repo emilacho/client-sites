@@ -80,6 +80,17 @@ export const courierOrderRequestSchema = z.object({
   /** R144 · cupón aplicado · el servidor re-calcula el descuento, no
    *  acepta el monto del navegador. */
   discountCode: z.string().max(40).optional().or(z.literal("")),
+  /** R157 · el premio del tesoro que el cliente reclama. El servidor
+   *  comprueba que se lo haya ganado -girando la ruleta o llegando al
+   *  tope de perlas- antes de aceptarlo. Sin esto, la línea del regalo
+   *  se rechaza. */
+  premio: z
+    .object({
+      id: z.string().min(1).max(60),
+      origen: z.enum(["ruleta", "perlas"]),
+      huella: z.string().max(128).optional(),
+    })
+    .optional(),
   /** R145 · propina para el motorizado. Queda escrita aparte · NO entra
    *  en el total del local ni en lo que se le ordena cobrar al
    *  repartidor. Tope $50 · una propina mayor es un dedo equivocado. */
