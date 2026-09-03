@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { getSupabaseAdmin } from "@/lib/supabase"
+import { telefonoCanonico } from "@/lib/telefono"
 
 /**
  * /api/customer/addresses · R96.108 + R96.119
@@ -18,13 +19,6 @@ export const dynamic = "force-dynamic"
 
 const CLIENT_SLUG = "naufrago"
 
-function normalizeWhatsapp(raw: string): string | null {
-  const digits = raw.replace(/\D/g, "")
-  if (digits.length < 8 || digits.length > 15) return null
-  if (digits.startsWith("0")) return `593${digits.slice(1)}`
-  if (digits.length === 9 && digits.startsWith("9")) return `593${digits}`
-  return digits
-}
 
 async function resolveCustomerByAuth(
   token: string,
@@ -73,7 +67,7 @@ export async function GET(req: NextRequest) {
   if (!whatsappRaw) {
     return Response.json({ ok: false, error: "missing_whatsapp" }, { status: 400 })
   }
-  const whatsapp = normalizeWhatsapp(whatsappRaw)
+  const whatsapp = telefonoCanonico(whatsappRaw)
   if (!whatsapp) {
     return Response.json({ ok: false, error: "invalid_whatsapp" }, { status: 400 })
   }

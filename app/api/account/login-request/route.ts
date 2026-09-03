@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server"
 import { createHash, randomInt } from "node:crypto"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
+import { telefonoCanonico } from "@/lib/telefono"
 
 /**
  * POST /api/account/login-request · R96.112
@@ -19,13 +20,6 @@ const PURPOSE = "account_login"
 const TTL_MIN = 5
 const OTP_SALT = process.env.OTP_SALT ?? "naufrago-otp-2026"
 
-function normalizeE164(raw: string): string | null {
-  const digits = raw.replace(/\D/g, "")
-  if (digits.length < 8 || digits.length > 15) return null
-  if (digits.startsWith("0")) return `593${digits.slice(1)}`
-  if (digits.length === 9 && digits.startsWith("9")) return `593${digits}`
-  return digits
-}
 
 function hashCode(code: string): string {
   return createHash("sha256").update(`${OTP_SALT}|${code}`).digest("hex")
@@ -78,7 +72,7 @@ export async function POST(req: NextRequest) {
   } catch {
     return Response.json({ ok: false, error: "invalid_json" }, { status: 400 })
   }
-  const phone = normalizeE164(
+  const phone = telefonoCanonico(
     typeof body.whatsapp === "string" ? body.whatsapp : "",
   )
   if (!phone) {

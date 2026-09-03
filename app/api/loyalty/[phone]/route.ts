@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { quienPregunta } from "@/lib/quien-pregunta"
+import { telefonoCanonico } from "@/lib/telefono"
 
 /**
  * GET /api/loyalty/[phone] · R96.21 · balance lookup público.
@@ -15,13 +16,6 @@ import { quienPregunta } from "@/lib/quien-pregunta"
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
-function normalizeE164(raw: string): string | null {
-  const digits = raw.replace(/\D/g, "")
-  if (digits.length < 8 || digits.length > 15) return null
-  if (digits.startsWith("0")) return `593${digits.slice(1)}`
-  if (digits.length === 9 && digits.startsWith("9")) return `593${digits}`
-  return digits
-}
 
 export async function GET(
   _req: Request,
@@ -45,7 +39,7 @@ export async function GET(
   }
 
   const { phone } = await ctx.params
-  const normalized = normalizeE164(decodeURIComponent(phone))
+  const normalized = telefonoCanonico(decodeURIComponent(phone))
   if (!normalized) {
     return NextResponse.json(
       { ok: false, error: "invalid_phone" },

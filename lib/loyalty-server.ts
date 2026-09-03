@@ -17,6 +17,7 @@ export {
   perlasQueGana,
 } from "@/lib/perlas"
 import { EARN_RATE, PERLA_VALUE_USD } from "@/lib/perlas"
+import { telefonoCanonico } from "@/lib/telefono"
 
 /** R96.24 · multi-tier redemption catalog · pattern Domino's
  *  20/40/60 tiers · 3 rewards mixed (% off + free item). Cliente
@@ -58,13 +59,6 @@ export const LOYALTY_REWARDS: LoyaltyReward[] = [
   },
 ]
 
-function normalizeE164(raw: string): string | null {
-  const digits = raw.replace(/\D/g, "")
-  if (digits.length < 8 || digits.length > 15) return null
-  if (digits.startsWith("0")) return `593${digits.slice(1)}`
-  if (digits.length === 9 && digits.startsWith("9")) return `593${digits}`
-  return digits
-}
 
 export function perlasToUsd(perlas: number): number {
   return Math.round(perlas * PERLA_VALUE_USD * 100) / 100
@@ -85,7 +79,7 @@ export async function earnPerlas({
   totalUsd: number
   orderCode: string
 }): Promise<{ earned: number; balance: number } | null> {
-  const ph = normalizeE164(phone)
+  const ph = telefonoCanonico(phone)
   if (!ph || totalUsd <= 0) return null
   const earned = usdToPerlas(totalUsd * EARN_RATE)
   if (earned <= 0) return null
@@ -146,7 +140,7 @@ export async function spendPerlas({
   amount: number
   orderCode: string
 }): Promise<{ spent: number; balance: number } | null> {
-  const ph = normalizeE164(phone)
+  const ph = telefonoCanonico(phone)
   if (!ph || amount <= 0) return null
 
   const supa = getSupabaseAdmin()

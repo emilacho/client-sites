@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server"
 import { origenPublico } from "@/lib/origen"
 import { getSupabaseAdmin } from "@/lib/supabase"
+import { telefonoCanonico } from "@/lib/telefono"
 
 /**
  * POST /api/notifications/order-status · R96.110
@@ -26,13 +27,6 @@ interface Body {
   newStatus?: unknown
 }
 
-function normalizeE164(raw: string): string | null {
-  const digits = raw.replace(/\D/g, "")
-  if (digits.length < 8 || digits.length > 15) return null
-  if (digits.startsWith("0")) return `593${digits.slice(1)}`
-  if (digits.length === 9 && digits.startsWith("9")) return `593${digits}`
-  return digits
-}
 
 const STATUS_TEMPLATES: Record<string, (orderCode: string, trackingUrl: string, etaMin?: number | null) => string | null> = {
   COOKING: (code, url) =>
@@ -96,7 +90,7 @@ export async function POST(req: NextRequest) {
       return Response.json({ ok: true, sent: false, reason: "already_notified" })
     }
 
-    const phone = normalizeE164(order.customer_phone)
+    const phone = telefonoCanonico(order.customer_phone)
     if (!phone) {
       return Response.json({ ok: false, error: "invalid_phone" }, { status: 400 })
     }
