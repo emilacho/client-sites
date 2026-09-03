@@ -12,9 +12,9 @@ import type {
 } from "@/lib/courier/provider"
 import {
   computeDiscount,
-  computeSubtotalUsd,
   totalItemCount,
 } from "@/lib/checkout/pricing"
+import { revisarPrecios } from "@/lib/checkout/precio-real"
 
 export const runtime = "nodejs"
 
@@ -61,7 +61,20 @@ export async function POST(request: Request) {
   }
   const { dropoff, lines } = parsed.data
 
-  const subtotalUsd = computeSubtotalUsd(lines)
+  // R154 · el precio lo pone la casa · si el navegador manda otro, se
+  // avisa acá y no al final del pedido.
+  const revision = revisarPrecios(lines)
+  if (!revision.ok) {
+    return NextResponse.json(
+      {
+        error: "precios_no_coinciden",
+        message:
+          "Los precios de tu pedido no coinciden con la carta. Vuelve a armarlo, por favor.",
+      },
+      { status: 400 },
+    )
+  }
+  const subtotalUsd = revision.subtotalUsd
   const discount = computeDiscount(subtotalUsd, null)
   const itemCount = totalItemCount(lines)
 

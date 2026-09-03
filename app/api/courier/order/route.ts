@@ -3,7 +3,8 @@ import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 import { origenPropio } from "@/lib/origen"
 import { courierOrderRequestSchema } from "@/lib/schemas"
 import { createOrder, getDeliveryQuote } from "@/lib/courier/para-rutas"
-import { computeDiscount, computeSubtotalUsd } from "@/lib/checkout/pricing"
+import { computeDiscount } from "@/lib/checkout/pricing"
+import { revisarPrecios } from "@/lib/checkout/precio-real"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { telefonoCanonico } from "@/lib/telefono"
 import { cliente } from "@/cliente.config"
@@ -123,9 +124,25 @@ export async function POST(request: Request) {
   // La propina NO entra acá a propósito: esa plata la recaudaría
   // PedidosYa y nos la liquidaría a nosotros, con lo cual le
   // quedaríamos debiendo la propina al motorizado. Va en mano.
-  const comidaUsd = computeSubtotalUsd(
-    lines.map((l) => ({ id: l.name, name: l.name, priceUsd: l.priceUsd, qty: l.qty })),
-  )
+  // R154 · el precio lo pone la casa. Antes el subtotal se "recalculaba"
+  // a partir de los precios que mandaba el navegador · recalcular la
+  // multiplicación no sirve de nada si el precio de cada plato lo escribe
+  // quien compra. Se comprobó contra el sitio publicado: 10 encebollados
+  // a $0.01 daban un subtotal de $0.10 en vez de $40, y esa es la cifra
+  // que se le ordena cobrar al motorizado.
+  const revision = revisarPrecios(lines)
+  if (!revision.ok) {
+    return NextResponse.json(
+      {
+        error: "precios_no_coinciden",
+        message:
+          "Los precios de tu pedido no coinciden con la carta. Vuelve a armarlo, por favor.",
+        detail: revision.problemas.join(" · "),
+      },
+      { status: 400 },
+    )
+  }
+  const comidaUsd = revision.subtotalUsd
   const descuento = computeDiscount(comidaUsd, parsed.data.discountCode || null)
 
   let envioParaCobrar: number | null = null
@@ -222,7 +239,8 @@ export async function POST(request: Request) {
   // (simulando Kushki capture + courier dispatch). En real flow lo
   // dejaríamos PENDING hasta que llegue confirmación PedidosYa real.
   const mockMode = process.env.PEDIDOSYA_COURIER_MOCK === "true"
-  const cartTotalUsd = lines.reduce((s, l) => s + l.priceUsd * l.qty, 0)
+  // R154 · el mismo subtotal de la casa, no la suma del navegador.
+  const cartTotalUsd = comidaUsd
 
   // R107 · el envío SÍ se cobra. Hasta hoy esta fila guardaba
   // delivery_fee_usd = 0 y total = comida, así que el pedido quedaba

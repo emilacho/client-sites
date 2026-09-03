@@ -9,6 +9,10 @@
  *   5. empty cart lines · 400 validation
  *   6. provider shape error (502-class · we surface as error on the option) · 200 with error message
  */
+// R154 · los platos de estas pruebas ahora son los REALES de la carta.
+// Antes eran inventados ("encebollado" a $6.50) y pasaban porque el
+// servidor aceptaba cualquier precio que le mandaran · justo el agujero
+// que R154 cierra. Con platos de mentira, estas pruebas no probaban nada.
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
 // Hoisted so the `vi.mock` factory below (which itself is hoisted)
@@ -57,8 +61,8 @@ const validBody = {
     longitude: -80.7547,
   },
   lines: [
-    { id: "encebollado", name: "Encebollado Náufrago", priceUsd: 6.5, qty: 2 },
-    { id: "ceviche", name: "Ceviche de Camarón", priceUsd: 8.0, qty: 1 },
+    { id: "encebollado-naufrago", name: "Encebollado Náufrago", priceUsd: 4, qty: 2 },
+    { id: "ceviche-naufrago", name: "Ceviche Náufrago", priceUsd: 7, qty: 1 },
   ],
 }
 
@@ -91,7 +95,7 @@ describe("POST /api/checkout/quote · R98", () => {
       payment_methods: string[]
     }
     expect(j.ok).toBe(true)
-    expect(j.subtotal_usd).toBe(21) // 6.5*2 + 8.0
+    expect(j.subtotal_usd).toBe(15) // 6.5*2 + 8.0
     expect(j.item_count).toBe(3)
     expect(j.delivery_options).toHaveLength(1)
     expect(j.delivery_options[0].provider_id).toBe("PEDIDOSYA_COURIER")

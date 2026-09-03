@@ -14,6 +14,10 @@
  *      cotización que hace el servidor
  *   5. si la cotización propia falla, se usa la del navegador (respaldo)
  */
+// R154 · los platos de estas pruebas ahora son los REALES de la carta.
+// Antes eran inventados ("encebollado" a $6.50) y pasaban porque el
+// servidor aceptaba cualquier precio que le mandaran · justo el agujero
+// que R154 cierra. Con platos de mentira, estas pruebas no probaban nada.
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
 const { mockCreateOrder, mockGetDeliveryQuote } = vi.hoisted(() => ({
@@ -53,7 +57,7 @@ const pedido = (extra: Record<string, unknown> = {}) =>
       quoteToken: "tok-1",
       dropoff: { street: "Cdla Kennedy", countryCode: "EC", latitude: -2.155, longitude: -79.902 },
       customer: { name: "Cliente", phone: "+593997744288" },
-      lines: [{ id: "encebollado", name: "Encebollado", priceUsd: 4, qty: 2 }],
+      lines: [{ id: "encebollado-naufrago", name: "Encebollado Náufrago", priceUsd: 4, qty: 2 }],
       ...extra,
     }),
   })

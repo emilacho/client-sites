@@ -10,6 +10,10 @@
  *   6. invalid json body · 400
  *   7. audit event insert failure · 200 with audit_warning
  */
+// R154 · los platos de estas pruebas ahora son los REALES de la carta.
+// Antes eran inventados ("encebollado" a $6.50) y pasaban porque el
+// servidor aceptaba cualquier precio que le mandaran · justo el agujero
+// que R154 cierra. Con platos de mentira, estas pruebas no probaban nada.
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
 const orderInsertSingle = vi.fn()
@@ -65,8 +69,8 @@ const validBody = {
     longitude: -80.7547,
   },
   lines: [
-    { id: "encebollado", name: "Encebollado Náufrago", priceUsd: 6.5, qty: 2 },
-    { id: "ceviche", name: "Ceviche de Camarón", priceUsd: 8.0, qty: 1 },
+    { id: "encebollado-naufrago", name: "Encebollado Náufrago", priceUsd: 4, qty: 2 },
+    { id: "ceviche-naufrago", name: "Ceviche Náufrago", priceUsd: 7, qty: 1 },
   ],
   customer: {
     name: "Cliente Test",
@@ -76,7 +80,7 @@ const validBody = {
   deliveryProvider: "PEDIDOSYA_COURIER",
   deliveryQuoteToken: "EST-abc-123",
   customerNotes: "Pitar dos veces",
-  subtotalUsd: 21,
+  subtotalUsd: 15,
   paymentMethod: "CASH_ON_DELIVERY",
 }
 
@@ -114,8 +118,8 @@ describe("POST /api/checkout/confirm · R98", () => {
     expect(j.order_code).toBe("NF-2026-AB12CD")
     expect(j.status).toBe("PENDING")
     expect(j.payment_status).toBe("PENDING")
-    expect(j.subtotal_usd).toBe(21)
-    expect(j.total_usd).toBe(21)
+    expect(j.subtotal_usd).toBe(15)
+    expect(j.total_usd).toBe(15)
     expect(j.redirect_url).toBe("/order/NF-2026-AB12CD")
     expect(orderInsert).toHaveBeenCalledTimes(1)
     expect(eventInsert).toHaveBeenCalledTimes(1)
@@ -137,12 +141,12 @@ describe("POST /api/checkout/confirm · R98", () => {
       discount_usd: number
       total_usd: number
     }
-    expect(j.subtotal_usd).toBe(21)
-    expect(j.discount_usd).toBe(1.05) // 5% of 21
-    expect(j.total_usd).toBe(19.95) // 21 - 1.05
+    expect(j.subtotal_usd).toBe(15)
+    expect(j.discount_usd).toBe(0.75) // 5% de 15
+    expect(j.total_usd).toBe(14.25) // 15 - 0.75
     const insertedRow = orderInsert.mock.calls[0]?.[0] as Record<string, unknown>
     expect(insertedRow.discount_code).toBe("NAUFRAGO5")
-    expect(insertedRow.discount_usd).toBe(1.05)
+    expect(insertedRow.discount_usd).toBe(0.75)
   })
 
   it("unknown discount code · resolves to 0 discount", async () => {
@@ -152,7 +156,7 @@ describe("POST /api/checkout/confirm · R98", () => {
     expect(res.status).toBe(200)
     const j = (await res.json()) as { discount_usd: number; total_usd: number }
     expect(j.discount_usd).toBe(0)
-    expect(j.total_usd).toBe(21)
+    expect(j.total_usd).toBe(15)
   })
 
   it("invalid dropoff · empty street · 400 validation", async () => {
