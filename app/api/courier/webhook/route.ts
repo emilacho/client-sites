@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { origenPropio } from "@/lib/origen"
 import {
   verifyWebhookSignature,
   parseWebhookEvent,
@@ -313,8 +314,9 @@ export async function POST(request: Request) {
 
       // R96.110 · WhatsApp status message · estilo Domino's Pizza Tracker.
       // Fire-and-forget · endpoint maneja Twilio not configured graceful.
-      const origin =
-        process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+      // R147 · antes esto salía a "localhost" en producción y el
+      // aviso al cliente moría en silencio.
+      const origin = origenPropio()
       void fetch(`${origin}/api/notifications/order-status`, {
         method: "POST",
         headers: { "content-type": "application/json" },

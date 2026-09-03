@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server"
+import { origenPublico } from "@/lib/origen"
 import { getSupabaseAdmin } from "@/lib/supabase"
 
 /**
@@ -16,7 +17,9 @@ import { getSupabaseAdmin } from "@/lib/supabase"
 
 export const runtime = "nodejs"
 
-const ORIGIN = process.env.NEXT_PUBLIC_APP_URL ?? "https://naufrago.delivery"
+// R147 · el enlace que recibe el cliente sale del dominio real.
+// Antes salía de "naufrago.delivery", que no existe.
+const ORIGIN = origenPublico()
 
 interface Body {
   orderCode?: unknown
