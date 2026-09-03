@@ -475,11 +475,30 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
         ) : null}
       </div>
 
+      {/* R149 · ESTE ANIDAMIENTO ES A PROPÓSITO · no lo aplanes.
+          El recuadro de afuera es de React y lleva los avisos. El de
+          adentro es de Google y va SIEMPRE VACÍO de nuestro lado.
+
+          Antes eran uno solo: le pasábamos a Google el mismo recuadro
+          donde React tenía puestos "Cargando mapa…", "Detectando tu
+          ubicación…" y el cartel de "¿Esta es tu dirección actual?".
+          Google, al armar el mapa, borra y reemplaza todo lo que haya
+          adentro · React seguía creyendo que sus avisos estaban ahí.
+
+          Cuando el cliente daba permiso de ubicación, esos avisos
+          aparecían y desaparecían, React intentaba quitar del documento
+          un elemento que Google ya se había llevado, y el fallo ocurre
+          DENTRO del motor de React: no lo agarra ninguna red de
+          contención y desmonta la PÁGINA ENTERA. El cliente veía
+          "Application error" justo al elegir envío a domicilio.
+
+          Reproducido y aislado: sin permiso de ubicación no pasa nunca;
+          con permiso, pasa siempre. */}
       <div
-        ref={mapDivRef}
         className="relative h-48 w-full overflow-hidden rounded-md border border-slate-700 bg-slate-900"
         style={{ minHeight: 192 }}
       >
+        <div ref={mapDivRef} className="absolute inset-0" />
         {!ready && (
           <div className="flex h-full items-center justify-center text-xs text-slate-500">
             Cargando mapa…
