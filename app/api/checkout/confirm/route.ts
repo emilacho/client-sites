@@ -4,10 +4,10 @@ import { checkoutConfirmRequestSchema } from "@/lib/schemas"
 import { cliente } from "@/cliente.config"
 import {
   computeDiscount,
-  computeSubtotalUsd,
   computeTotalUsd,
 } from "@/lib/checkout/pricing"
 import { generateOrderCode } from "@/lib/checkout/order-code"
+import { revisarPrecios } from "@/lib/checkout/precio-real"
 
 export const runtime = "nodejs"
 
@@ -55,7 +55,20 @@ export async function POST(request: Request) {
 
   // ── Re-compute money math server-side · client values are
   // display-only and we ignore them on the persisted row.
-  const subtotalUsd = computeSubtotalUsd(data.lines)
+  // R154 · el precio lo pone la casa · si el navegador manda otro, se
+  // avisa acá y no al final del pedido.
+  const revision = revisarPrecios(data.lines)
+  if (!revision.ok) {
+    return NextResponse.json(
+      {
+        error: "precios_no_coinciden",
+        message:
+          "Los precios de tu pedido no coinciden con la carta. Vuelve a armarlo, por favor.",
+      },
+      { status: 400 },
+    )
+  }
+  const subtotalUsd = revision.subtotalUsd
   const discount = computeDiscount(subtotalUsd, data.discountCode || null)
   // Delivery fee is 0 at confirm time · the real fee is locked in
   // when the courier dispatch fires (R99). We track the chosen
