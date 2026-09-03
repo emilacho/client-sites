@@ -437,7 +437,7 @@ function CartFooter() {
     // round-trip + el mensaje genérico validation_failed.
     const errors: string[] = []
     if (!form.street || form.street.trim().length === 0) {
-      errors.push("Falta la dirección · escribí o pinchá el mapa")
+      errors.push("Falta la dirección · escribe la tuya o toca el mapa")
     }
     if (!form.name || form.name.trim().length === 0) {
       errors.push("Falta tu nombre")
@@ -1668,7 +1668,7 @@ function DiscountCodeRow() {
       return
     }
     if (result.reason === "invalid_whatsapp") {
-      setErrorMsg("WhatsApp inválido · revisá el número")
+      setErrorMsg("WhatsApp inválido · revisa el número")
       return
     }
     if (result.reason === "unknown_code") {
