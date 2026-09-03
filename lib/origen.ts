@@ -1,4 +1,5 @@
 import "server-only"
+import { cliente } from "@/cliente.config"
 /**
  * La dirección de esta misma publicación · R146.
  *
@@ -33,4 +34,17 @@ export function origenPropio(): string {
     process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL
   if (declarado) return declarado.replace(/\/+$/, "")
   return "http://localhost:3000"
+}
+
+/**
+ * La dirección PÚBLICA del cliente · la que ve la gente.
+ *
+ * Es distinta de `origenPropio()` a propósito. Un enlace que se le manda
+ * al cliente por WhatsApp tiene que decir naufrago.ec, no la dirección
+ * interna de una publicación. Antes había dos enlaces armados con
+ * "https://naufrago.delivery" — un dominio que NUNCA se compró y que
+ * hoy ni siquiera resuelve. El cliente recibía un enlace muerto.
+ */
+export function origenPublico(): string {
+  return cliente.domain.replace(/\/+$/, "")
 }

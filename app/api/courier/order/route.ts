@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
+import { origenPropio } from "@/lib/origen"
 import { courierOrderRequestSchema } from "@/lib/schemas"
 import { createOrder, getDeliveryQuote } from "@/lib/courier/para-rutas"
 import { computeDiscount, computeSubtotalUsd } from "@/lib/checkout/pricing"
@@ -284,8 +285,9 @@ export async function POST(request: Request) {
       // El aviso al CLIENTE también se espera ahora, por la misma razón
       // que el de la cocina: con `void` la función se apaga al responder y
       // se lo lleva puesto.
-      const origin =
-        process.env.NEXT_PUBLIC_APP_URL ?? "https://naufrago.ec"
+      // R147 · esta se llamaba al sitio público aunque corriera en una
+      // vista previa · probar un cambio disparaba avisos en producción.
+      const origin = origenPropio()
       await fetch(`${origin}/api/notifications/order-status`, {
         method: "POST",
         headers: { "content-type": "application/json" },

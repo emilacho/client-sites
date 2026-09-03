@@ -17,7 +17,9 @@ export const runtime = "edge"
 
 const NOMINATIM_UA =
   process.env.NOMINATIM_USER_AGENT ??
-  "Naufrago/1.0 (https://naufrago.delivery; emilacho@hotmail.com)"
+  // R147 · nos presentábamos con un dominio que no existe · su política
+  // pide un contacto que funcione.
+  "Naufrago/1.0 (https://naufrago.ec; emilacho@hotmail.com)"
 const GOOGLE_KEY = process.env.GOOGLE_MAPS_API_KEY
 
 interface GeocodeResult {

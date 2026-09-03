@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server"
 import { llamadaInterna } from "@/lib/llave-interna"
+import { origenPropio, origenPublico } from "@/lib/origen"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import {
   getDeliveryQuote,
@@ -30,10 +31,7 @@ interface Body {
   orderCode?: unknown
 }
 
-const ORIGIN =
-  process.env.NEXT_PUBLIC_APP_URL ??
-  process.env.NEXT_PUBLIC_BASE_URL ??
-  "https://naufrago.delivery"
+
 
 export async function POST(req: NextRequest) {
   // R146 · esta ruta despacha un motorizado REAL, y desde R144 con
@@ -268,7 +266,7 @@ export async function POST(req: NextRequest) {
   // ─── Trigger /api/notifications/order-status con ACCEPTED para que
   //     mande el template canónico del tracker (también enqueue para el
   //     dashboard tracker URL del cliente).
-  void fetch(`${ORIGIN}/api/notifications/order-status`, {
+  void fetch(`${origenPropio()}/api/notifications/order-status`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ orderCode, newStatus: "ACCEPTED" }),
@@ -324,7 +322,7 @@ async function dispatchAcceptedWhatsApp(
     `✅ Pedido ${orderCode} aceptado por el motorizado`,
     ``,
     `Llega en ~${etaMinutes} minutos.`,
-    `${ORIGIN}/order/${orderCode}`,
+    `${origenPublico()}/order/${orderCode}`,
     ``,
     `Te aviso cuando esté cerca 📍`,
   ].join("\n")
