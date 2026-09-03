@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server"
+import { metodosDisponiblesEnBase } from "@/lib/metodos-de-pago"
 import { randomBytes } from "node:crypto"
-import {
-  checkoutQuoteRequestSchema,
-  type PaymentMethod,
-} from "@/lib/schemas"
+import { checkoutQuoteRequestSchema } from "@/lib/schemas"
 import {
   getActiveCourierProviders,
   CourierEnvError,
@@ -132,7 +130,7 @@ export async function POST(request: Request) {
     discount,
     item_count: itemCount,
     delivery_options: deliveryOptions,
-    payment_methods: availablePaymentMethods(),
+    payment_methods: metodosDisponiblesEnBase(),
     computed_at: new Date().toISOString(),
   })
 }
@@ -156,28 +154,6 @@ function stubQuoteFor(provider: CourierProvider): {
     expires_at: new Date(Date.now() + 5 * 60_000).toISOString(),
     stub: true,
   }
-}
-
-/**
- * Available payment methods given the configured gateway env vars.
- * Pre-Kushki alta only the offline methods are surfaced; once
- * `KUSHKI_PUBLIC_KEY` lands, the gateway-served methods light up
- * automatically.
- */
-function availablePaymentMethods(): PaymentMethod[] {
-  const methods: PaymentMethod[] = []
-  if (process.env.KUSHKI_PUBLIC_KEY) {
-    methods.push(
-      "GOOGLE_PAY",
-      "APPLE_PAY",
-      "CARD_CREDIT",
-      "CARD_DEBIT",
-    )
-  }
-  if (process.env.PAYPHONE_TOKEN) methods.push("PAYPHONE")
-  // Always available · offline fallbacks
-  methods.push("CASH_ON_DELIVERY", "WHATSAPP_MANUAL")
-  return methods
 }
 
 export function GET() {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 import { courierQuoteRequestSchema } from "@/lib/schemas"
 import { getDeliveryQuote } from "@/lib/courier/para-rutas"
+import { metodosDisponibles } from "@/lib/metodos-de-pago"
 
 export const runtime = "nodejs"
 
@@ -85,6 +86,9 @@ export async function POST(request: Request) {
       priceUsd: quote.priceUsd,
       etaMinutes: quote.etaMinutes,
       expiresAt: quote.expiresAt,
+      // R148 · las formas de pago que se pueden cobrar de verdad. La
+      // pantalla muestra estas y sólo estas.
+      metodosDePago: metodosDisponibles(),
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)

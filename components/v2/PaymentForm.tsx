@@ -1000,12 +1000,17 @@ export interface PaymentFormProps {
   priceUsd: number
   etaMinutes: number
   totalUsd: number
+  /** R148 · las formas que el SERVIDOR dice que se pueden cobrar de
+   *  verdad. La pantalla muestra estas y sólo estas. Vacío = todavía no
+   *  contestó · no se ofrece ninguna, antes que ofrecer uno que no cobra. */
+  metodosDisponibles: string[]
   onCancel: () => void
   onPay: (selectedMethod: PaymentMethod) => void | Promise<void>
 }
 
 export function PaymentForm({
   totalUsd,
+  metodosDisponibles,
   onCancel,
   onPay,
 }: PaymentFormProps) {
@@ -1013,7 +1018,25 @@ export function PaymentForm({
   // (mostrar resumen de envío adicional) · por ahora no se usan acá ·
   // viven en el resumen del cart drawer arriba
   const cart = useCart()
-  const [method, setMethod] = useState<PaymentMethod>("card")
+  // Si la lista viene vacía —el servidor no contestó, o contestó una
+  // versión vieja— se cae a efectivo, que es la única que SIEMPRE se
+  // puede cobrar. Mejor una sola forma real que ninguna, o que seis de
+  // mentira.
+  const lista = metodosDisponibles.length > 0 ? metodosDisponibles : ["cash"]
+  const disponible = (m: PaymentMethod) => lista.includes(m)
+  const [method, setMethod] = useState<PaymentMethod>(
+    (lista[0] as PaymentMethod) ?? "cash",
+  )
+
+  // Si la lista llega o cambia después del primer dibujo, y lo que
+  // estaba elegido no está en ella, se corrige solo.
+  const listaFirma = lista.join(",")
+  useEffect(() => {
+    const actuales = listaFirma.split(",")
+    if (!actuales.includes(method)) {
+      setMethod(actuales[0] as PaymentMethod)
+    }
+  }, [listaFirma, method])
 
   // ── Card state ────────────────────────────────────────────────────
   const [savedCards, setSavedCards] = useState<SavedCard[]>([])
@@ -1187,42 +1210,54 @@ export function PaymentForm({
           ¿Cómo pagas?
         </span>
         <div className="grid grid-cols-3 gap-2">
+          {disponible("card") ? (
           <MethodTab
             active={method === "card"}
             logo={<CardsStackLogo />}
             label="Tarjeta"
             onClick={() => setMethod("card")}
           />
+          ) : null}
+          {disponible("cash") ? (
           <MethodTab
             active={method === "cash"}
             logo={<CashLogo />}
             label="Efectivo"
             onClick={() => setMethod("cash")}
           />
+          ) : null}
+          {disponible("deuna") ? (
           <MethodTab
             active={method === "deuna"}
             logo={<DeUnaLogo small />}
             label="DeUna"
             onClick={() => setMethod("deuna")}
           />
+          ) : null}
+          {disponible("payphone") ? (
           <MethodTab
             active={method === "payphone"}
             logo={<PayPhoneLogo small />}
             label="PayPhone"
             onClick={() => setMethod("payphone")}
           />
+          ) : null}
+          {disponible("apple_pay") ? (
           <MethodTab
             active={method === "apple_pay"}
             logo={<ApplePayTabLogo />}
             label="Apple Pay"
             onClick={() => setMethod("apple_pay")}
           />
+          ) : null}
+          {disponible("google_pay") ? (
           <MethodTab
             active={method === "google_pay"}
             logo={<GooglePayTabLogo />}
             label="Google Pay"
             onClick={() => setMethod("google_pay")}
           />
+          ) : null}
         </div>
       </div>
 

@@ -380,6 +380,9 @@ function CartFooter() {
     estado: "inicio" | "buscando" | "listo" | "rechazado" | "sin_soporte"
   }>({ estado: "inicio" })
   const [selectedReward, setSelectedReward] = useState<LoyaltyReward | null>(null)
+  // R148 · lo que el servidor dice que se puede cobrar. Arranca vacío:
+  // hasta que conteste, no se ofrece nada.
+  const [metodosDePago, setMetodosDePago] = useState<string[]>([])
   // R96.111 · OTP step-up para canje · pending=esperando código · verifying=POSTing
   const [otpReward, setOtpReward] = useState<LoyaltyReward | null>(null)
   const [otpCode, setOtpCode] = useState("")
@@ -488,6 +491,11 @@ function CartFooter() {
             .join(" · ")
         }
         throw new Error(msg)
+      }
+      // R148 · el servidor dice qué se puede cobrar de verdad · la
+      // pantalla obedece esa lista y no ofrece nada más.
+      if (Array.isArray(json.metodosDePago)) {
+        setMetodosDePago(json.metodosDePago as string[])
       }
       setShipping({
         kind: "quoted",
@@ -1209,6 +1217,7 @@ function CartFooter() {
           style={{ overscrollBehavior: "contain" }}
         >
         <PaymentForm
+          metodosDisponibles={metodosDePago}
           priceUsd={shipping.priceUsd}
           etaMinutes={shipping.etaMinutes}
           totalUsd={total}
