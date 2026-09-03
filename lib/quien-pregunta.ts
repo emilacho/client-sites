@@ -26,6 +26,7 @@ import "server-only"
  */
 import { createClient } from "@supabase/supabase-js"
 import { getSupabaseAdmin } from "@/lib/supabase"
+import { telefonoCanonico } from "@/lib/telefono"
 
 const CLIENT_SLUG = "naufrago"
 
@@ -73,7 +74,10 @@ async function porElCodigoDePedido(codigo: string): Promise<QuienPregunta | null
       .eq("order_code", codigo.toUpperCase())
       .maybeSingle()
     const tel = (data as { customer_phone?: string } | null)?.customer_phone
-    return tel ? { whatsapp: tel, via: "codigo_de_pedido" } : null
+    // R152 · los pedidos viejos guardan el número crudo · se normaliza
+    // acá también para que la búsqueda de la ficha encuentre algo.
+    const canonico = telefonoCanonico(tel)
+    return canonico ? { whatsapp: canonico, via: "codigo_de_pedido" } : null
   } catch {
     return null
   }

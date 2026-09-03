@@ -5,6 +5,7 @@ import { courierOrderRequestSchema } from "@/lib/schemas"
 import { createOrder, getDeliveryQuote } from "@/lib/courier/para-rutas"
 import { computeDiscount, computeSubtotalUsd } from "@/lib/checkout/pricing"
 import { getSupabaseAdmin } from "@/lib/supabase"
+import { telefonoCanonico } from "@/lib/telefono"
 import { cliente } from "@/cliente.config"
 
 export const runtime = "nodejs"
@@ -94,7 +95,25 @@ export async function POST(request: Request) {
       { status: 400 },
     )
   }
-  const { quoteToken, dropoff, customer, lines, notes } = parsed.data
+  const { quoteToken, dropoff, lines, notes } = parsed.data
+
+  // R152 · el teléfono se deja en UNA sola forma antes de tocar nada.
+  // Antes se guardaba tal cual lo escribía el cliente ("0997744288")
+  // mientras el resto del sistema usa la forma internacional
+  // ("593997744288") · el mismo cliente quedaba partido en dos y su
+  // pedido nunca se cruzaba con sus perlas ni con su ficha.
+  const telefono = telefonoCanonico(parsed.data.customer.phone)
+  if (!telefono) {
+    return NextResponse.json(
+      {
+        error: "telefono_invalido",
+        message:
+          "Ese número no parece completo. Escribe tu celular con los 10 dígitos, por ejemplo 0991234567.",
+      },
+      { status: 400 },
+    )
+  }
+  const customer = { ...parsed.data.customer, phone: telefono }
 
   // ── R144 · cuánto tiene que cobrar el motorizado en la puerta ──────
   // La comida y el descuento los recalcula el servidor · el navegador

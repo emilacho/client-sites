@@ -442,8 +442,13 @@ function CartFooter() {
     if (!form.name || form.name.trim().length === 0) {
       errors.push("Falta tu nombre")
     }
-    if (!form.phone || form.phone.trim().length < 6) {
-      errors.push("Falta WhatsApp · mínimo 6 dígitos")
+    // R152 · pedía 6 dígitos mientras TODO el resto del sistema exige 8:
+    // el ingreso a la cuenta, las perlas, las direcciones, los avisos. Un
+    // pedido con 6 dígitos entraba y después no se podía ni llamar al
+    // cliente ni cruzarlo con su tesoro. Ahora la pantalla pide lo mismo
+    // que el sistema, y lo dice en criollo.
+    if (!form.phone || form.phone.replace(/\D/g, "").length < 8) {
+      errors.push("Falta tu celular · escríbelo completo, con los 10 dígitos")
     }
     if (errors.length > 0) {
       setShipping({
