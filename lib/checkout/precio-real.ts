@@ -34,6 +34,30 @@ import "server-only"
  */
 import { MENU_ITEMS } from "@/lib/v2/naufrago-content"
 
+/**
+ * Los regalos · valen CERO y no están en la carta.
+ *
+ * REGRESIÓN QUE ESTO ARREGLA (introducida por mí en R154)
+ * La ruleta agrega el premio ganado al carrito como una línea normal a
+ * $0 (`RuletaModal.tsx:411`). Esas líneas NO viven en la carta, así que
+ * al empezar a rechazar todo id desconocido dejé sin poder pedir a
+ * cualquiera que ganara la ruleta. Estuvo roto en producción desde que
+ * se publicó R154.
+ *
+ * Se aceptan a $0 y sólo estos tres. Como valen cero, aceptarlos no
+ * puede rebajar una cuenta · lo único en juego es el producto en sí, y
+ * por eso van con tope de una unidad.
+ */
+const REGALOS: Record<string, { nombre: string; topeUnidades: number }> = {
+  "prize-chifle": { nombre: "Chifle · regalo", topeUnidades: 1 },
+  "prize-pan": { nombre: "Pan · regalo", topeUnidades: 1 },
+  "prize-cola": { nombre: "Cola · regalo", topeUnidades: 1 },
+}
+
+export function esRegalo(idDeLinea: string): boolean {
+  return idDeLinea in REGALOS
+}
+
 export interface PrecioDeLinea {
   /** El precio que manda la casa · null si el plato no existe. */
   precioUsd: number | null
@@ -46,6 +70,7 @@ function redondear(n: number): number {
 }
 
 export function precioRealDeLinea(idDeLinea: string): PrecioDeLinea {
+  if (esRegalo(idDeLinea)) return { precioUsd: 0 }
   const [idPlato, sufijo] = idDeLinea.split("::")
   const plato = MENU_ITEMS.find((i) => i.id === idPlato)
   if (!plato) return { precioUsd: null, motivo: `plato_desconocido:${idPlato}` }
@@ -116,6 +141,10 @@ export function revisarPrecios(lineas: LineaPedida[]): RevisionDePrecios {
   const problemas: string[] = []
 
   for (const l of lineas) {
+    if (esRegalo(l.id) && l.qty > REGALOS[l.id].topeUnidades) {
+      problemas.push(`regalo_con_exceso:${l.id}:${l.qty}`)
+      continue
+    }
     const { precioUsd, motivo } = precioRealDeLinea(l.id)
     if (precioUsd === null) {
       problemas.push(motivo ?? `linea_invalida:${l.id}`)
