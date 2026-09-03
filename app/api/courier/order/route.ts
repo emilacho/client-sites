@@ -5,6 +5,7 @@ import { courierOrderRequestSchema } from "@/lib/schemas"
 import { createOrder, getDeliveryQuote } from "@/lib/courier/para-rutas"
 import { computeDiscount } from "@/lib/checkout/pricing"
 import { revisarPrecios } from "@/lib/checkout/precio-real"
+import { tieneDerechoAlCupon } from "@/lib/checkout/cupon"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { telefonoCanonico } from "@/lib/telefono"
 import { cliente } from "@/cliente.config"
@@ -143,7 +144,16 @@ export async function POST(request: Request) {
     )
   }
   const comidaUsd = revision.subtotalUsd
-  const descuento = computeDiscount(comidaUsd, parsed.data.discountCode || null)
+  // R155 · el cupón se comprueba ACÁ, no sólo en la ruta que la pantalla
+  // llama de buena fe. Quien mande el pedido directo se saltaba las
+  // reglas y se llevaba el 5% en cada pedido, para siempre.
+  const cuponPedido = parsed.data.discountCode || null
+  const derecho = cuponPedido
+    ? await tieneDerechoAlCupon(cuponPedido, telefono)
+    : { tieneDerecho: false }
+  const descuento = derecho.tieneDerecho
+    ? computeDiscount(comidaUsd, cuponPedido)
+    : { code: null, percentOff: 0, amountUsd: 0 }
 
   let envioParaCobrar: number | null = null
   try {
@@ -249,7 +259,11 @@ export async function POST(request: Request) {
   // que es la que PedidosYa confirmó · no la del navegador ni la de
   // una re-cotización, que podrían diferir de lo cobrado.
   const deliveryFeeUsd = courierResult.priceUsd ?? 0
-  const totalUsd = Number((cartTotalUsd + deliveryFeeUsd).toFixed(2))
+  // R155 · el total del pedido es EXACTAMENTE lo que se cobra: comida
+  // menos descuento más envío. Antes el descuento se caía de esta cuenta.
+  const totalUsd = Number(
+    Math.max(0, cartTotalUsd - descuento.amountUsd + deliveryFeeUsd).toFixed(2),
+  )
   const etaMinutes = courierResult.etaMinutes ?? null
   const { generateOrderCode } = await import("@/lib/checkout/order-code")
   const orderCode = generateOrderCode()
@@ -271,6 +285,11 @@ export async function POST(request: Request) {
         dropoff_country_code: dropoff.countryCode ?? "EC",
         cart_lines: lines,
         subtotal_usd: cartTotalUsd,
+        // R155 · el descuento se le restaba a lo que cobra el motorizado
+        // pero NO se guardaba · el motorizado cobraba $40.50 y la ficha
+        // decía $42.50. Los libros no cerraban contra la plata.
+        discount_code: descuento.code,
+        discount_usd: descuento.amountUsd,
         delivery_fee_usd: deliveryFeeUsd,
         total_usd: totalUsd,
         // R145 · la propina va aparte, NO dentro del total: no es plata

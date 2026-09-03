@@ -41,6 +41,10 @@ vi.mock("@/lib/supabase", () => ({
       update: self,
       eq: self,
       select: self,
+      // R155 · el cupón ahora se comprueba contra `promo_usage`. Sin
+      // filas = nunca lo usó = primer uso libre, que es el caso que
+      // esta prueba quiere ejercer.
+      limit: async () => ({ data: [], error: null }),
       single: async () => ({ data: null, error: null }),
     })
     return chain
@@ -82,7 +86,7 @@ describe("cuánto cobra el motorizado en la puerta · R144", () => {
     expect(cobrado()).toBe(10.5) // $8 + $2.50
   })
 
-  it("con cupón · el servidor re-calcula el descuento y lo resta", async () => {
+  it("con cupón Y con derecho · el servidor re-calcula el descuento y lo resta", async () => {
     await POST(pedido({ discountCode: "SURFBOLLADO" }))
     expect(cobrado()).toBe(10.1) // $8 − $0.40 + $2.50
   })
