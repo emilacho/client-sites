@@ -187,7 +187,7 @@ export function OrderTracker({ initial, orderCode }: Props) {
           <>
             <ReviewCard orderCode={orderCode} />
             <PushCta orderCode={orderCode} />
-            <PreferencesPrompt phone={snap.customer_phone} />
+            <PreferencesPrompt orderCode={orderCode} />
             <ReorderCta />
           </>
         ) : null}
@@ -1114,15 +1114,19 @@ function ReviewCard({ orderCode }: { orderCode: string }) {
    "Algo que siempre llevemos en cuenta?" · stored en
    naufrago_customers.preferences (text 500). Pre-fill notas en
    futuros pedidos. */
-function PreferencesPrompt({ phone }: { phone: string }) {
+/* R151 · antes recibía el TELÉFONO del cliente y se lo mandaba al
+   servidor como si eso lo identificara. Ahora recibe el código del
+   pedido: quien tiene el enlace de seguimiento es el dueño, y el
+   teléfono lo resuelve el servidor. Así el teléfono deja de viajar. */
+function PreferencesPrompt({ orderCode }: { orderCode: string }) {
   const [pref, setPref] = useState("")
   const [initial, setInitial] = useState<string | null>(null)
   const [state, setState] = useState<"idle" | "saving" | "saved">("idle")
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
-    if (!phone) return
-    fetch(`/api/customer/preferences?whatsapp=${encodeURIComponent(phone)}`)
+    if (!orderCode) return
+    fetch(`/api/customer/preferences?orderCode=${encodeURIComponent(orderCode)}`)
       .then((r) => r.json())
       .then((data) => {
         if (data?.ok) {
@@ -1133,7 +1137,7 @@ function PreferencesPrompt({ phone }: { phone: string }) {
       })
       .catch(() => {})
       .finally(() => setLoaded(true))
-  }, [phone])
+  }, [orderCode])
 
   if (!loaded) return null
 
@@ -1143,7 +1147,7 @@ function PreferencesPrompt({ phone }: { phone: string }) {
       const res = await fetch("/api/customer/preferences", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ whatsapp: phone, preferences: pref }),
+        body: JSON.stringify({ orderCode, preferences: pref }),
       })
       const data = await res.json()
       if (data.ok) {

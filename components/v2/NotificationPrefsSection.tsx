@@ -5,6 +5,7 @@
  * Requiere whatsapp asociado al perfil · si no · disable + CTA.
  */
 import { useEffect, useState } from "react"
+import { getSupabaseBrowser } from "@/lib/supabase-browser"
 import { Bell } from "lucide-react"
 
 interface Props {
@@ -26,7 +27,14 @@ export default function NotificationPrefsSection({
   useEffect(() => {
     if (!whatsapp) return
     setLoading(true)
-    fetch(`/api/subscribers/lookup?whatsapp=${encodeURIComponent(whatsapp)}`)
+    // R151 · la ruta ya no acepta un teléfono suelto · viaja la sesión.
+    void (async () => {
+      const supa = getSupabaseBrowser()
+      const { data: { session } } = await supa.auth.getSession()
+      if (!session?.access_token) { setLoading(false); return }
+      fetch("/api/subscribers/lookup", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
       .then((r) => r.json())
       .then((data) => {
         if (data?.ok) {
@@ -35,6 +43,7 @@ export default function NotificationPrefsSection({
       })
       .catch(() => {})
       .finally(() => setLoading(false))
+    })()
   }, [whatsapp])
 
   async function toggle(next: boolean) {
