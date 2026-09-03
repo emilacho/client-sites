@@ -988,7 +988,7 @@ function CashForm({ totalUsd }: { totalUsd: number }) {
         Pago en efectivo al motorizado
       </p>
       <p className="text-[11px] text-slate-400">
-        Prepará ${totalUsd.toFixed(2)} exactos cuando llegue · el motorizado
+        Prepara ${totalUsd.toFixed(2)} exactos cuando llegue · el motorizado
         rara vez tiene cambio para billetes grandes
       </p>
     </div>
@@ -1340,21 +1340,32 @@ export function PaymentForm({
         ) : null}
       </div>
 
-      {/* Trust line · padlock + SSL + PCI + logos */}
-      <div className="space-y-1.5 rounded-xl border border-slate-800 bg-slate-900/30 px-3 py-2">
-        <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-400">
-          <LockIcon size={12} color="#94A3B8" />
-          <span>Pago seguro · SSL 256-bit · PCI DSS compliant</span>
+      {/* R148.1 · La franja de abajo anunciaba VISA, Mastercard, AMEX,
+          Discover, DeUna y PayPhone · y ninguna cobraba. Un cliente que
+          llegaba a pagar en efectivo veía seis logos de tarjeta y podía
+          irse creyendo que se había equivocado de sitio.
+
+          Y decía "PCI DSS compliant", que es una certificación que este
+          formulario no tiene y hoy ni necesita: no toca una tarjeta.
+          Anunciar una certificación que no se tiene no es un adorno.
+
+          Ahora sólo se muestran los logos de lo que de verdad se puede
+          cobrar. Con una sola forma, la franja entera sobra. */}
+      {disponible("card") ? (
+        <div className="space-y-1.5 rounded-xl border border-slate-800 bg-slate-900/30 px-3 py-2">
+          <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-400">
+            <LockIcon size={12} color="#94A3B8" />
+            <span>Pago seguro · el número de tu tarjeta no pasa por nosotros</span>
+          </div>
+          <div className="flex items-center justify-center gap-1.5">
+            <BrandChip brand="visa" small />
+            <BrandChip brand="mastercard" small />
+            <BrandChip brand="amex" small />
+            <BrandChip brand="discover" small />
+            {disponible("payphone") ? <PayPhoneLogo small /> : null}
+          </div>
         </div>
-        <div className="flex items-center justify-center gap-1.5">
-          <BrandChip brand="visa" small />
-          <BrandChip brand="mastercard" small />
-          <BrandChip brand="amex" small />
-          <BrandChip brand="discover" small />
-          <DeUnaLogo small />
-          <PayPhoneLogo small />
-        </div>
-      </div>
+      ) : null}
 
       {/* CTA · big purple button */}
       <button
