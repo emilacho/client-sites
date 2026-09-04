@@ -4,6 +4,7 @@
  * AI search (ChatGPT/Gemini/Perplexity) usa esto en 2026 para recomendaciones.
  */
 import { cliente } from "@/cliente.config"
+import { COCINA_ABRE_H, COCINA_CIERRA_H } from "@/lib/horario"
 import { MENU_ITEMS } from "@/lib/v2/naufrago-content"
 import { COCINA } from "@/lib/ubicacion"
 
@@ -19,8 +20,10 @@ const NAUFRAGO_OPENING = [
   {
     "@type": "OpeningHoursSpecification" as const,
     dayOfWeek: ["Thursday", "Friday", "Saturday", "Sunday", "Monday"],
-    opens: "09:00",
-    closes: "17:00",
+    // R162 · también sale de `lib/horario.ts` · antes decía 09:00-17:00
+    // a mano y Google mostraba un horario que el sitio no cumplía.
+    opens: `${String(COCINA_ABRE_H).padStart(2, "0")}:00`,
+    closes: `${String(COCINA_CIERRA_H).padStart(2, "0")}:00`,
   },
 ]
 

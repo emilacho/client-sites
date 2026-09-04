@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { cocinaAbierta, HORARIO_TEXTO } from "@/lib/horario"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 import { origenPropio } from "@/lib/origen"
 import { courierOrderRequestSchema } from "@/lib/schemas"
@@ -119,7 +120,21 @@ export async function POST(request: Request) {
   }
   const customer = { ...parsed.data.customer, phone: telefono }
 
-  const supabase = getSupabaseAdmin()
+  // R162.1 · si la base no se puede abrir, el pedido no puede seguir ·
+  // pero se responde con una frase, no con un 500 pelado.
+  let supabase: ReturnType<typeof getSupabaseAdmin>
+  try {
+    supabase = getSupabaseAdmin()
+  } catch {
+    return NextResponse.json(
+      {
+        error: "sin_base",
+        message:
+          "No pudimos tomar tu pedido en este momento. Intenta de nuevo o escríbenos por WhatsApp.",
+      },
+      { status: 503 },
+    )
+  }
 
   // ── R158 · un despacho por cotización ────────────────────────────
   // Comprobado: mandando dos veces el mismo pedido salían DOS envíos en
@@ -157,6 +172,26 @@ export async function POST(request: Request) {
     // Si no se puede comprobar, se sigue · un duplicado es malo, pero
     // dejar sin pedido a un cliente por una lectura fallida es peor.
   }
+
+  // ── R162 · con la cocina cerrada no se toma el pedido ─────────────
+  // Emilio: "cierra la opción de pedir en las horas que estamos
+  // cerrados". Se comprueba ACÁ y no sólo en la pantalla: una
+  // comprobación que vive únicamente en el navegador no es una
+  // comprobación · quien mande el pedido directo se la salta.
+  //
+  // Y sobre todo: aceptar un pedido con el local cerrado significa
+  // despachar un motorizado a una cocina apagada. Eso se paga (contrato
+  // 2.5) y el cliente se queda sin comida.
+  if (!cocinaAbierta()) {
+    return NextResponse.json(
+      {
+        error: "local_cerrado",
+        message: `Estamos cerrados · atendemos ${HORARIO_TEXTO}. ¡Te esperamos!`,
+      },
+      { status: 409 },
+    )
+  }
+
 
 
   // ── R144 · cuánto tiene que cobrar el motorizado en la puerta ──────

@@ -1,33 +1,77 @@
 /**
- * El horario de la cocina · UN solo lugar · R121.
+ * El horario de la cocina · UN solo lugar · R121 · actualizado R162.
  *
- * Habia TRES horarios distintos conviviendo en el sitio, y no coincidian:
- *   - preguntas frecuentes y el panel de contacto · "jueves a lunes, 9 AM a 5 PM"
- *   - el asistente de voz · "estamos abiertos hoy hasta las 22:00"
- *   - la pantalla de reservar hora · 11:00 a 22:00
+ * Emilio, 04-sep: "se trabaja de 7 de la mañana hasta las 3 de la tarde ·
+ * se cierra martes y miércoles · y también cierra la opción de pedir en
+ * las horas que estamos cerrados".
  *
- * El tercero no es un texto: es el que MANDA. Esa pantalla RECHAZA cualquier
- * hora fuera de 11-22. O sea que el sitio le prometia al cliente 9 AM y
- * despues le negaba el pedido, y le decia que cerraba a las 5 PM cuando en
- * realidad seguia tomando pedidos hasta las 10 de la noche.
+ * POR QUÉ ESTE ARCHIVO EXISTE
+ * Había TRES horarios distintos conviviendo y ninguno coincidía. Se
+ * unificaron en R121. Al ir a cambiarlos hoy aparecieron DOS otra vez:
  *
- * Se unifico en lo que el sistema YA HACE (11:00-22:00), no en lo que decia
- * un texto que no controlaba nada. Los dias salen de las preguntas
- * frecuentes, que era el unico lugar donde estaban escritos.
+ *   este archivo            · 11:00 a 22:00   (preguntas frecuentes, voz,
+ *                                              reservar hora)
+ *   cliente.config.ts       ·  9:00 a 17:00   (el cartel abierto/cerrado)
+ *   structured-data.ts      ·  9:00 a 17:00   (lo que ve Google)
  *
- * Si el horario real de la cocina es otro, se cambia ACA y se corrige en
- * todas las pantallas a la vez.
+ * O sea que el cartel decía "abierto" a las 9:30 y las preguntas
+ * frecuentes decían que abría a las 11. Ahora los tres SALEN DE ACÁ ·
+ * cambiar el horario es cambiar dos números en este archivo.
  */
 
-export const COCINA_ABRE_H = 11
-export const COCINA_CIERRA_H = 22
+/** Hora a la que abre la cocina · 7 = 7 de la mañana. */
+export const COCINA_ABRE_H = 7
+/** Hora a la que cierra · 15 = 3 de la tarde. */
+export const COCINA_CIERRA_H = 15
+
+/** Días cerrados · 0=domingo … 6=sábado. Martes y miércoles. */
+export const DIAS_CERRADOS = [2, 3] as const
 
 export const DIAS_ABIERTO = "jueves a lunes"
 export const DIAS_CERRADO = "martes y mi\u00e9rcoles"
 
-/** "11:00" · "22:00" */
+/** "7:00" · "15:00" */
 export const ABRE_TEXTO = `${COCINA_ABRE_H}:00`
 export const CIERRA_TEXTO = `${COCINA_CIERRA_H}:00`
 
-/** Una linea lista para mostrar. */
+/** Una línea lista para mostrar. */
 export const HORARIO_TEXTO = `${DIAS_ABIERTO} de ${ABRE_TEXTO} a ${CIERRA_TEXTO}`
+
+/** La zona horaria del local · Ecuador no cambia de hora en el año. */
+export const ZONA_HORARIA = "America/Guayaquil"
+
+/**
+ * Qué día y hora es AHÍ, en la cocina · no en el reloj de quien mira.
+ * Un cliente puede estar en otro país y el que manda es el local.
+ */
+export function ahoraEnLaCocina(): { dia: number; hora: number; minuto: number } {
+  const partes = new Intl.DateTimeFormat("en-US", {
+    timeZone: ZONA_HORARIA,
+    hour12: false,
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).formatToParts(new Date())
+  const dias: Record<string, number> = {
+    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+  }
+  const w = partes.find((p) => p.type === "weekday")?.value ?? "Mon"
+  return {
+    dia: dias[w] ?? 0,
+    hora: Number(partes.find((p) => p.type === "hour")?.value ?? "0"),
+    minuto: Number(partes.find((p) => p.type === "minute")?.value ?? "0"),
+  }
+}
+
+/**
+ * ¿La cocina está abierta ahora mismo?
+ *
+ * Vive acá y no en un componente a propósito: lo usa la pantalla para no
+ * dejar pedir, Y el servidor para rechazar un pedido que llegue igual.
+ * Una comprobación que sólo vive en la pantalla no es una comprobación.
+ */
+export function cocinaAbierta(): boolean {
+  const { dia, hora } = ahoraEnLaCocina()
+  if ((DIAS_CERRADOS as readonly number[]).includes(dia)) return false
+  return hora >= COCINA_ABRE_H && hora < COCINA_CIERRA_H
+}

@@ -36,9 +36,8 @@ import { saveLastOrder } from "@/lib/v2/use-last-order"
 import MapAddressPicker from "./MapAddressPicker"
 import { PaymentForm } from "./PaymentForm"
 import { track } from "@/lib/v2/posthog-track"
-import {
-  useLoyaltyBalance,
-} from "@/lib/v2/use-loyalty-balance"
+import { useLoyaltyBalance } from "@/lib/v2/use-loyalty-balance"
+import { cocinaAbierta, HORARIO_TEXTO } from "@/lib/horario"
 
 /** WhatsApp brand glyph · simpleicons.org path · pure white fill. */
 function WhatsAppGlyph() {
@@ -410,7 +409,17 @@ function CartFooter() {
     cart.subtotal - cart.discountUsd + shippingPrice + cart.tipUsd
   const showBreakdown =
     cart.discountUsd > 0 || shippingPrice > 0 || cart.tipUsd > 0
-  const buttonsDisabled = cart.lines.length === 0
+  // R162 · con la cocina cerrada no se puede pedir · Emilio, 04-sep.
+  // El estado se recalcula cada minuto para que a las 15:00 en punto la
+  // pantalla se cierre sola sin que nadie recargue.
+  const [abierto, setAbierto] = useState(true)
+  useEffect(() => {
+    const revisar = () => setAbierto(cocinaAbierta())
+    revisar()
+    const id = window.setInterval(revisar, 60_000)
+    return () => window.clearInterval(id)
+  }, [])
+  const buttonsDisabled = cart.lines.length === 0 || !abierto
 
   async function requestQuote(e: React.FormEvent) {
     e.preventDefault()
@@ -801,6 +810,19 @@ function CartFooter() {
           Brand-accurate buttons · WhatsApp #25D366 verde oficial
           con glyph SDR · PedidosYa #F52F41 rojo Pantone 032 C con
           "P" mark blanca. */}
+      {/* R162 · con la cocina cerrada, el cliente se entera ACÁ y no
+          después de llenar dirección, nombre y teléfono para nada. */}
+      {!abierto ? (
+        <div className="mb-2 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2.5 text-center">
+          <p className="text-sm font-semibold text-rose-200">
+            Ahora estamos cerrados
+          </p>
+          <p className="mt-0.5 text-xs text-rose-100/80">
+            Atendemos {HORARIO_TEXTO} · te esperamos
+          </p>
+        </div>
+      ) : null}
+
       {shipping.kind === "none" ? (
         <div className="grid grid-cols-2 gap-2">
           <a

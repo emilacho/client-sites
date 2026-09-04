@@ -18,7 +18,7 @@
 // Antes eran inventados ("encebollado" a $6.50) y pasaban porque el
 // servidor aceptaba cualquier precio que le mandaran · justo el agujero
 // que R154 cierra. Con platos de mentira, estas pruebas no probaban nada.
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 
 const { mockCreateOrder, mockGetDeliveryQuote } = vi.hoisted(() => ({
   mockCreateOrder: vi.fn(),
@@ -69,7 +69,14 @@ const pedido = (extra: Record<string, unknown> = {}) =>
 /** Lo que se le ordenó cobrar al motorizado en la última llamada. */
 const cobrado = () => mockCreateOrder.mock.calls.at(-1)?.[0]?.collectMoneyUsd
 
+// R162 · la ruta ahora rechaza pedidos con la cocina cerrada (7:00-15:00,
+// martes y miércoles cerrado). Sin congelar la hora, estas pruebas pasaban
+// o fallaban según el momento del día en que alguien las corriera · que es
+// justo lo que una prueba no debe hacer. Se fija un lunes a las 10 de la
+// mañana en Guayaquil (UTC-5 todo el año).
 beforeEach(() => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date("2026-09-07T15:00:00Z")) // lunes 10:00 en la cocina
   vi.clearAllMocks()
   mockGetDeliveryQuote.mockResolvedValue({
     quoteToken: "tok-1", priceUsd: 2.5, etaMinutes: 0,
@@ -79,6 +86,8 @@ beforeEach(() => {
     orderId: "py-1", status: "CONFIRMED", priceUsd: 2.5, etaMinutes: 30, raw: {},
   })
 })
+
+afterEach(() => vi.useRealTimers())
 
 describe("cuánto cobra el motorizado en la puerta · R144", () => {
   it("sin cupón · cobra la comida más el envío", async () => {
