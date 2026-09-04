@@ -62,6 +62,9 @@ interface Pedido {
   total_usd: number
   delivery_fee_usd: number
   tip_usd: number
+  /** R160 · el identificador del envío en PedidosYa · si existe, el
+   *  envío YA se creó y su costo ya se debe. */
+  delivery_provider_order_id: string | null
   payment_method: string
   payment_status: string
   vivo: boolean
@@ -344,7 +347,7 @@ export default function PantallaCocina() {
                 : "bg-amber-500 text-slate-900"
             }`}
           >
-            {sonido ? "🔔 Sonido ENCENDIDO" : "🔕 Sonido APAGADO · tocá para encender"}
+            {sonido ? "🔔 Sonido ENCENDIDO" : "🔕 Sonido APAGADO · toca para encender"}
           </button>
         </div>
       </header>
@@ -382,7 +385,7 @@ export default function PantallaCocina() {
       ) : null}
       {!sonido ? (
         <p className="bg-amber-500 px-3 py-2 text-center text-sm font-bold text-slate-900">
-          ⚠ Esta pantalla NO va a avisar cuando entre un pedido · tocá el botón
+          ⚠ Esta pantalla NO va a avisar cuando entre un pedido · toca el botón
           naranja de arriba y vas a escuchar dos tonos.
         </p>
       ) : null}
@@ -466,7 +469,15 @@ export default function PantallaCocina() {
                   </p>
                   {porCancelar === p.id ? (
                     <span className="flex shrink-0 items-center gap-2 text-xs">
-                      <span className="text-slate-300">¿Cancelar?</span>
+                      {/* R160 · el contrato de PedidosYa (2.5) dice que el
+                          envío se paga desde que se crea · cancelar después
+                          detiene al motorizado pero no borra la deuda. Quien
+                          toca el botón tiene que saberlo ANTES de tocarlo. */}
+                      <span className="text-slate-300">
+                        {p.delivery_provider_order_id
+                          ? "¿Cancelar? · el envío ya se cobra"
+                          : "¿Cancelar? · todavía sin costo"}
+                      </span>
                       <button
                         type="button"
                         disabled={ocupado === p.id}
@@ -591,7 +602,7 @@ function FranjaDePlata({ pedido }: { pedido: Pedido }) {
             <span className="font-bold text-slate-100">
               El motorizado le cobra ${total.toFixed(2)} al cliente
             </span>
-            <span className="text-slate-400"> · vos no cobras nada</span>
+            <span className="text-slate-400"> · tú no cobras nada</span>
           </>
         )}
       </p>
@@ -607,7 +618,7 @@ function FranjaDePlata({ pedido }: { pedido: Pedido }) {
         ) : (
           <p className="bg-slate-900 px-3 py-1.5 text-sm text-slate-400">
             Aparte, el cliente le da ${propina.toFixed(2)} de propina en mano ·
-            <span className="text-slate-300"> vos no haces nada</span>
+            <span className="text-slate-300"> tú no haces nada</span>
           </p>
         )
       ) : null}
