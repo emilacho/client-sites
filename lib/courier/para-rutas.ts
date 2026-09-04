@@ -211,3 +211,18 @@ export function parseWebhookEvent(rawBody: string): {
     payload: e.payload,
   }
 }
+
+/**
+ * Cancelar un envío ya despachado · R159.
+ *
+ * El proveedor sólo deja cancelar mientras nadie lo tomó · una vez que
+ * el motorizado salió devuelve error, y el que llama tiene que avisarle
+ * a la cocina que le toca llamar por teléfono.
+ */
+export async function cancelarEnvio(
+  providerOrderId: string,
+  motivo?: string,
+  providerId?: DeliveryProvider,
+): Promise<void> {
+  await proveedor(providerId).cancel(providerOrderId, motivo)
+}

@@ -2,6 +2,8 @@ import type { NextRequest } from "next/server"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { cocinaAutorizada } from "@/lib/cocina-llave"
 import { enviarVentaALoyverse } from "@/lib/loyverse"
+import { cancelarEnvio } from "@/lib/courier/para-rutas"
+import { devolverPerlasDelPedido } from "@/lib/loyalty-server"
 
 /**
  * POST /api/cocina/avanzar · R132
@@ -80,7 +82,7 @@ export async function POST(req: NextRequest) {
   const { data: pedido, error: errorLectura } = await supa
     .from("orders")
     .select(
-      "id, order_code, status, cart_lines, delivery_fee_usd, total_usd, customer_notes, delivered_at",
+      "id, order_code, status, cart_lines, delivery_fee_usd, total_usd, customer_notes, delivered_at, delivery_provider_order_id",
     )
     .eq("id", orderId)
     .maybeSingle()
@@ -121,6 +123,43 @@ export async function POST(req: NextRequest) {
       payload: { desde: pedido.status, pantalla: "cocina" },
     })
     .then(undefined, () => {})
+
+  // ── R159 · cancelar de verdad, no sólo en nuestra pantalla ────────
+  //
+  // Hasta hoy cancelar marcaba el pedido acá y NADA MÁS. El motorizado
+  // seguía yendo igual a la puerta del cliente · y desde R144 con orden
+  // de cobrar. O sea: el local cancelaba, al cliente se le decía que su
+  // pedido estaba anulado, y aparecía alguien a cobrarle comida que
+  // nunca se hizo.
+  //
+  // El proveedor SÍ sabe cancelar -está implementado desde siempre- y no
+  // lo llamaba nadie. Mismo caso que las perlas.
+  const avisos: string[] = []
+  if (paso === "cancelar") {
+    if (pedido.delivery_provider_order_id) {
+      try {
+        await cancelarEnvio(pedido.delivery_provider_order_id, "Cancelado por el local")
+      } catch (err) {
+        // Una vez que el motorizado ya salió, el proveedor no deja
+        // cancelar por sistema. No se traga el error: la cocina TIENE que
+        // enterarse, porque le toca llamar.
+        avisos.push(
+          "El motorizado ya salió · el proveedor no deja cancelarlo por sistema. Llámalo tú.",
+        )
+        console.warn("[cocina] no se pudo cancelar el envío", err)
+      }
+    }
+
+    // Y si había gastado su tesoro en el premio, se le devuelve. No
+    // recibió nada · quedarse con sus perlas sería quedarse con lo que
+    // juntó en $60 de compras.
+    try {
+      const dev = await devolverPerlasDelPedido(pedido.order_code)
+      if (dev) avisos.push(`Se le devolvieron ${dev.devueltas} perlas`)
+    } catch (err) {
+      console.warn("[cocina] no se pudieron devolver las perlas", err)
+    }
+  }
 
   // ── El último paso manda la venta a la contabilidad del local ──────
   let contabilidad: string | null = null
@@ -163,5 +202,12 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return Response.json({ ok: true, estado: destino.estado, contabilidad })
+  // R159 · los avisos van de vuelta a la pantalla. Si el motorizado ya
+  // salió y hay que llamarlo, la cocina TIENE que enterarse en el momento.
+  return Response.json({
+    ok: true,
+    estado: destino.estado,
+    contabilidad,
+    ...(avisos.length ? { avisos } : {}),
+  })
 }
