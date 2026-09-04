@@ -417,7 +417,7 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
           onChange({ street: e.target.value, lat: null, lng: null })
         }}
         placeholder="Calle · número · barrio"
-        className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none"
+        className="min-h-[44px] w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none"
       />
     )
   }
@@ -442,8 +442,8 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
             // Se espera un toque para no matar el click en la lista.
             setTimeout(() => setSugerencias([]), 180)
           }}
-          placeholder="Buscá tu dirección…"
-          className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none"
+          placeholder="Busca tu dirección…"
+          className="min-h-[44px] w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none"
           autoComplete="off"
         />
         {buscando && sugerencias.length === 0 ? (
@@ -521,7 +521,7 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
               {detected.accuracy > 200 && (
                 <p className="mt-1 text-[10px] text-amber-300">
                   ⚠ Ubicación aproximada (±{Math.round(detected.accuracy)}m) ·
-                  arrastrá el pin si está lejos
+                  arrastra el pin si está lejos
                 </p>
               )}
               {detected.accuracy <= 200 && detected.accuracy > 0 && (
@@ -566,7 +566,7 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
         />
       </div>
       <p className="text-[10px] text-slate-500">
-        Buscá arriba · arrastrá el pin · o editá manualmente la dirección final.
+        Busca arriba · arrastra el pin · o escribe la dirección final a mano.
       </p>
     </div>
   )

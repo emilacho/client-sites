@@ -229,7 +229,11 @@ export function CartDrawer({ onOpenMenu }: CartDrawerProps = {}) {
               </div>
             </header>
 
-            <div className="flex-1 overflow-y-auto px-4 py-3">
+            {/* R161 · `min-h-0` NO es decorativo · sin él, este bloque se
+                niega a encogerse por debajo del alto de su contenido y
+                EMPUJA el pie del carrito fuera de la pantalla. Ese era el
+                motivo de que no se pudiera bajar para ver la dirección. */}
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
               {cart.lines.length === 0 ? (
                 <EmptyState
                   onVerMenu={
@@ -693,7 +697,16 @@ function CartFooter() {
   }
 
   return (
-    <footer className="border-t border-slate-800 bg-slate-950/80 px-5 py-3">
+    // R161 · el pie lleva el formulario de dirección, que es el paso más
+    // largo del pedido: buscador, mapa, calle, referencia, nombre,
+    // teléfono, notas y el botón. En un teléfono de 667px no entra, y
+    // antes NO había forma de bajar: el botón "Cotizar envío" quedaba
+    // fuera de la pantalla y no se podía tocar. Comprobado en 375x667 y
+    // en 390x844 · en los dos.
+    <footer
+      className="max-h-[70svh] shrink-0 overflow-y-auto border-t border-slate-800 bg-slate-950/80 px-5 py-3"
+      style={{ overscrollBehavior: "contain" }}
+    >
       <DiscountCodeRow />
 
       {/* Totals · breakdown when discount o envío activos · single
@@ -905,7 +918,10 @@ function CartFooter() {
               podía cotizar. El aparato sabe dónde está sin depender de
               Google, y el que pide comida casi siempre está en la
               dirección de entrega. */}
-          <div className="flex items-center gap-2">
+          {/* R161 · `flex-wrap` · en un teléfono de 360px el botón y el
+              texto no entran en una línea y quedaban apretados uno contra
+              otro. Ahora el texto baja solo cuando no cabe. */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
             <button
               type="button"
               onClick={() => {
@@ -927,7 +943,7 @@ function CartFooter() {
                   { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 },
                 )
               }}
-              className="rounded-full border border-cyan-500/50 px-3 py-1.5 text-xs font-semibold text-cyan-200"
+              className="inline-flex min-h-[44px] items-center rounded-full border border-cyan-500/50 px-4 text-xs font-semibold text-cyan-200 transition-colors hover:bg-cyan-500/10"
             >
               {ubicacion.estado === "buscando" ? "Buscando…" : "📍 Usar mi ubicación"}
             </button>
@@ -954,7 +970,7 @@ function CartFooter() {
             placeholder="Piso · depto · referencia (opcional)"
             value={form.detail}
             onChange={(e) => setForm((f) => ({ ...f, detail: e.target.value }))}
-            className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500"
+            className="min-h-[44px] w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none"
           />
           <div className="grid grid-cols-2 gap-2">
             <input
@@ -962,7 +978,7 @@ function CartFooter() {
               placeholder="Tu nombre"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500"
+              className="min-h-[44px] w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none"
             />
             <input
               required
@@ -970,12 +986,12 @@ function CartFooter() {
               placeholder="Teléfono"
               value={form.phone}
               onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-              className="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500"
+              className="min-h-[44px] w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none"
             />
           </div>
           {/* R96.144 · opt-in promos checkbox · LOPDP granular consent ·
               default unchecked · solo se persiste si el cliente lo marca. */}
-          <label className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-300">
+          <label className="flex min-h-[44px] cursor-pointer items-center gap-2.5 rounded-lg border border-slate-700 bg-slate-950 px-3 text-xs text-slate-300">
             <input
               type="checkbox"
               checked={form.optInPromos}
@@ -1093,7 +1109,7 @@ function CartFooter() {
             value={form.notes}
             onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
             rows={2}
-            className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500"
+            className="min-h-[44px] w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none"
           />
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -1281,7 +1297,7 @@ function EmptyState({ onVerMenu }: { onVerMenu?: () => void }) {
         </button>
       ) : null}
       <p className="mt-1 text-[12px] text-slate-500">
-        ¿Buscás descuento? Toca el{" "}
+        ¿Buscas descuento? Toca el{" "}
         <strong className="text-cyan-300">cofre</strong> en la isla.
       </p>
     </div>
