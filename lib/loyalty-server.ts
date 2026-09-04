@@ -153,3 +153,73 @@ export async function spendPerlas({
 
   return { spent: amount, balance: newPerlas }
 }
+
+/**
+ * Devolver las perlas de un pedido que se cancela · R159.
+ *
+ * Si el cliente gastó su tesoro en el premio y despues el local cancela
+ * el pedido, esas perlas no pueden quedarse en la nada: no recibió el
+ * premio y perdió lo que había juntado en $60 de compras.
+ *
+ * Se apoya en la libreta, que ya registra cada gasto con el código del
+ * pedido. Sin filas de gasto no hay nada que devolver · y si ya se
+ * devolvió antes, no se devuelve dos veces (la razón lleva el código del
+ * pedido y se comprueba antes).
+ */
+export async function devolverPerlasDelPedido(
+  orderCode: string,
+): Promise<{ devueltas: number } | null> {
+  const supa = getSupabaseAdmin()
+  const razon = `refund:order:${orderCode}`
+
+  // ¿Ya se devolvieron? · una cancelación repetida no regala perlas.
+  const { data: yaDevuelto } = await supa
+    .from("loyalty_ledger")
+    .select("id")
+    .eq("client_slug", "naufrago")
+    .eq("reason", razon)
+    .maybeSingle()
+  if (yaDevuelto) return null
+
+  // Lo que se gastó en ESE pedido.
+  const { data: gastos } = await supa
+    .from("loyalty_ledger")
+    .select("phone, delta")
+    .eq("client_slug", "naufrago")
+    .eq("order_code", orderCode)
+    .lt("delta", 0)
+  const filas = (gastos as { phone: string; delta: number }[] | null) ?? []
+  if (filas.length === 0) return null
+
+  const telefono = filas[0].phone
+  const total = filas.reduce((s, f) => s + Math.abs(f.delta), 0)
+  if (total <= 0) return null
+
+  const { data: saldo } = await supa
+    .from("loyalty_balance")
+    .select("perlas, spent_total")
+    .eq("client_slug", "naufrago")
+    .eq("phone", telefono)
+    .maybeSingle()
+
+  await supa
+    .from("loyalty_balance")
+    .update({
+      perlas: (saldo?.perlas ?? 0) + total,
+      // También se descuenta del histórico de gastado · si no, el
+      // "cuánto llevas gastado" contaría un canje que no ocurrió.
+      spent_total: Math.max(0, (saldo?.spent_total ?? 0) - total),
+    })
+    .eq("client_slug", "naufrago")
+    .eq("phone", telefono)
+
+  await supa.from("loyalty_ledger").insert({
+    client_slug: "naufrago",
+    phone: telefono,
+    delta: total,
+    reason: razon,
+    order_code: orderCode,
+  })
+
+  return { devueltas: total }
+}

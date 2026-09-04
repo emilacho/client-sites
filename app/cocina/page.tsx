@@ -246,6 +246,11 @@ export default function PantallaCocina() {
       })
       const data = await res.json()
       if (!data.ok) setError(`No se pudo mover el ticket · ${data.error ?? ""}`)
+      // R159 · si al cancelar el motorizado ya había salido, el proveedor
+      // no lo deja parar por sistema y hay que llamarlo. Eso NO se puede
+      // tragar en silencio: es alguien yendo a cobrar un pedido anulado.
+      else if (Array.isArray(data.avisos) && data.avisos.length > 0)
+        setError(`${pedido.order_code} · ${data.avisos.join(" · ")}`)
       else if (paso === "entregado" && data.contabilidad === "falló")
         setError(
           `${pedido.order_code} se cobró, pero NO entró a la contabilidad. Queda anotado.`,
