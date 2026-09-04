@@ -1,3 +1,5 @@
+import { COCINA_ABRE_H, COCINA_CIERRA_H } from "@/lib/horario"
+
 /**
  * Náufrago landing v1 · sourced from real agent outputs (master workflow
  * execution_id 7196 · 2026-05-16). Files at
@@ -57,16 +59,19 @@ export const cliente: ClienteConfig = {
   whatsappDisplay: "0997744288",
   instagram: "naufrago.ec",
   address: "Avenida 8 NO · Urdenor 1 · Tarqui, Guayaquil",
-  schedule: "Jueves a Lunes · 9:00 AM – 5:00 PM",
-  scheduleShort: "Jue–Lun · 9am–5pm",
+  // R162 · el horario sale de `lib/horario.ts` · acá ya no se escribe a
+  // mano. Antes este bloque decía 9-17 mientras las preguntas frecuentes
+  // decían 11-22: el cartel de "abierto" y el texto se contradecían.
+  schedule: "Jueves a Lunes · 7:00 AM – 3:00 PM",
+  scheduleShort: "Jue–Lun · 7am–3pm",
   businessHours: {
-    0: [9, 17],  // Domingo · 9am-5pm
-    1: [9, 17],  // Lunes · 9am-5pm
-    2: null,     // Martes · cerrado
-    3: null,     // Miércoles · cerrado
-    4: [9, 17],  // Jueves · 9am-5pm
-    5: [9, 17],  // Viernes · 9am-5pm
-    6: [9, 17],  // Sábado · 9am-5pm
+    0: [COCINA_ABRE_H, COCINA_CIERRA_H],  // Domingo
+    1: [COCINA_ABRE_H, COCINA_CIERRA_H],  // Lunes
+    2: null,                              // Martes · cerrado
+    3: null,                              // Miércoles · cerrado
+    4: [COCINA_ABRE_H, COCINA_CIERRA_H],  // Jueves
+    5: [COCINA_ABRE_H, COCINA_CIERRA_H],  // Viernes
+    6: [COCINA_ABRE_H, COCINA_CIERRA_H],  // Sábado
   },
   positioningStatement:
     "Náufrago es la cocina costera de Olón que transforma el marisco más fresco de la zona en ceviches y encebollados con alma de playa — servidos directo a tu puerta de jueves a lunes, para que cada bocado sepa a mar recién salido.",

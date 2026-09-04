@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { cocinaAbierta, HORARIO_TEXTO } from "@/lib/horario"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 import { courierQuoteRequestSchema } from "@/lib/schemas"
 import { getDeliveryQuote } from "@/lib/courier/para-rutas"
@@ -21,6 +22,25 @@ export const runtime = "nodejs"
  * to estimate the rider for a multi-line food order.
  */
 export async function POST(request: Request) {
+  // ── R162 · con la cocina cerrada no se toma el pedido ─────────────
+  // Emilio: "cierra la opción de pedir en las horas que estamos
+  // cerrados". Se comprueba ACÁ y no sólo en la pantalla: una
+  // comprobación que vive únicamente en el navegador no es una
+  // comprobación · quien mande el pedido directo se la salta.
+  //
+  // Y sobre todo: aceptar un pedido con el local cerrado significa
+  // despachar un motorizado a una cocina apagada. Eso se paga (contrato
+  // 2.5) y el cliente se queda sin comida.
+  if (!cocinaAbierta()) {
+    return NextResponse.json(
+      {
+        error: "local_cerrado",
+        message: `Estamos cerrados · atendemos ${HORARIO_TEXTO}. ¡Te esperamos!`,
+      },
+      { status: 409 },
+    )
+  }
+
   // R146 · freno de velocidad. Cada llamada de acá va a PedidosYa de
   // verdad: consume cuota y su propia documentación avisa que bloquean
   // 10 minutos por exceso de llamadas. Sin freno, un guión repitiendo
