@@ -138,13 +138,30 @@ export async function POST(req: NextRequest) {
   if (paso === "cancelar") {
     if (pedido.delivery_provider_order_id) {
       try {
-        await cancelarEnvio(pedido.delivery_provider_order_id, "Cancelado por el local")
+        // Su documentación pide comunicar siempre el motivo · se manda.
+        await cancelarEnvio(
+          pedido.delivery_provider_order_id,
+          "Cancelado por el local desde la pantalla de cocina",
+        )
       } catch (err) {
-        // Una vez que el motorizado ya salió, el proveedor no deja
-        // cancelar por sistema. No se traga el error: la cocina TIENE que
-        // enterarse, porque le toca llamar.
+        // R159.1 · CORREGIDO tras leer las reglas de PedidosYa.
+        //
+        // Su documentación es explícita: sólo se puede cancelar por
+        // sistema un envío en CONFIRMED, o sea creado y todavía sin
+        // repartidor asignado. En IN_PROGRESS, NEAR_PICKUP, PICKED_UP o
+        // NEAR_DROPOFF hay que PEDIRLE LA CANCELACIÓN A ELLOS · no
+        // llamar al motorizado, que fue lo que puse primero y está mal.
+        //
+        // El campo `onlineSupportUrl` que devolvían para eso figura como
+        // DESCONTINUADO en su propia especificación. La vía vigente es
+        // entrar a envios.pedidosya.com, sección "Mis envíos", y usar
+        // "Solicitar ayuda" sobre ese envío.
+        const message = err instanceof Error ? err.message : String(err)
+        const yaEnCurso = /cancel_(404|409)/.test(message)
         avisos.push(
-          "El motorizado ya salió · el proveedor no deja cancelarlo por sistema. Llámalo tú.",
+          yaEnCurso
+            ? `El repartidor ya tomó este envío · PedidosYa no deja cancelarlo por sistema. Entra a envios.pedidosya.com → Mis envíos → Solicitar ayuda, y pide la cancelación del envío ${pedido.delivery_provider_order_id}.`
+            : `No se pudo cancelar el envío en PedidosYa · revísalo en envios.pedidosya.com → Mis envíos (envío ${pedido.delivery_provider_order_id}).`,
         )
         console.warn("[cocina] no se pudo cancelar el envío", err)
       }
