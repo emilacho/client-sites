@@ -165,8 +165,14 @@ export function StoriesModal({ open, onClose, onOpenMenu }: StoriesModalProps) {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: "8%", opacity: 0 }}
           transition={{ duration: 0.28 }}
-          className="relative z-10 w-full max-w-sm overflow-hidden rounded-3xl"
+          /* R161 · antes era `overflow-hidden` y la tarjeta está centrada:
+             lo que no entraba se recortaba y NO había forma de bajar. En
+             pantallas de 375x667 y 360x640 el botón "Siguiente" quedaba
+             fuera y no se podía tocar · comprobado. Ahora la tarjeta se
+             limita al alto de la pantalla y se desplaza. */
+          className="relative z-10 max-h-[92svh] w-full max-w-sm overflow-y-auto rounded-3xl"
           style={{
+            overscrollBehavior: "contain",
             background: `linear-gradient(180deg, ${PURPLE} 0%, #1F1138 100%)`,
             border: `3px solid ${PURPLE}`,
             boxShadow: "0 24px 48px -12px rgba(0,0,0,0.6)",
@@ -285,21 +291,27 @@ export function StoriesModal({ open, onClose, onOpenMenu }: StoriesModalProps) {
               <span className="font-mono">${current.priceUsd.toFixed(2)}</span>
             </button>
 
-            {/* Manual nav · desktop friendly */}
-            <div className="flex items-center justify-between text-white/60">
+            {/* R161 · estas dos medían 16px de alto · un dedo necesita 44.
+                Ahora son botones de verdad, con su área para tocar. */}
+            <div className="flex items-center justify-between gap-2">
               <button
                 type="button"
                 onClick={() => setIdx((i) => Math.max(0, i - 1))}
                 disabled={idx === 0}
-                className="flex items-center gap-1 text-xs disabled:opacity-30"
+                aria-label="Foto anterior"
+                className="flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 text-xs text-white/80 transition-colors hover:bg-white/10 disabled:opacity-25"
               >
                 <ChevronLeft className="h-4 w-4" /> Anterior
               </button>
+              <span className="shrink-0 font-mono text-[11px] tabular-nums text-white/50">
+                {idx + 1}/{DISHES.length}
+              </span>
               <button
                 type="button"
                 onClick={() => setIdx((i) => Math.min(DISHES.length - 1, i + 1))}
                 disabled={idx === DISHES.length - 1}
-                className="flex items-center gap-1 text-xs disabled:opacity-30"
+                aria-label="Foto siguiente"
+                className="flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 text-xs text-white/80 transition-colors hover:bg-white/10 disabled:opacity-25"
               >
                 Siguiente <ChevronRight className="h-4 w-4" />
               </button>
