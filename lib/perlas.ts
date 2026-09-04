@@ -80,3 +80,40 @@ export const CLUB = {
 
 /** El tesoro del socio, en porcentaje, para mostrar. */
 export const PORCENTAJE_SOCIO = Math.round(CLUB.tasaSocio * 100)
+
+/* ─────────────────────────────────────────────────────────────────
+   EL PREMIO DEL TESORO · R157
+
+   Emilio (04-sep): "mejor hagamos que acumulen perlas para ganar un
+   chifle gratis, así no nos complicamos por ahora" · y después "el
+   premio puede ser un chifle, un pan o una cola · cuando toquen el
+   botón de reclamar se les abre un cuadro para seleccionar cualquiera
+   de los 3".
+
+   Vive ACÁ, con el resto de la regla de las perlas, por el mismo motivo
+   que dice el comentario de arriba: había DOS catálogos de premios
+   escritos a mano -uno para el servidor y otro para la pantalla- y
+   nada obligaba a que dijeran lo mismo.
+   ───────────────────────────────────────────────────────────────── */
+
+/** El tope · 240 perlas = $60 gastados, a 4 perlas por dólar. */
+export const PERLAS_PARA_EL_PREMIO = 240
+
+export interface PremioDelTesoro {
+  /** El id de la línea que se agrega al pedido · vale $0. */
+  id: "prize-chifle" | "prize-pan" | "prize-cola"
+  label: string
+  emoji: string
+}
+
+/** Los tres entre los que elige el cliente al reclamar. */
+export const PREMIOS_DEL_TESORO: PremioDelTesoro[] = [
+  { id: "prize-chifle", label: "Chifle", emoji: "🍌" },
+  { id: "prize-pan", label: "Pan", emoji: "🥖" },
+  { id: "prize-cola", label: "Cola", emoji: "🥤" },
+]
+
+/** Cuánto le falta para el premio · 0 si ya lo tiene. */
+export function perlasQueFaltan(perlas: number): number {
+  return Math.max(0, PERLAS_PARA_EL_PREMIO - perlas)
+}

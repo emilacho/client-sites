@@ -37,27 +37,9 @@ export interface LoyaltyReward {
   freeItemId?: string
 }
 
-export const LOYALTY_REWARDS: LoyaltyReward[] = [
-  {
-    id: "perlas-100-5pct",
-    cost: 100,
-    type: "percent_off",
-    label: "5% descuento",
-    description: "Aplicado al subtotal del pedido",
-    percentOff: 5,
-  },
-  // R104.4 · el premio de 300 perlas era "Patacones gratis" y sale de la
-  // lista con el plato. NO se reemplazó por otro plato gratis: cuál y por
-  // cuántas perlas es una decisión de negocio. Hoy quedan 100 y 600.
-  {
-    id: "perlas-600-15pct",
-    cost: 600,
-    type: "percent_off",
-    label: "15% descuento",
-    description: "Para que el tesoro pese menos · aplicado al subtotal",
-    percentOff: 15,
-  },
-]
+// R157 · el premio vive en `lib/perlas.ts` · un solo lugar para los dos
+// lados. Acá sólo se re-exporta para no romper a quien ya lo importaba.
+export { PERLAS_PARA_EL_PREMIO, PREMIOS_DEL_TESORO } from "@/lib/perlas"
 
 
 export function perlasToUsd(perlas: number): number {

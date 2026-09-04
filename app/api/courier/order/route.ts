@@ -6,6 +6,8 @@ import { createOrder, getDeliveryQuote } from "@/lib/courier/para-rutas"
 import { computeDiscount } from "@/lib/checkout/pricing"
 import { revisarPrecios } from "@/lib/checkout/precio-real"
 import { tieneDerechoAlCupon } from "@/lib/checkout/cupon"
+import { autorizarPremio } from "@/lib/checkout/premio"
+import { generateOrderCode } from "@/lib/checkout/order-code"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { telefonoCanonico } from "@/lib/telefono"
 import { cliente } from "@/cliente.config"
@@ -131,7 +133,29 @@ export async function POST(request: Request) {
   // quien compra. Se comprobó contra el sitio publicado: 10 encebollados
   // a $0.01 daban un subtotal de $0.10 en vez de $40, y esa es la cifra
   // que se le ordena cobrar al motorizado.
-  const revision = revisarPrecios(lines)
+  // R157 · el premio del tesoro. Se autoriza ANTES de revisar precios
+  // porque de eso depende si la línea del regalo se acepta. Si es por
+  // perlas, acá se le descuentan · y se hace después de tener el código
+  // del pedido para que quede anotado contra ese pedido.
+  const orderCode = generateOrderCode()
+  const veredictoPremio = await autorizarPremio(
+    parsed.data.premio ?? null,
+    telefono,
+    orderCode,
+  )
+  if (parsed.data.premio && !veredictoPremio.aceptado) {
+    return NextResponse.json(
+      {
+        error: "premio_no_valido",
+        message:
+          "No pudimos confirmar tu premio. Vuelve a abrir el cofre o revisa tu tesoro.",
+        detail: veredictoPremio.motivo,
+      },
+      { status: 400 },
+    )
+  }
+
+  const revision = revisarPrecios(lines, veredictoPremio.idAutorizado)
   if (!revision.ok) {
     return NextResponse.json(
       {
@@ -265,8 +289,8 @@ export async function POST(request: Request) {
     Math.max(0, cartTotalUsd - descuento.amountUsd + deliveryFeeUsd).toFixed(2),
   )
   const etaMinutes = courierResult.etaMinutes ?? null
-  const { generateOrderCode } = await import("@/lib/checkout/order-code")
-  const orderCode = generateOrderCode()
+  // R157 · el código ya se generó arriba · lo necesita el descuento de
+  // perlas del premio, para quedar anotado contra este pedido.
   let naufragoOrderId: string | null = null
   try {
     const { data: inserted } = await supabase
