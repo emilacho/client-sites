@@ -119,6 +119,46 @@ export async function POST(request: Request) {
   }
   const customer = { ...parsed.data.customer, phone: telefono }
 
+  const supabase = getSupabaseAdmin()
+
+  // ── R158 · un despacho por cotización ────────────────────────────
+  // Comprobado: mandando dos veces el mismo pedido salían DOS envíos en
+  // PedidosYa, con dos motorizados y dos cobros. No hace falta mala
+  // intención · alcanza con una conexión de celular que se corta después
+  // de que el servidor ya recibió el pedido: el cliente cree que no pasó
+  // nada, toca de nuevo, y salen dos.
+  //
+  // Antes de despachar se mira si esa cotización ya tiene envío. Si lo
+  // tiene, se devuelve el que ya existe en vez de crear otro · para el
+  // cliente es el mismo resultado y no se despacha a nadie de más.
+  try {
+    const { data: yaDespachado } = await supabase
+      .from("courier_orders")
+      .select("pedidosya_order_id, tracking_url, status")
+      .eq("quote_token", quoteToken)
+      .maybeSingle()
+    if (yaDespachado) {
+      const { data: pedidoPrevio } = await supabase
+        .from("orders")
+        .select("id, order_code")
+        .eq("delivery_provider_order_id", yaDespachado.pedidosya_order_id)
+        .maybeSingle()
+      return NextResponse.json({
+        ok: true,
+        repetido: true,
+        orderId: yaDespachado.pedidosya_order_id,
+        orderCode: (pedidoPrevio as { order_code?: string } | null)?.order_code ?? null,
+        naufragoOrderId: (pedidoPrevio as { id?: string } | null)?.id ?? null,
+        trackingUrl: yaDespachado.tracking_url ?? undefined,
+        status: yaDespachado.status,
+      })
+    }
+  } catch {
+    // Si no se puede comprobar, se sigue · un duplicado es malo, pero
+    // dejar sin pedido a un cliente por una lectura fallida es peor.
+  }
+
+
   // ── R144 · cuánto tiene que cobrar el motorizado en la puerta ──────
   // La comida y el descuento los recalcula el servidor · el navegador
   // es sólo pantalla. El envío sale de una cotización propia hecha
@@ -241,7 +281,6 @@ export async function POST(request: Request) {
   // del cliente. Antes apuntaba a `public` (legado R74) · esa tabla nunca
   // llegó a crearse, y de haberse creado ahí habría quedado publicada
   // hacia afuera con nombre, teléfono y dirección del cliente adentro.
-  const supabase = getSupabaseAdmin()
   try {
     await supabase
       .from("courier_orders")
