@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await supa
     .from("orders")
     .select(
-      "id, order_code, status, created_at, accepted_at, ready_at, delivered_at, customer_name, customer_phone, dropoff_address, dropoff_detail, cart_lines, customer_notes, subtotal_usd, discount_usd, delivery_fee_usd, total_usd, tip_usd, payment_method, payment_status",
+      "id, order_code, status, created_at, accepted_at, ready_at, delivered_at, customer_name, customer_phone, dropoff_address, dropoff_detail, cart_lines, customer_notes, subtotal_usd, discount_usd, delivery_fee_usd, total_usd, tip_usd, payment_method, payment_status, delivery_provider_order_id",
     )
     .eq("client_slug", CLIENT_SLUG)
     .gte("created_at", desde)
