@@ -587,15 +587,21 @@ export default function PantallaCocina() {
      · el pedido  · lo cobra el MOTORIZADO en la puerta, no el local
      · la propina · es del motorizado, nunca del local
 
-   Y la propina llega de dos maneras segun como se pago:
-     · en efectivo    · el cliente se la da en mano · el local NO hace nada
-     · por internet   · ya se le cobro al cliente · el local se la ENTREGA
-                        en efectivo cuando el motorizado pasa a retirar
+   R167 · LA PROPINA NUNCA SE COBRA POR INTERNET · decision de Emilio
+   del 08-sep. El cliente la elige al pedir, pero se la entrega al
+   motorizado EN LA MANO, pague como pague. Si la cobraramos con la
+   tarjeta entraria a la cuenta del local y despues habria que
+   hacersela llegar al motorizado · le quedariamos debiendo.
 
-   La segunda frase se decide por si la plata ENTRO de verdad
-   (payment_status), NO por lo que el cliente eligio en la pantalla. Si
-   se decidiera por lo elegido, un pedido marcado "tarjeta" que nunca se
-   cobro haria que el local regale la propina de su bolsillo.
+   Por eso el local NUNCA entrega plata de propina. Antes esta franja
+   decia que si -"dale $X al motorizado, ya se la cobramos"- y con la
+   decision nueva eso era regalar plata del local: el cobro con tarjeta
+   NO incluye la propina. Se corrigio junto con la decision.
+
+   La linea del pedido si depende de si la plata ENTRO de verdad
+   (payment_status), NO de lo que el cliente eligio en la pantalla. Si
+   dependiera de lo elegido, un pedido marcado "tarjeta" que nunca se
+   cobro saldria sin que nadie cobre nada.
    ───────────────────────────────────────────────────────────────── */
 function FranjaDePlata({ pedido }: { pedido: Pedido }) {
   const propina = Number(pedido.tip_usd ?? 0)
@@ -621,19 +627,12 @@ function FranjaDePlata({ pedido }: { pedido: Pedido }) {
       </p>
 
       {propina > 0 ? (
-        yaPagado ? (
-          /* La unica linea de esta pantalla que pide una ACCION con
-             plata en la mano. Va en ambar y con verbo al frente. */
-          <p className="bg-amber-500 px-3 py-2 text-sm font-bold text-slate-950">
-            Dale ${propina.toFixed(2)} en efectivo al motorizado · es su
-            propina, ya se la cobramos al cliente
-          </p>
-        ) : (
-          <p className="bg-slate-900 px-3 py-1.5 text-sm text-slate-400">
-            Aparte, el cliente le da ${propina.toFixed(2)} de propina en mano ·
-            <span className="text-slate-300"> tú no haces nada</span>
-          </p>
-        )
+        /* R167 · una sola frase, pague como pague · el local nunca pone
+           plata de su bolsillo para la propina. */
+        <p className="bg-slate-900 px-3 py-1.5 text-sm text-slate-400">
+          El cliente le da ${propina.toFixed(2)} de propina al motorizado en
+          mano ·<span className="text-slate-300"> tú no haces nada</span>
+        </p>
       ) : null}
     </div>
   )
