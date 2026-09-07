@@ -21,6 +21,7 @@
  */
 import Link from "next/link"
 import { confirmarCobro } from "@/lib/pagos/payphone"
+import { despacharPedidoPagado } from "@/lib/checkout/despachar-pagado"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { cliente } from "@/cliente.config"
 
@@ -126,6 +127,30 @@ export default async function ConfirmacionDePago({ searchParams }: Props) {
     marca: r.marcaTarjeta,
     transactionId: r.transactionId,
   })
+
+  // R164 · RECIÉN ACÁ SALE EL PEDIDO A LA CALLE.
+  // Con tarjeta el pedido quedó reservado y sin despachar hasta que la
+  // plata entrara. Este es ese momento. Si el despacho falla igual, la
+  // plata ya entró: el pedido queda marcado para la cocina y al cliente
+  // se le dice la verdad · que lo estamos coordinando a mano.
+  const salida = await despacharPedidoPagado(clientTransactionId)
+
+  if (!salida.ok) {
+    return (
+      <Marco
+        emoji="🌊"
+        titulo="¡Pago recibido!"
+        texto="Tu pago entró bien. Estamos coordinando el motorizado a mano y te escribimos por WhatsApp en minutos · no hace falta que hagas nada."
+        codigo={clientTransactionId}
+        monto={r.montoCentavos / 100}
+        tarjeta={
+          r.marcaTarjeta && r.ultimosDigitos
+            ? `${r.marcaTarjeta} ${r.ultimosDigitos}`
+            : undefined
+        }
+      />
+    )
+  }
 
   return (
     <Marco

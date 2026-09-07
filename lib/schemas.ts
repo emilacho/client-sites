@@ -84,6 +84,12 @@ export const courierOrderRequestSchema = z.object({
    *  comprueba que se lo haya ganado -girando la ruleta o llegando al
    *  tope de perlas- antes de aceptarlo. Sin esto, la línea del regalo
    *  se rechaza. */
+  /** R164 · pago con tarjeta. En true el pedido queda RESERVADO: se
+   *  revisan precios, cupón, premio y horario igual que siempre, se
+   *  guarda la ficha · pero NO se manda al motorizado. El despacho
+   *  ocurre recién cuando PayPhone confirma el cobro. Así la comida
+   *  nunca sale antes de que la plata entre. */
+  soloReservar: z.boolean().optional(),
   premio: z
     .object({
       id: z.string().min(1).max(60),

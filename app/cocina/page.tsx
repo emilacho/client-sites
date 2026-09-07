@@ -68,6 +68,8 @@ interface Pedido {
   payment_method: string
   payment_status: string
   vivo: boolean
+  /** R164 · el cliente YA pagó pero el motorizado no se pudo pedir. */
+  atencion?: boolean
   contabilidad: "ok" | "falló" | null
 }
 
@@ -401,6 +403,17 @@ export default function PantallaCocina() {
             const min = minutosDesde(p.created_at)
             return (
               <article key={p.id} className="overflow-hidden rounded bg-slate-800 shadow-lg">
+                {/* R164 · pagado y sin motorizado. Es el único caso en
+                    que hay plata cobrada y nada en camino · va arriba de
+                    todo y en rojo para que no se pase por alto. */}
+                {p.atencion ? (
+                  <div className="bg-red-600 px-3 py-2 text-sm font-bold leading-snug text-white">
+                    ⚠️ PAGADO · falta pedir el motorizado a mano
+                    <span className="block text-xs font-normal opacity-90">
+                      Cocina el pedido y pide el envío desde envios.pedidosya.com
+                    </span>
+                  </div>
+                ) : null}
                 {/* CABECERA · se toca para dar el ticket por terminado */}
                 <button
                   type="button"

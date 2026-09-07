@@ -41,37 +41,12 @@ type PaymentMethod =
 
 type CardBrand = "visa" | "mastercard" | "amex" | "discover" | "unknown"
 
-interface SavedCard {
-  id: string
-  brand: CardBrand
-  last4: string
-  expiry: string
-  holder: string
-}
-
 const LS_SAVED_CARDS = "naufrago_saved_cards"
 const LS_EMAIL_RECEIPT = "naufrago_email_receipt"
 
-// ─── Helpers ────────────────────────────────────────────────────────
-function detectCardBrand(raw: string): CardBrand {
-  const digits = raw.replace(/\D/g, "")
-  if (/^4/.test(digits)) return "visa"
-  if (/^(5[1-5]|2[2-7])/.test(digits)) return "mastercard"
-  if (/^3[47]/.test(digits)) return "amex"
-  if (/^(6011|65|64[4-9])/.test(digits)) return "discover"
-  return "unknown"
-}
-
-function formatCard(raw: string): string {
-  const digits = raw.replace(/\D/g, "").slice(0, 16)
-  return digits.replace(/(.{4})/g, "$1 ").trim()
-}
-
-function formatExpiry(raw: string): string {
-  const digits = raw.replace(/\D/g, "").slice(0, 4)
-  if (digits.length <= 2) return digits
-  return digits.slice(0, 2) + "/" + digits.slice(2)
-}
+// R164 · acá vivían el detector de marca de tarjeta y los que le daban
+// formato al número y a la fecha mientras el cliente escribía. No hacen
+// falta: esas casillas ya no existen · las pide PayPhone.
 
 // ─── Brand logos SVG · inline · brand-accurate ──────────────────────
 function BrandChip({ brand, small }: { brand: CardBrand; small?: boolean }) {
@@ -572,184 +547,6 @@ function TipChipsInline({
   )
 }
 
-// ─── Card form sub-component ────────────────────────────────────────
-function CardForm({
-  savedCards,
-  selectedSavedCardId,
-  onSelectSavedCard,
-  onUseNewCard,
-  cardNumber,
-  setCardNumber,
-  expiry,
-  setExpiry,
-  cvv,
-  setCvv,
-  holder,
-  setHolder,
-  saveCard,
-  setSaveCard,
-}: {
-  savedCards: SavedCard[]
-  selectedSavedCardId: string | null
-  onSelectSavedCard: (id: string) => void
-  onUseNewCard: () => void
-  cardNumber: string
-  setCardNumber: (v: string) => void
-  expiry: string
-  setExpiry: (v: string) => void
-  cvv: string
-  setCvv: (v: string) => void
-  holder: string
-  setHolder: (v: string) => void
-  saveCard: boolean
-  setSaveCard: (v: boolean) => void
-}) {
-  const brand = detectCardBrand(cardNumber)
-  const cvvLen = brand === "amex" ? 4 : 3
-  const usingNewCard = !selectedSavedCardId
-
-  return (
-    <div className="space-y-2">
-      {/* Saved cards list */}
-      {savedCards.length > 0 ? (
-        <div className="space-y-1.5">
-          <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-slate-400">
-            Tarjetas guardadas
-          </span>
-          {savedCards.map((sc) => {
-            const isSel = sc.id === selectedSavedCardId
-            return (
-              <button
-                key={sc.id}
-                type="button"
-                onClick={() => onSelectSavedCard(sc.id)}
-                className={[
-                  "flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition-all",
-                  isSel
-                    ? "border-cyan-400 bg-cyan-500/10"
-                    : "border-slate-700 bg-slate-900 hover:border-slate-600",
-                ].join(" ")}
-              >
-                <div className="flex items-center gap-2">
-                  <BrandChip brand={sc.brand} small />
-                  <span className="font-mono text-xs text-slate-200">
-                    ····{sc.last4}
-                  </span>
-                  <span className="text-[10px] text-slate-500">
-                    {sc.expiry}
-                  </span>
-                </div>
-                <span
-                  className={[
-                    "flex h-4 w-4 items-center justify-center rounded-full border-2",
-                    isSel ? "border-cyan-400 bg-cyan-400" : "border-slate-600",
-                  ].join(" ")}
-                >
-                  {isSel ? <span className="h-1.5 w-1.5 rounded-full bg-slate-950" /> : null}
-                </span>
-              </button>
-            )
-          })}
-          <button
-            type="button"
-            onClick={onUseNewCard}
-            className={[
-              "flex w-full items-center justify-center gap-1 rounded-lg border-2 border-dashed px-3 py-2 text-xs font-semibold transition-all",
-              usingNewCard
-                ? "border-cyan-400 bg-cyan-500/10 text-cyan-200"
-                : "border-slate-700 text-slate-400 hover:border-slate-600",
-            ].join(" ")}
-          >
-            + Usar otra tarjeta
-          </button>
-        </div>
-      ) : null}
-
-      {/* New card form · solo si NO hay saved seleccionada */}
-      {usingNewCard ? (
-        <div className="space-y-2 rounded-xl border-2 border-slate-700 bg-slate-900/40 px-3 py-2.5">
-          <label className="block">
-            <span className="mb-1 block text-[10px] font-medium text-slate-400">
-              Número de tarjeta
-            </span>
-            <div className="relative">
-              <input
-                type="text"
-                value={cardNumber}
-                onChange={(e) => setCardNumber(formatCard(e.target.value))}
-                placeholder="1234 5678 9012 3456"
-                className="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-2 pr-14 font-mono text-sm tracking-wider text-slate-100 placeholder:text-slate-600 focus:border-cyan-500 focus:outline-none"
-                inputMode="numeric"
-                autoComplete="cc-number"
-              />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                <BrandChip brand={brand} />
-              </div>
-            </div>
-          </label>
-
-          <div className="grid grid-cols-2 gap-2">
-            <label className="block">
-              <span className="mb-1 block text-[10px] font-medium text-slate-400">
-                Vencimiento
-              </span>
-              <input
-                type="text"
-                value={expiry}
-                onChange={(e) => setExpiry(formatExpiry(e.target.value))}
-                placeholder="MM/AA"
-                className="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-2 font-mono text-sm text-slate-100 placeholder:text-slate-600 focus:border-cyan-500 focus:outline-none"
-                inputMode="numeric"
-                autoComplete="cc-exp"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-[10px] font-medium text-slate-400">
-                CVV
-              </span>
-              <input
-                type="text"
-                value={cvv}
-                onChange={(e) =>
-                  setCvv(e.target.value.replace(/\D/g, "").slice(0, cvvLen))
-                }
-                placeholder={brand === "amex" ? "4 dígitos" : "3 dígitos"}
-                className="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-2 font-mono text-sm text-slate-100 placeholder:text-slate-600 focus:border-cyan-500 focus:outline-none"
-                inputMode="numeric"
-                autoComplete="cc-csc"
-                maxLength={cvvLen}
-              />
-            </label>
-          </div>
-
-          <label className="block">
-            <span className="mb-1 block text-[10px] font-medium text-slate-400">
-              Titular
-            </span>
-            <input
-              type="text"
-              value={holder}
-              onChange={(e) => setHolder(e.target.value.toUpperCase())}
-              placeholder="COMO APARECE EN LA TARJETA"
-              className="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-2 text-sm tracking-wide text-slate-100 placeholder:text-slate-600 focus:border-cyan-500 focus:outline-none"
-              autoComplete="cc-name"
-            />
-          </label>
-
-          <label className="flex cursor-pointer items-center gap-2 text-[11px] text-slate-300">
-            <input
-              type="checkbox"
-              checked={saveCard}
-              onChange={(e) => setSaveCard(e.target.checked)}
-              className="h-3.5 w-3.5 accent-cyan-400"
-            />
-            <span>Guardar esta tarjeta para próximos pedidos</span>
-          </label>
-        </div>
-      ) : null}
-    </div>
-  )
-}
 
 // ─── DeUna form (mock) ──────────────────────────────────────────────
 function DeUnaForm({
@@ -817,97 +614,6 @@ function DeUnaForm({
   )
 }
 
-// ─── PayPhone form (mock) ───────────────────────────────────────────
-function PayPhoneForm({
-  step,
-  phone,
-  setPhone,
-  otp,
-  setOtp,
-  onSendOtp,
-  onConfirmOtp,
-}: {
-  step: "phone" | "otp" | "ready"
-  phone: string
-  setPhone: (v: string) => void
-  otp: string
-  setOtp: (v: string) => void
-  onSendOtp: () => void
-  onConfirmOtp: () => void
-}) {
-  return (
-    <div
-      className="space-y-2.5 rounded-xl border-2 px-3 py-3"
-      style={{
-        background: "linear-gradient(180deg, rgba(0,186,242,0.10) 0%, rgba(0,124,160,0.20) 100%)",
-        borderColor: "rgba(0,186,242,0.40)",
-      }}
-    >
-      {step === "phone" ? (
-        <>
-          <label className="block">
-            <span className="mb-1 block text-[10px] font-medium text-slate-400">
-              Número PayPhone (registrado en la billetera)
-            </span>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-              placeholder="099XXXXXXX"
-              className="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-2 font-mono text-sm text-slate-100 placeholder:text-slate-600 focus:border-cyan-500 focus:outline-none"
-              inputMode="tel"
-              maxLength={10}
-            />
-          </label>
-          <button
-            type="button"
-            onClick={onSendOtp}
-            disabled={phone.length < 9}
-            className="w-full rounded-full bg-sky-500 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
-          >
-            Enviar código por SMS
-          </button>
-        </>
-      ) : step === "otp" ? (
-        <>
-          <p className="text-[11px] text-slate-300">
-            Código enviado al <span className="font-mono">{phone}</span> ·
-            ingresá los 6 dígitos
-          </p>
-          <input
-            type="text"
-            value={otp}
-            onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            placeholder="000000"
-            className="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-2 text-center font-mono text-lg tracking-[0.4em] text-slate-100 placeholder:text-slate-600 focus:border-cyan-500 focus:outline-none"
-            inputMode="numeric"
-            maxLength={6}
-          />
-          <button
-            type="button"
-            onClick={onConfirmOtp}
-            disabled={otp.length < 4}
-            className="w-full rounded-full bg-sky-500 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
-          >
-            Validar código
-          </button>
-        </>
-      ) : (
-        <div className="space-y-1 text-center">
-          <div className="flex justify-center">
-            <CheckIcon size={36} />
-          </div>
-          <p className="mt-1 text-sm font-semibold text-emerald-300">
-            PayPhone confirmado
-          </p>
-          <p className="text-[11px] text-slate-400">
-            Procesando · click Pagar para finalizar
-          </p>
-        </div>
-      )}
-    </div>
-  )
-}
 
 // ─── Apple Pay / Google Pay form · botones oficiales styled ─────────
 // Hoy click → mock validating · cuando Kushki esté wireado · el click
@@ -995,6 +701,31 @@ function CashForm({ totalUsd }: { totalUsd: number }) {
   )
 }
 
+/**
+ * R164 · lo que se le muestra al cliente cuando elige tarjeta.
+ *
+ * Es a propósito corto: la promesa (pago protegido), qué va a pasar
+ * (se abre el formulario de PayPhone) y cuánto. Nada más · cada casilla
+ * de más en esta pantalla es un cliente menos que termina el pedido.
+ */
+function PagoSeguroAviso({ totalUsd }: { totalUsd: number }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3.5">
+      <p className="text-sm font-semibold text-white">Pago protegido</p>
+      <p className="mt-1 text-xs leading-relaxed text-white/60">
+        Al continuar se abre el formulario seguro de PayPhone para que
+        ingreses tu tarjeta. Tus datos viajan directo a ellos · nosotros
+        nunca los vemos ni los guardamos.
+      </p>
+      <p className="mt-2.5 text-xs text-white/50">
+        Se cobrará{" "}
+        <span className="font-semibold text-white">${totalUsd.toFixed(2)}</span>{" "}
+        y tu pedido sale a la cocina apenas se apruebe.
+      </p>
+    </div>
+  )
+}
+
 // ─── Componente principal ──────────────────────────────────────────
 export interface PaymentFormProps {
   priceUsd: number
@@ -1038,26 +769,15 @@ export function PaymentForm({
     }
   }, [listaFirma, method])
 
-  // ── Card state ────────────────────────────────────────────────────
-  const [savedCards, setSavedCards] = useState<SavedCard[]>([])
-  const [selectedSavedCardId, setSelectedSavedCardId] = useState<string | null>(
-    null,
-  )
-  const [cardNumber, setCardNumber] = useState("")
-  const [expiry, setExpiry] = useState("")
-  const [cvv, setCvv] = useState("")
-  const [holder, setHolder] = useState("")
-  const [saveCard, setSaveCard] = useState(false)
+  // R164 · acá vivían el número de tarjeta, la fecha, el código de
+  // seguridad, el nombre del titular, las tarjetas guardadas y un
+  // código de verificación de PayPhone. Ninguno cobraba nada · y el
+  // navegador del cliente terminaba guardando los últimos dígitos de
+  // su tarjeta sin necesidad. Todo eso ahora lo pide PayPhone en su
+  // propio formulario.
 
   // ── DeUna state ───────────────────────────────────────────────────
   const [deunaConfirmed, setDeunaConfirmed] = useState(false)
-
-  // ── PayPhone state ────────────────────────────────────────────────
-  const [payphoneStep, setPayphoneStep] = useState<"phone" | "otp" | "ready">(
-    "phone",
-  )
-  const [payphonePhone, setPayphonePhone] = useState("")
-  const [payphoneOtp, setPayphoneOtp] = useState("")
 
   // ── Apple Pay / Google Pay state ──────────────────────────────────
   const [walletValidating, setWalletValidating] = useState(false)
@@ -1072,53 +792,33 @@ export function PaymentForm({
   // ── Submit state ──────────────────────────────────────────────────
   const [submitting, setSubmitting] = useState(false)
 
-  // Load saved cards + cached email on mount
+  // R164 · se leía el correo guardado y TAMBIÉN las tarjetas guardadas
+  // en este navegador. Lo segundo se fue: no se guarda ninguna tarjeta.
   useEffect(() => {
     try {
-      const stored = window.localStorage.getItem(LS_SAVED_CARDS)
-      if (stored) {
-        const parsed = JSON.parse(stored) as SavedCard[]
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setSavedCards(parsed)
-          setSelectedSavedCardId(parsed[0].id)
-        }
-      }
       const email = window.localStorage.getItem(LS_EMAIL_RECEIPT)
-      if (email) {
-        setEmailReceiptAddress(email)
-      }
+      if (email) setEmailReceiptAddress(email)
+      // Limpieza · si un cliente viejo tiene tarjetas guardadas de la
+      // versión anterior, se le borran de su navegador al pasar por acá.
+      window.localStorage.removeItem(LS_SAVED_CARDS)
     } catch {
       // ignore
     }
   }, [])
 
-  // ── Validation per method ─────────────────────────────────────────
-  const cardValidNew =
-    cardNumber.replace(/\s/g, "").length >= 12 &&
-    /^\d{2}\/\d{2}$/.test(expiry) &&
-    cvv.length >= 3 &&
-    holder.trim().length >= 2
-  const cardValid = method === "card" && (selectedSavedCardId !== null || cardValidNew)
-
   const canPay =
     method === "cash" ||
-    cardValid ||
+    // R164 · la tarjeta ya NO se escribe acá. Los datos se cargan en el
+    // formulario de PayPhone, que se abre en el paso siguiente · esta
+    // pantalla sólo elige la forma de pago. Por eso no hay nada que
+    // validar: el botón está listo desde el principio.
+    method === "card" ||
+    method === "payphone" ||
     (method === "deuna" && deunaConfirmed) ||
-    (method === "payphone" && payphoneStep === "ready") ||
     (method === "apple_pay" && walletConfirmed === "apple") ||
     (method === "google_pay" && walletConfirmed === "google")
 
   // ── Handlers ──────────────────────────────────────────────────────
-  function handleSendPayphoneOtp() {
-    if (payphonePhone.length < 9) return
-    // Mock · en real wire enviaría OTP vía PayPhone API
-    setPayphoneStep("otp")
-  }
-
-  function handleConfirmPayphoneOtp() {
-    if (payphoneOtp.length < 4) return
-    setPayphoneStep("ready")
-  }
 
   // Apple/Google Pay trigger · mock por ahora · cuando esté Kushki
   // wireado invoca el SDK real del wallet (ApplePaySession / google.payments)
@@ -1134,23 +834,6 @@ export function PaymentForm({
   function handlePay() {
     if (submitting || !canPay) return
     setSubmitting(true)
-
-    // Save card si checkbox + new card
-    if (method === "card" && saveCard && !selectedSavedCardId) {
-      const newCard: SavedCard = {
-        id: `card-${Date.now()}`,
-        brand: detectCardBrand(cardNumber),
-        last4: cardNumber.replace(/\D/g, "").slice(-4),
-        expiry,
-        holder,
-      }
-      try {
-        const next = [...savedCards, newCard].slice(0, 3) // max 3 saved
-        window.localStorage.setItem(LS_SAVED_CARDS, JSON.stringify(next))
-      } catch {
-        // ignore quota
-      }
-    }
 
     // Save email receipt preference
     if (emailReceipt && emailReceiptAddress) {
@@ -1262,39 +945,23 @@ export function PaymentForm({
       </div>
 
       {/* Form por método */}
-      {method === "card" ? (
-        <CardForm
-          savedCards={savedCards}
-          selectedSavedCardId={selectedSavedCardId}
-          onSelectSavedCard={(id) => setSelectedSavedCardId(id)}
-          onUseNewCard={() => setSelectedSavedCardId(null)}
-          cardNumber={cardNumber}
-          setCardNumber={setCardNumber}
-          expiry={expiry}
-          setExpiry={setExpiry}
-          cvv={cvv}
-          setCvv={setCvv}
-          holder={holder}
-          setHolder={setHolder}
-          saveCard={saveCard}
-          setSaveCard={setSaveCard}
-        />
+      {method === "card" || method === "payphone" ? (
+        // R164 · acá NO se piden datos de tarjeta.
+        //
+        // Antes esta pantalla tenía casillas para el número, la fecha y
+        // el código de seguridad · y no cobraban nada: eran de adorno.
+        // Peor: los guardaba en el propio navegador del cliente.
+        //
+        // Ahora los datos se escriben en el formulario de PayPhone, que
+        // es de ellos y está certificado para eso. Nosotros nunca vemos
+        // ni guardamos un número de tarjeta.
+        <PagoSeguroAviso totalUsd={totalUsd} />
       ) : method === "cash" ? (
         <CashForm totalUsd={totalUsd} />
       ) : method === "deuna" ? (
         <DeUnaForm
           confirmed={deunaConfirmed}
           onConfirm={() => setDeunaConfirmed(true)}
-        />
-      ) : method === "payphone" ? (
-        <PayPhoneForm
-          step={payphoneStep}
-          phone={payphonePhone}
-          setPhone={setPayphonePhone}
-          otp={payphoneOtp}
-          setOtp={setPayphoneOtp}
-          onSendOtp={handleSendPayphoneOtp}
-          onConfirmOtp={handleConfirmPayphoneOtp}
         />
       ) : isDigitalWallet ? (
         <DigitalWalletForm
