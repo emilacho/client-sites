@@ -41,8 +41,28 @@ export interface CobroPayphone {
   mensaje?: string
 }
 
+/** Hay credenciales cargadas · el cobro es TÉCNICAMENTE posible. */
 export function payphoneConfigurado(): boolean {
   return Boolean(process.env.PAYPHONE_TOKEN && process.env.PAYPHONE_STORE_ID)
+}
+
+/**
+ * R165 · el interruptor. Tener las credenciales NO enciende la tarjeta.
+ *
+ * POR QUÉ HACEN FALTA DOS COSAS Y NO UNA
+ * Cargar las llaves y abrir la caja son decisiones distintas y pasan en
+ * momentos distintos. Las llaves las carga quien tiene acceso a la
+ * plataforma; encender la tarjeta para todos los clientes se decide
+ * DESPUÉS de haber probado un cobro de punta a punta. Si una sola
+ * variable hiciera las dos cosas, cargar las llaves sería lo mismo que
+ * abrir la caja · y quedaría abierta antes de que nadie comprobara que
+ * cobra.
+ *
+ * Apagarlo es además el freno de mano: si algo sale mal con los cobros,
+ * se pone en "0" y los clientes vuelven a efectivo sin publicar nada.
+ */
+export function payphoneEncendido(): boolean {
+  return payphoneConfigurado() && process.env.PAYPHONE_ACTIVO === "1"
 }
 
 /**

@@ -25,18 +25,18 @@ export type MetodoDePago =
   | "apple_pay"
   | "google_pay"
 
-export function payphoneConfigurado(): boolean {
-  return Boolean(
-    process.env.PAYPHONE_TOKEN && process.env.PAYPHONE_STORE_ID,
-  )
-}
+// R165 · el interruptor vive con el cobro (lib/pagos/payphone.ts) ·
+// una sola definición, no dos que puedan quedar en desacuerdo.
+export { payphoneConfigurado, payphoneEncendido } from "@/lib/pagos/payphone"
+import { payphoneEncendido } from "@/lib/pagos/payphone"
 
 /** Las que se pueden cobrar hoy, con las credenciales que hay cargadas. */
 export function metodosDisponibles(): MetodoDePago[] {
   const metodos: MetodoDePago[] = []
 
   // La Cajita cubre tarjeta + billetera PayPhone con una sola credencial.
-  if (payphoneConfigurado()) metodos.push("card", "payphone")
+  // R165 · pero sólo si además está encendido a mano.
+  if (payphoneEncendido()) metodos.push("card", "payphone")
 
   // Efectivo siempre · desde R144 el motorizado cobra de verdad en la
   // puerta, así que no es una promesa vacía.
