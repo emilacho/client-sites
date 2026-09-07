@@ -982,6 +982,20 @@ export function PaymentForm({
           Propina al motorizado · opcional
         </span>
         <TipChipsInline value={cart.tipUsd} onChange={cart.setTip} />
+        {/* R167 · LA PROPINA ES SIEMPRE EN EFECTIVO, TAMBIÉN CON TARJETA.
+            Esa plata es del motorizado. Si la cobráramos con la tarjeta,
+            entraría a la cuenta del local y después habría que hacérsela
+            llegar · quedaríamos debiéndosela. Así que el cliente la
+            elige acá igual que siempre, pero se la entrega en la mano.
+            Sin esta línea, quien paga con tarjeta cree que la propina ya
+            fue y el motorizado se queda sin nada. */}
+        {(method === "card" || method === "payphone") && cart.tipUsd > 0 ? (
+          <p className="mt-1.5 text-[11px] leading-snug text-amber-200/80">
+            Esta propina se la entregas al motorizado{" "}
+            <strong className="font-semibold">en efectivo</strong> cuando
+            recibas el pedido · no se cobra con la tarjeta.
+          </p>
+        ) : null}
       </div>
 
       {/* Email receipt opcional */}
