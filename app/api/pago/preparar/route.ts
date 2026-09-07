@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getSupabaseAdmin } from "@/lib/supabase"
-import { payphoneConfigurado, aCentavos } from "@/lib/pagos/payphone"
+import { payphoneEncendido, aCentavos } from "@/lib/pagos/payphone"
 import { cliente } from "@/cliente.config"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 })
   }
 
-  if (!payphoneConfigurado()) {
+  if (!payphoneEncendido()) {
     return NextResponse.json(
       { error: "pago_no_disponible", message: "El pago con tarjeta no está disponible por ahora." },
       { status: 503 },
