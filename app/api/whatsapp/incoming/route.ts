@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server"
 import { cabecerasInternas } from "@/lib/llave-interna"
 import { origenPropio } from "@/lib/origen"
 import { getSupabaseAdmin } from "@/lib/supabase"
+import { firmaValida, direccionVerificada } from "@/lib/whatsapp/firma"
 
 /**
  * POST /api/whatsapp/incoming · R96.139 + R96.156
@@ -71,6 +72,26 @@ function twimlResponse(message: string): Response {
 
 export async function POST(req: NextRequest) {
   const formText = await req.text()
+
+  // R166 · ¿esto lo mandó el proveedor de verdad?
+  //
+  // Sin esta puerta, cualquiera que supiera la dirección podía decir
+  // "soy el dueño" y cambiar los jugos del día, o decir "soy este
+  // cliente" y cambiarle la dirección de entrega a su pedido. El campo
+  // del remitente lo escribe quien llama · no prueba nada por sí solo.
+  //
+  // Se contesta 404 y no 401 a propósito: a quien no corresponde no se
+  // le confirma que acá hay algo.
+  if (!firmaValida(req, formText)) {
+    // Se dice CONTRA QUÉ dirección se verificó. Si el proveedor tiene
+    // configurada otra, todos los avisos rebotan y el WhatsApp queda
+    // mudo · sin esta línea, esa caída sería imposible de diagnosticar.
+    console.warn(
+      `[whatsapp] aviso sin firma válida · descartado · verificado contra ${direccionVerificada(req)} · traía sello: ${Boolean(req.headers.get("x-twilio-signature"))} · hay clave: ${Boolean(process.env.TWILIO_AUTH_TOKEN)}`,
+    )
+    return new Response("Not found", { status: 404 })
+  }
+
   const form = new URLSearchParams(formText)
   const fromRaw = form.get("From") ?? ""
   const body = form.get("Body") ?? ""
