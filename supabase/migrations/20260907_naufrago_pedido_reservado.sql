@@ -11,13 +11,24 @@
 --   necesita un estado propio y visible · no puede quedar mezclado con
 --   los pedidos normales ni desaparecer en un registro.
 --
+-- OJO CON EL NOMBRE DE LA TABLA · esta migración nació diciendo
+-- `public.naufrago_orders`, que es como se llamaba ANTES del cambio del
+-- 28-may (20260528_naufrago_schema_isolation.sql) que la mudó a
+-- `naufrago.orders`. Las migraciones anteriores a esa fecha usan el
+-- nombre viejo y son correctas para su momento · copiar de ellas sin
+-- mirar la fecha es el error. El sitio escribe contra `naufrago.orders`
+-- (lib/supabase.ts fija `db: { schema: "naufrago" }`).
+--
+-- El nombre de la restricción SÍ quedó con el nombre viejo: renombrar
+-- una tabla no renombra sus restricciones.
+--
 -- Sin este cambio la ficha del pedido NO SE PUEDE GUARDAR: la lista de
 -- estados permitidos los rechaza, y el código que la guarda se traga el
 -- error. El cliente pagaría un pedido que no existe en ningún lado.
-alter table public.naufrago_orders
+alter table naufrago.orders
   drop constraint if exists naufrago_orders_status_check;
 
-alter table public.naufrago_orders
+alter table naufrago.orders
   add constraint naufrago_orders_status_check
   check (status in (
     'PENDING_PAYMENT',           -- R164 · reservado · esperando el cobro
