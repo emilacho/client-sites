@@ -34,6 +34,7 @@ import { useCart } from "@/lib/v2/cart-context"
 import { buildWhatsAppLink, MENU_ITEMS } from "@/lib/v2/naufrago-content"
 import { saveLastOrder } from "@/lib/v2/use-last-order"
 import MapAddressPicker from "./MapAddressPicker"
+import { CajitaPayphone } from "./CajitaPayphone"
 import { PaymentForm } from "./PaymentForm"
 import { track } from "@/lib/v2/posthog-track"
 import { useLoyaltyBalance } from "@/lib/v2/use-loyalty-balance"
@@ -110,6 +111,14 @@ type ShippingState =
     }
   | { kind: "paying"; quoteToken: string; priceUsd: number; etaMinutes: number }
   | { kind: "ordering"; priceUsd: number; etaMinutes: number }
+  /** R164 · el pedido quedó RESERVADO y falta que el cliente pague.
+   *  Todavía no salió a la calle · sale cuando PayPhone confirme. */
+  | {
+      kind: "cobrando"
+      orderCode: string
+      metodo: "card" | "payphone"
+      totalUsd: number
+    }
   | {
       kind: "success"
       orderId: string
@@ -512,6 +521,8 @@ function CartFooter() {
     quoteTokenArg?: string,
     priceUsdArg?: number,
     etaMinutesArg?: number,
+    /** R164 · pago con tarjeta · reserva sin despachar. */
+    metodoTarjeta?: "card" | "payphone",
   ) {
     // R97.5 · ahora confirmOrder se llama POST mock payment · args
     // explícitos · pero soportamos también el flow viejo (quoted state
@@ -537,6 +548,9 @@ function CartFooter() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           quoteToken,
+          // R164 · con tarjeta el pedido se reserva y NO se despacha
+          // hasta que el cobro entre.
+          soloReservar: metodoTarjeta ? true : undefined,
           dropoff: {
             street: form.street,
             detail: form.detail || undefined,
@@ -574,6 +588,20 @@ function CartFooter() {
       if (!res.ok || !json.ok) {
         throw new Error(json.detail || json.error || "order_failed")
       }
+      // R164 · RESERVADO · el pedido existe pero no salió ni se avisó a
+      // nadie. Ahora se le muestra el formulario de PayPhone. El resto
+      // -avisos, historial, vaciar el carrito- ocurre después del pago,
+      // no acá: si el cliente abandona el pago, nada de eso debió pasar.
+      if (metodoTarjeta) {
+        setShipping({
+          kind: "cobrando",
+          orderCode: json.orderCode ?? json.orderId,
+          metodo: metodoTarjeta,
+          totalUsd: Number(json.totalUsd ?? total),
+        })
+        return
+      }
+
       // R96.9 · persist last order para pattern "Pide lo mismo"
       saveLastOrder({
         orderCode: json.orderId ?? null,
@@ -1185,16 +1213,45 @@ function CartFooter() {
               expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(),
             })
           }
-          onPay={async () => {
+          onPay={async (metodoElegido) => {
             if (shipping.kind !== "payment") return
             const { quoteToken, priceUsd, etaMinutes } = shipping
             setShipping({ kind: "paying", quoteToken, priceUsd, etaMinutes })
-            // Simulación · 1.5s de latencia "procesando pago"
-            await new Promise((r) => setTimeout(r, 1500))
-            // Después llamar al confirmOrder con los datos del quote
-            await confirmOrder(quoteToken, priceUsd, etaMinutes)
+            // R164 · con tarjeta el pedido se RESERVA y se abre el
+            // formulario de PayPhone · la comida no sale hasta cobrar.
+            // Con efectivo sigue igual que siempre: sale y el motorizado
+            // cobra en la puerta.
+            const conTarjeta =
+              metodoElegido === "card" || metodoElegido === "payphone"
+            await confirmOrder(
+              quoteToken,
+              priceUsd,
+              etaMinutes,
+              conTarjeta ? (metodoElegido as "card" | "payphone") : undefined,
+            )
           }}
         />
+        </div>
+      ) : shipping.kind === "cobrando" ? (
+        // R164 · el formulario de PayPhone. El pedido ya está guardado
+        // y esperando · si el cobro no entra, no sale nada.
+        <div className="space-y-3">
+          <div className="text-center">
+            <p className="text-sm font-semibold text-white">
+              Falta un paso · el pago
+            </p>
+            <p className="mt-0.5 text-[11px] text-slate-400">
+              Pedido {shipping.orderCode} · ${shipping.totalUsd.toFixed(2)}
+            </p>
+          </div>
+          <CajitaPayphone
+            orderCode={shipping.orderCode}
+            metodo={shipping.metodo}
+          />
+          <p className="text-center text-[10px] leading-relaxed text-slate-500">
+            Si cierras esta ventana sin pagar, tu pedido no se envía a la
+            cocina y no se te cobra nada.
+          </p>
         </div>
       ) : shipping.kind === "paying" ? (
         <div className="flex items-center justify-center gap-2 py-3 text-sm text-cyan-200">

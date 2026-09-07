@@ -27,7 +27,10 @@ const CLIENT_SLUG = "naufrago"
  * ticket se quedaría pegado en pantalla después de darlo por listo, que
  * es justo lo que pasó la primera vez que lo probé.
  */
-const VIVOS = ["PENDING", "ACCEPTED", "PREPARING"]
+// R164 · NEEDS_ATTENTION entra a la lista de vivos a propósito: es un
+// pedido COBRADO cuyo motorizado no se pudo pedir. Si no está entre los
+// vivos, la cocina no lo ve, el cliente pagó y nadie cocina nada.
+const VIVOS = ["PENDING", "ACCEPTED", "PREPARING", "NEEDS_ATTENTION"]
 
 export async function GET(req: NextRequest) {
   if (!(await cocinaAutorizada(req.headers.get("x-cocina-llave")))) {
@@ -43,6 +46,11 @@ export async function GET(req: NextRequest) {
       "id, order_code, status, created_at, accepted_at, ready_at, delivered_at, customer_name, customer_phone, dropoff_address, dropoff_detail, cart_lines, customer_notes, subtotal_usd, discount_usd, delivery_fee_usd, total_usd, tip_usd, payment_method, payment_status, delivery_provider_order_id",
     )
     .eq("client_slug", CLIENT_SLUG)
+    // R164 · los pedidos que quedaron esperando un pago que nunca entró
+    // NO son asunto de la cocina · son carritos abandonados. Si se
+    // mostraran, la pantalla se llenaría de pedidos que nadie va a
+    // cocinar y el sonido de "pedido nuevo" perdería sentido.
+    .neq("status", "PENDING_PAYMENT")
     .gte("created_at", desde)
     .order("created_at", { ascending: true })
     .limit(60)
@@ -76,6 +84,8 @@ export async function GET(req: NextRequest) {
     pedidos: pedidos.map((p) => ({
       ...p,
       vivo: VIVOS.includes(String(p.status)),
+      /** R164 · cobrado y sin motorizado · hay que pedirlo a mano. */
+      atencion: String(p.status) === "NEEDS_ATTENTION",
       contabilidad: contabilidad.get(p.id) ?? null,
     })),
   })

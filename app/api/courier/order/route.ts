@@ -1,19 +1,19 @@
-import { NextResponse } from "next/server"
-import { cocinaAbierta, HORARIO_TEXTO } from "@/lib/horario"
-import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
-import { origenPropio } from "@/lib/origen"
-import { courierOrderRequestSchema } from "@/lib/schemas"
-import { createOrder, getDeliveryQuote } from "@/lib/courier/para-rutas"
-import { computeDiscount } from "@/lib/checkout/pricing"
-import { revisarPrecios } from "@/lib/checkout/precio-real"
-import { tieneDerechoAlCupon } from "@/lib/checkout/cupon"
-import { autorizarPremio } from "@/lib/checkout/premio"
-import { generateOrderCode } from "@/lib/checkout/order-code"
-import { getSupabaseAdmin } from "@/lib/supabase"
-import { telefonoCanonico } from "@/lib/telefono"
-import { cliente } from "@/cliente.config"
+import { NextResponse } from "next/server";
+import { cocinaAbierta, HORARIO_TEXTO } from "@/lib/horario";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { origenPropio } from "@/lib/origen";
+import { courierOrderRequestSchema } from "@/lib/schemas";
+import { createOrder, getDeliveryQuote } from "@/lib/courier/para-rutas";
+import { computeDiscount } from "@/lib/checkout/pricing";
+import { revisarPrecios } from "@/lib/checkout/precio-real";
+import { tieneDerechoAlCupon } from "@/lib/checkout/cupon";
+import { autorizarPremio } from "@/lib/checkout/premio";
+import { generateOrderCode } from "@/lib/checkout/order-code";
+import { getSupabaseAdmin } from "@/lib/supabase";
+import { telefonoCanonico } from "@/lib/telefono";
+import { cliente } from "@/cliente.config";
 
-export const runtime = "nodejs"
+export const runtime = "nodejs";
 
 /**
  * Round 74 · PedidosYa Courier · create order endpoint.
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
       limit: 8,
       windowSec: 60,
       bucket: "courier_order",
-    })
+    });
     if (!rl.ok) {
       return NextResponse.json(
         {
@@ -76,18 +76,18 @@ export async function POST(request: Request) {
           retryIn: rl.resetIn,
         },
         { status: 429 },
-      )
+      );
     }
   }
 
-  let body: unknown
+  let body: unknown;
   try {
-    body = await request.json()
+    body = await request.json();
   } catch {
-    return NextResponse.json({ error: "invalid_json" }, { status: 400 })
+    return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
-  const parsed = courierOrderRequestSchema.safeParse(body)
+  const parsed = courierOrderRequestSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       {
@@ -98,16 +98,16 @@ export async function POST(request: Request) {
         })),
       },
       { status: 400 },
-    )
+    );
   }
-  const { quoteToken, dropoff, lines, notes } = parsed.data
+  const { quoteToken, dropoff, lines, notes } = parsed.data;
 
   // R152 · el teléfono se deja en UNA sola forma antes de tocar nada.
   // Antes se guardaba tal cual lo escribía el cliente ("0997744288")
   // mientras el resto del sistema usa la forma internacional
   // ("593997744288") · el mismo cliente quedaba partido en dos y su
   // pedido nunca se cruzaba con sus perlas ni con su ficha.
-  const telefono = telefonoCanonico(parsed.data.customer.phone)
+  const telefono = telefonoCanonico(parsed.data.customer.phone);
   if (!telefono) {
     return NextResponse.json(
       {
@@ -116,15 +116,15 @@ export async function POST(request: Request) {
           "Ese número no parece completo. Escribe tu celular con los 10 dígitos, por ejemplo 0991234567.",
       },
       { status: 400 },
-    )
+    );
   }
-  const customer = { ...parsed.data.customer, phone: telefono }
+  const customer = { ...parsed.data.customer, phone: telefono };
 
   // R162.1 · si la base no se puede abrir, el pedido no puede seguir ·
   // pero se responde con una frase, no con un 500 pelado.
-  let supabase: ReturnType<typeof getSupabaseAdmin>
+  let supabase: ReturnType<typeof getSupabaseAdmin>;
   try {
-    supabase = getSupabaseAdmin()
+    supabase = getSupabaseAdmin();
   } catch {
     return NextResponse.json(
       {
@@ -133,7 +133,7 @@ export async function POST(request: Request) {
           "No pudimos tomar tu pedido en este momento. Intenta de nuevo o escríbenos por WhatsApp.",
       },
       { status: 503 },
-    )
+    );
   }
 
   // ── R158 · un despacho por cotización ────────────────────────────
@@ -151,22 +151,23 @@ export async function POST(request: Request) {
       .from("courier_orders")
       .select("pedidosya_order_id, tracking_url, status")
       .eq("quote_token", quoteToken)
-      .maybeSingle()
+      .maybeSingle();
     if (yaDespachado) {
       const { data: pedidoPrevio } = await supabase
         .from("orders")
         .select("id, order_code")
         .eq("delivery_provider_order_id", yaDespachado.pedidosya_order_id)
-        .maybeSingle()
+        .maybeSingle();
       return NextResponse.json({
         ok: true,
         repetido: true,
         orderId: yaDespachado.pedidosya_order_id,
-        orderCode: (pedidoPrevio as { order_code?: string } | null)?.order_code ?? null,
+        orderCode:
+          (pedidoPrevio as { order_code?: string } | null)?.order_code ?? null,
         naufragoOrderId: (pedidoPrevio as { id?: string } | null)?.id ?? null,
         trackingUrl: yaDespachado.tracking_url ?? undefined,
         status: yaDespachado.status,
-      })
+      });
     }
   } catch {
     // Si no se puede comprobar, se sigue · un duplicado es malo, pero
@@ -189,10 +190,8 @@ export async function POST(request: Request) {
         message: `Estamos cerrados · atendemos ${HORARIO_TEXTO}. ¡Te esperamos!`,
       },
       { status: 409 },
-    )
+    );
   }
-
-
 
   // ── R144 · cuánto tiene que cobrar el motorizado en la puerta ──────
   // La comida y el descuento los recalcula el servidor · el navegador
@@ -212,12 +211,12 @@ export async function POST(request: Request) {
   // porque de eso depende si la línea del regalo se acepta. Si es por
   // perlas, acá se le descuentan · y se hace después de tener el código
   // del pedido para que quede anotado contra ese pedido.
-  const orderCode = generateOrderCode()
+  const orderCode = generateOrderCode();
   const veredictoPremio = await autorizarPremio(
     parsed.data.premio ?? null,
     telefono,
     orderCode,
-  )
+  );
   if (parsed.data.premio && !veredictoPremio.aceptado) {
     return NextResponse.json(
       {
@@ -227,10 +226,10 @@ export async function POST(request: Request) {
         detail: veredictoPremio.motivo,
       },
       { status: 400 },
-    )
+    );
   }
 
-  const revision = revisarPrecios(lines, veredictoPremio.idAutorizado)
+  const revision = revisarPrecios(lines, veredictoPremio.idAutorizado);
   if (!revision.ok) {
     return NextResponse.json(
       {
@@ -240,73 +239,97 @@ export async function POST(request: Request) {
         detail: revision.problemas.join(" · "),
       },
       { status: 400 },
-    )
+    );
   }
-  const comidaUsd = revision.subtotalUsd
+  const comidaUsd = revision.subtotalUsd;
   // R155 · el cupón se comprueba ACÁ, no sólo en la ruta que la pantalla
   // llama de buena fe. Quien mande el pedido directo se saltaba las
   // reglas y se llevaba el 5% en cada pedido, para siempre.
-  const cuponPedido = parsed.data.discountCode || null
+  const cuponPedido = parsed.data.discountCode || null;
   const derecho = cuponPedido
     ? await tieneDerechoAlCupon(cuponPedido, telefono)
-    : { tieneDerecho: false }
+    : { tieneDerecho: false };
   const descuento = derecho.tieneDerecho
     ? computeDiscount(comidaUsd, cuponPedido)
-    : { code: null, percentOff: 0, amountUsd: 0 }
+    : { code: null, percentOff: 0, amountUsd: 0 };
 
-  let envioParaCobrar: number | null = null
+  let envioParaCobrar: number | null = null;
   try {
     const c = await getDeliveryQuote({
       dropoff,
       cartTotalUsd: comidaUsd,
       itemCount: lines.reduce((n, l) => n + l.qty, 0),
-    })
-    envioParaCobrar = c.priceUsd
+    });
+    envioParaCobrar = c.priceUsd;
   } catch {
     // Si nuestra propia cotización falla, usamos la que vio el cliente
     // (el esquema ya la topea en $100). Peor sería no cobrar nada.
-    envioParaCobrar = parsed.data.quotedDeliveryFeeUsd ?? null
+    envioParaCobrar = parsed.data.quotedDeliveryFeeUsd ?? null;
   }
 
   const aCobrarEnLaPuerta =
     envioParaCobrar === null
       ? 0
       : Number(
-          Math.max(0, comidaUsd - descuento.amountUsd + envioParaCobrar).toFixed(2),
-        )
+          Math.max(
+            0,
+            comidaUsd - descuento.amountUsd + envioParaCobrar,
+          ).toFixed(2),
+        );
 
-  let courierResult
-  try {
-    courierResult = await createOrder({
-      quoteToken,
-      dropoff,
-      customer,
-      lines: lines.map((l) => ({ name: l.name, qty: l.qty, priceUsd: l.priceUsd })),
-      notes,
-      collectMoneyUsd: aCobrarEnLaPuerta,
-    })
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    // R144 · el proveedor topea cuánto puede cobrar un motorizado en
-    // efectivo (probado 30-ago: $100 pasa, $200 no). Si el pedido lo
-    // supera, el cliente merece una frase que se entienda, no el
-    // código crudo del proveedor.
-    if (message.includes("COLLECT_MONEY_EXCEEDED")) {
+  // R164 · EL CORTE ENTRE RESERVAR Y DESPACHAR.
+  //
+  // Con efectivo el orden es: se despacha y el motorizado cobra en la
+  // puerta. Con tarjeta ese orden es al revés · si mandáramos el pedido
+  // primero, la comida saldría del local antes de que la plata entre, y
+  // si el cliente cierra la pantalla de pago nos quedamos con el envío
+  // pagado y sin cobrar nada.
+  //
+  // Por eso `soloReservar`: se revisa TODO igual -horario, precios,
+  // cupón, premio, cotización- y se guarda la ficha, pero no se le
+  // avisa al motorizado. El despacho lo dispara PayPhone al confirmar
+  // el cobro (lib/checkout/despachar-pagado.ts).
+  const soloReservar = parsed.data.soloReservar === true;
+
+  type Despacho = Awaited<ReturnType<typeof createOrder>>;
+  let courierResult: Despacho | null = null;
+  if (!soloReservar) {
+    try {
+      courierResult = await createOrder({
+        quoteToken,
+        dropoff,
+        customer,
+        lines: lines.map((l) => ({
+          name: l.name,
+          qty: l.qty,
+          priceUsd: l.priceUsd,
+        })),
+        notes,
+        collectMoneyUsd: aCobrarEnLaPuerta,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      // R144 · el proveedor topea cuánto puede cobrar un motorizado en
+      // efectivo (probado 30-ago: $100 pasa, $200 no). Si el pedido lo
+      // supera, el cliente merece una frase que se entienda, no el
+      // código crudo del proveedor.
+      if (message.includes("COLLECT_MONEY_EXCEEDED")) {
+        return NextResponse.json(
+          {
+            error: "cobro_excede_maximo",
+            message:
+              "Este pedido supera el máximo que el motorizado puede cobrar en efectivo. Escríbenos por WhatsApp y lo coordinamos.",
+            detail: message,
+          },
+          { status: 400 },
+        );
+      }
+      const status = message.startsWith("courier_env_missing:") ? 503 : 502;
       return NextResponse.json(
-        {
-          error: "cobro_excede_maximo",
-          message:
-            "Este pedido supera el máximo que el motorizado puede cobrar en efectivo. Escríbenos por WhatsApp y lo coordinamos.",
-          detail: message,
-        },
-        { status: 400 },
-      )
+        { error: "order_failed", detail: message },
+        { status },
+      );
     }
-    const status = message.startsWith("courier_env_missing:") ? 503 : 502
-    return NextResponse.json(
-      { error: "order_failed", detail: message },
-      { status },
-    )
   }
 
   // Best-effort persist · don't block the customer on Supabase
@@ -316,10 +339,12 @@ export async function POST(request: Request) {
   // del cliente. Antes apuntaba a `public` (legado R74) · esa tabla nunca
   // llegó a crearse, y de haberse creado ahí habría quedado publicada
   // hacia afuera con nombre, teléfono y dirección del cliente adentro.
-  try {
-    await supabase
-      .from("courier_orders")
-      .upsert(
+  // R164 · si el pedido sólo se reservó todavía no hay envío, y esta
+  // tabla es el espejo del envío · su llave es el número que da
+  // PedidosYa. Se escribe al despachar.
+  if (courierResult)
+    try {
+      await supabase.from("courier_orders").upsert(
         {
           client_slug: cliente.slug,
           pedidosya_order_id: courierResult.orderId,
@@ -335,20 +360,20 @@ export async function POST(request: Request) {
           raw_create_response: courierResult.raw as object,
         },
         { onConflict: "pedidosya_order_id" },
-      )
-  } catch (err) {
-    // Swallow · log on the server but proceed with success response.
-    console.warn("[courier-order] courier_orders persist failed", err)
-  }
+      );
+    } catch (err) {
+      // Swallow · log on the server but proceed with success response.
+      console.warn("[courier-order] courier_orders persist failed", err);
+    }
 
   // R97.5 · ALSO insert into naufrago.orders (R96 canonical table)
   // para que tracker /order/[code] + WhatsApp templates + geofencing
   // funcionen. En MOCK MODE inicializamos en ACCEPTED + payment CAPTURED
   // (simulando Kushki capture + courier dispatch). En real flow lo
   // dejaríamos PENDING hasta que llegue confirmación PedidosYa real.
-  const mockMode = process.env.PEDIDOSYA_COURIER_MOCK === "true"
+  const mockMode = process.env.PEDIDOSYA_COURIER_MOCK === "true";
   // R154 · el mismo subtotal de la casa, no la suma del navegador.
-  const cartTotalUsd = comidaUsd
+  const cartTotalUsd = comidaUsd;
 
   // R107 · el envío SÍ se cobra. Hasta hoy esta fila guardaba
   // delivery_fee_usd = 0 y total = comida, así que el pedido quedaba
@@ -356,23 +381,35 @@ export async function POST(request: Request) {
   // que no cerraba. La cifra viene del DESPACHO (route.pricing.total),
   // que es la que PedidosYa confirmó · no la del navegador ni la de
   // una re-cotización, que podrían diferir de lo cobrado.
-  const deliveryFeeUsd = courierResult.priceUsd ?? 0
+  // R164 · reservado: todavía no hay despacho que confirme el precio,
+  // así que se guarda el de nuestra propia cotización. Al despachar se
+  // reescribe con el que PedidosYa cobre de verdad.
+  const deliveryFeeUsd = courierResult
+    ? (courierResult.priceUsd ?? 0)
+    : (envioParaCobrar ?? 0);
   // R155 · el total del pedido es EXACTAMENTE lo que se cobra: comida
   // menos descuento más envío. Antes el descuento se caía de esta cuenta.
   const totalUsd = Number(
     Math.max(0, cartTotalUsd - descuento.amountUsd + deliveryFeeUsd).toFixed(2),
-  )
-  const etaMinutes = courierResult.etaMinutes ?? null
+  );
+  const etaMinutes = courierResult?.etaMinutes ?? null;
   // R157 · el código ya se generó arriba · lo necesita el descuento de
   // perlas del premio, para quedar anotado contra este pedido.
-  let naufragoOrderId: string | null = null
+  let naufragoOrderId: string | null = null;
   try {
-    const { data: inserted } = await supabase
+    const { data: inserted, error: errorFicha } = await supabase
       .from("orders")
       .insert({
         client_slug: cliente.slug,
         order_code: orderCode,
-        status: mockMode ? "ACCEPTED" : "PENDING",
+        // R164 · PENDING_PAYMENT es un estado que la cocina NO debe
+        // ver: es un pedido que todavía no se pagó ni salió. Pasa a
+        // PENDING recién cuando PayPhone confirma.
+        status: soloReservar
+          ? "PENDING_PAYMENT"
+          : mockMode
+            ? "ACCEPTED"
+            : "PENDING",
         customer_name: customer.name,
         customer_phone: customer.phone,
         customer_email: customer.email || null,
@@ -396,24 +433,54 @@ export async function POST(request: Request) {
         tip_usd: parsed.data.tipUsd ?? 0,
         delivery_eta_minutes: etaMinutes,
         delivery_provider: "PEDIDOSYA_COURIER",
-        delivery_provider_order_id: courierResult.orderId,
-        delivery_provider_tracking_url: courierResult.trackingUrl ?? null,
+        delivery_provider_order_id: courierResult?.orderId ?? null,
+        delivery_provider_tracking_url: courierResult?.trackingUrl ?? null,
         delivery_quote_token: quoteToken,
         // R107 · antes decía "CARD_DEBIT" fijo · era falso: no hay
         // pasarela de tarjeta conectada, así que ningún pedido se pagó
         // con débito. La cocina lo leía como cobrado por adelantado.
         // Lo que existe hoy es efectivo contra entrega.
-        payment_method: "CASH_ON_DELIVERY",
-        payment_status: mockMode ? "CAPTURED" : "PENDING",
-        payment_provider: mockMode ? "KUSHKI" : null,
+        // "PAYPHONE" y no "CARD": la lista de formas de pago que la
+        // base acepta no tiene "CARD" · quien cobra es PayPhone.
+        payment_method: soloReservar ? "PAYPHONE" : "CASH_ON_DELIVERY",
+        payment_status: !soloReservar && mockMode ? "CAPTURED" : "PENDING",
+        payment_provider: soloReservar
+          ? "PAYPHONE"
+          : mockMode
+            ? "KUSHKI"
+            : null,
         customer_notes: notes || null,
         accepted_at: mockMode ? new Date().toISOString() : null,
-        raw_dispatch_response: courierResult.raw as object,
+        raw_dispatch_response: (courierResult?.raw ?? null) as object,
       })
       .select("id, order_code")
-      .single()
+      .single();
+
+    // R164 · CON TARJETA, SIN FICHA NO HAY PEDIDO.
+    //
+    // Guardar la ficha siempre fue "mejor esfuerzo": si fallaba, el
+    // pedido igual salía y el error sólo quedaba en el registro del
+    // servidor. Eso es tolerable con efectivo -el motorizado ya va en
+    // camino y cobra igual- pero es inaceptable con tarjeta: se le
+    // cobraría a alguien por un pedido que no existe en ningún lado.
+    //
+    // Así que en una reserva el fallo se dice en voz alta. El cliente
+    // ve que no se pudo y paga en efectivo · nadie pierde plata.
+    if (soloReservar && (errorFicha || !inserted)) {
+      console.error("[courier-order] reserva sin ficha", errorFicha);
+      return NextResponse.json(
+        {
+          error: "reserva_fallida",
+          message:
+            "No pudimos preparar tu pago en este momento. Puedes pedir con pago en efectivo.",
+          detail: errorFicha?.message ?? "insert_sin_fila",
+        },
+        { status: 503 },
+      );
+    }
+
     if (inserted) {
-      naufragoOrderId = inserted.id
+      naufragoOrderId = inserted.id;
 
       // R134 · ACÁ IBA EL AVISO POR WHATSAPP A LA COCINA (R110) · se
       // eliminó por decisión de Emilio: la pantalla de pedidos ya muestra
@@ -441,18 +508,24 @@ export async function POST(request: Request) {
       // se lo lleva puesto.
       // R147 · esta se llamaba al sitio público aunque corriera en una
       // vista previa · probar un cambio disparaba avisos en producción.
-      const origin = origenPropio()
-      await fetch(`${origin}/api/notifications/order-status`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orderCode, newStatus: "ACCEPTED" }),
-      }).catch(() => {})
+      // R164 · una reserva NO avisa nada todavía. Decirle al cliente
+      // "pedido confirmado" antes de cobrarle es mentirle: si el pago
+      // se cae, ese aviso quedó dicho y nadie va a cocinar nada. El
+      // aviso lo manda el despacho, después del cobro.
+      if (!soloReservar) {
+        const origin = origenPropio();
+        await fetch(`${origin}/api/notifications/order-status`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ orderCode, newStatus: "ACCEPTED" }),
+        }).catch(() => {});
+      }
 
       await supabase
         .from("order_events")
         .insert({
           order_id: inserted.id,
-          event_type: "ORDER_CREATED",
+          event_type: soloReservar ? "ORDER_RESERVED" : "ORDER_CREATED",
           actor: "system",
           payload: {
             mock_mode: mockMode,
@@ -461,20 +534,25 @@ export async function POST(request: Request) {
             total_usd: totalUsd,
           },
         })
-        .then(undefined, () => {})
+        .then(undefined, () => {});
     }
   } catch (err) {
-    console.warn("[courier-order] naufrago.orders persist failed", err)
+    console.warn("[courier-order] naufrago.orders persist failed", err);
   }
 
   return NextResponse.json({
     ok: true,
-    orderId: courierResult.orderId,
+    // R164 · en una reserva el "orderId" es el código de la casa: no
+    // existe número de envío hasta que se despache.
+    orderId: courierResult?.orderId ?? orderCode,
     orderCode,
     naufragoOrderId,
-    trackingUrl: courierResult.trackingUrl,
-    status: courierResult.status,
-  })
+    trackingUrl: courierResult?.trackingUrl ?? null,
+    status: courierResult?.status ?? "PENDING_PAYMENT",
+    reservado: soloReservar,
+    /** Lo que hay que cobrarle · comida menos descuento más envío. */
+    totalUsd,
+  });
 }
 
 export async function GET() {
@@ -491,5 +569,5 @@ export async function GET() {
       lines: "cart lines array",
       notes: "string (optional)",
     },
-  })
+  });
 }
