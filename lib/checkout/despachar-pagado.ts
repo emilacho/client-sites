@@ -25,6 +25,7 @@ import "server-only"
  */
 import { createOrder, getDeliveryQuote } from "@/lib/courier/para-rutas"
 import { getSupabaseAdmin } from "@/lib/supabase"
+import { cabecerasInternas } from "@/lib/llave-interna"
 import { origenPropio } from "@/lib/origen"
 import { cliente } from "@/cliente.config"
 
@@ -199,10 +200,16 @@ export async function despacharPedidoPagado(
     )
 
   // Recién ahora el cliente recibe su aviso · el pedido existe de verdad.
-  await fetch(`${origenPropio()}/api/notifications/order-status`, {
+  const origin = origenPropio()
+  await fetch(`${origin}/api/notifications/order-status`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...cabecerasInternas() },
     body: JSON.stringify({ orderCode: pedido.order_code, newStatus: "ACCEPTED" }),
+  }).catch(() => {})
+  await fetch(`${origin}/api/notifications/order-confirm`, {
+    method: "POST",
+    headers: { "content-type": "application/json", ...cabecerasInternas() },
+    body: JSON.stringify({ orderCode: pedido.order_code }),
   }).catch(() => {})
 
   return { ok: true, trackingUrl: envio.trackingUrl ?? null }

@@ -1,34 +1,47 @@
 import type { NextRequest } from "next/server"
-import { telefonoCanonico } from "@/lib/telefono"
+import { llamadaInterna } from "@/lib/llave-interna"
+import { origenPublico } from "@/lib/origen"
+import { getSupabaseAdmin } from "@/lib/supabase"
+import { cliente } from "@/cliente.config"
 
 /**
- * POST /api/notifications/order-confirm · R96.14 · WhatsApp confirm
- * post-PedidosYa-order. Twilio WhatsApp API (env vars TWILIO_*).
+ * El primer aviso al cliente · "tu pedido está confirmado".
  *
- * Gracefully degrades · si las env vars no están set · devuelve OK
- * con `sent:false` sin crash · permite landing en preview sin keys
- * (CLAUDE.md stack canon · Twilio wrapper merged · keys pending
- * populate por Emilio).
+ * R170 · REESCRITO PORQUE ERA UN MEGÁFONO ABIERTO.
  *
- * Body · { orderCode, customerPhone, trackingUrl, totalUsd, itemCount }
+ * Cómo estaba: la pantalla del cliente le pasaba a esta dirección el
+ * teléfono, el monto, la cantidad de platos y el enlace de seguimiento,
+ * y esta dirección mandaba un WhatsApp con todo eso desde la cuenta del
+ * local. Sin comprobar nada.
  *
- * Output cliente · texto WhatsApp ·
- *   "¡Hola! Tu pedido NF-2026-XXXXXX está confirmado · X platos ·
- *   $YY.YY. Seguilo en vivo aquí · <trackingUrl>"
+ * Es decir · cualquiera podía mandarle un WhatsApp a CUALQUIER número,
+ * que llegaba desde el número del local, con el texto y el ENLACE que
+ * quisiera. Eso es el molde exacto de una estafa por mensaje: "tu
+ * pedido está confirmado, seguilo acá" apuntando a donde el estafador
+ * quiera. Y de paso gasta el saldo de mensajería del local.
+ *
+ * Cómo quedó · dos cerrojos:
+ *
+ *   1 · Sólo la llama el propio sistema (llave interna). Antes la
+ *       llamaba el navegador; ahora la llama el servidor después de
+ *       despachar de verdad, que es el único momento en que el aviso
+ *       corresponde.
+ *
+ *   2 · No se cree NADA de lo que le manden salvo el código del pedido.
+ *       El teléfono, el monto, los platos y el enlace salen de la ficha
+ *       guardada. Aunque alguien consiguiera la llave, no puede elegir
+ *       ni a quién le llega ni a dónde apunta el enlace.
+ *
+ * Se manda UNA sola vez por pedido · si se reintenta, se ignora.
  */
 
 export const runtime = "nodejs"
 
-interface Body {
-  orderCode?: unknown
-  customerPhone?: unknown
-  trackingUrl?: unknown
-  totalUsd?: unknown
-  itemCount?: unknown
+interface Linea {
+  qty?: number
 }
 
-
-function buildMessage(p: {
+function armarMensaje(p: {
   orderCode: string
   trackingUrl: string
   totalUsd: number
@@ -40,62 +53,88 @@ function buildMessage(p: {
     `Código · ${p.orderCode}`,
     `${p.itemCount} ${p.itemCount === 1 ? "plato" : "platos"} · $${p.totalUsd.toFixed(2)}`,
     ``,
-    `Seguilo en vivo · ${p.trackingUrl}`,
+    `Síguelo en vivo · ${p.trackingUrl}`,
   ].join("\n")
 }
 
 export async function POST(req: NextRequest) {
-  let body: Body
+  // Cerrojo 1 · esto no lo llama un navegador. 404 y no 401: a quien no
+  // corresponde no se le confirma que acá hay algo.
+  if (!llamadaInterna(req)) {
+    return new Response("Not found", { status: 404 })
+  }
+
+  let body: { orderCode?: unknown }
   try {
-    body = (await req.json()) as Body
+    body = (await req.json()) as { orderCode?: unknown }
   } catch {
     return Response.json({ ok: false, error: "invalid_json" }, { status: 400 })
   }
-
   const orderCode = typeof body.orderCode === "string" ? body.orderCode : ""
-  const customerPhoneRaw =
-    typeof body.customerPhone === "string" ? body.customerPhone : ""
-  const trackingUrl =
-    typeof body.trackingUrl === "string" ? body.trackingUrl : ""
-  const totalUsd = typeof body.totalUsd === "number" ? body.totalUsd : 0
-  const itemCount = typeof body.itemCount === "number" ? body.itemCount : 0
-
-  if (!orderCode || !customerPhoneRaw || !trackingUrl) {
-    return Response.json(
-      { ok: false, error: "missing_fields" },
-      { status: 400 },
-    )
+  if (!orderCode) {
+    return Response.json({ ok: false, error: "missing_fields" }, { status: 400 })
   }
 
-  const customerPhone = telefonoCanonico(customerPhoneRaw)
-  if (!customerPhone) {
-    return Response.json(
-      { ok: false, error: "invalid_phone" },
-      { status: 400 },
-    )
+  const supa = getSupabaseAdmin()
+
+  // Cerrojo 2 · todo sale de la ficha, no del que llama.
+  const { data } = await supa
+    .from("orders")
+    .select("id, order_code, customer_phone, total_usd, cart_lines")
+    .eq("client_slug", cliente.slug)
+    .eq("order_code", orderCode)
+    .maybeSingle()
+  const pedido = data as {
+    id: string
+    order_code: string
+    customer_phone: string | null
+    total_usd: number | null
+    cart_lines: Linea[] | null
+  } | null
+
+  if (!pedido) {
+    return Response.json({ ok: false, error: "pedido_no_encontrado" }, { status: 404 })
+  }
+  if (!pedido.customer_phone) {
+    return Response.json({ ok: true, sent: false, reason: "sin_telefono" })
+  }
+
+  // Una sola vez por pedido.
+  const { data: previos } = await supa
+    .from("order_events")
+    .select("id")
+    .eq("order_id", pedido.id)
+    .eq("event_type", "WHATSAPP_CONFIRM_SENT")
+    .limit(1)
+  if (Array.isArray(previos) && previos.length > 0) {
+    return Response.json({ ok: true, sent: false, reason: "ya_enviado" })
   }
 
   const accountSid = process.env.TWILIO_ACCOUNT_SID
   const authToken = process.env.TWILIO_AUTH_TOKEN
-  const fromWa = process.env.TWILIO_WHATSAPP_FROM // e.g. "whatsapp:+14155238886"
-
+  const fromWa = process.env.TWILIO_WHATSAPP_FROM
   if (!accountSid || !authToken || !fromWa) {
-    // Gracefully degrade · log + return success-not-sent · UI doesn't
-    // need to error out · just no message goes out.
-    return Response.json({
-      ok: true,
-      sent: false,
-      reason: "twilio_not_configured",
-    })
+    return Response.json({ ok: true, sent: false, reason: "twilio_not_configured" })
   }
 
-  const message = buildMessage({ orderCode, trackingUrl, totalUsd, itemCount })
+  const itemCount = (pedido.cart_lines ?? []).reduce(
+    (n, l) => n + Number(l?.qty ?? 0),
+    0,
+  )
+  const mensaje = armarMensaje({
+    orderCode: pedido.order_code,
+    // El enlace lo arma el servidor con el dominio de la marca · nunca
+    // llega de afuera. Acá vivía el agujero de la estafa por mensaje.
+    trackingUrl: `${origenPublico()}/order/${encodeURIComponent(pedido.order_code)}`,
+    totalUsd: Number(pedido.total_usd ?? 0),
+    itemCount,
+  })
 
   try {
     const params = new URLSearchParams({
-      To: `whatsapp:+${customerPhone}`,
+      To: `whatsapp:+${pedido.customer_phone}`,
       From: fromWa,
-      Body: message,
+      Body: mensaje,
     })
     const auth = Buffer.from(`${accountSid}:${authToken}`).toString("base64")
     const res = await fetch(
@@ -112,23 +151,29 @@ export async function POST(req: NextRequest) {
     if (!res.ok) {
       const detail = await res.text().catch(() => "")
       return Response.json(
-        {
-          ok: false,
-          error: "twilio_error",
-          status: res.status,
-          detail: detail.slice(0, 300),
-        },
+        { ok: false, error: "twilio_error", status: res.status, detail: detail.slice(0, 300) },
         { status: 502 },
       )
     }
-    const data = (await res.json()) as { sid?: string }
-    return Response.json({ ok: true, sent: true, sid: data.sid ?? null })
+    const enviado = (await res.json()) as { sid?: string }
+
+    await supa
+      .from("order_events")
+      .insert({
+        order_id: pedido.id,
+        event_type: "WHATSAPP_CONFIRM_SENT",
+        actor: "system",
+        payload: { sid: enviado.sid ?? null },
+      })
+      .then(
+        () => {},
+        () => {},
+      )
+
+    return Response.json({ ok: true, sent: true, sid: enviado.sid ?? null })
   } catch (err) {
     return Response.json(
-      {
-        ok: false,
-        error: err instanceof Error ? err.message : "unknown_error",
-      },
+      { ok: false, error: err instanceof Error ? err.message : "unknown_error" },
       { status: 500 },
     )
   }

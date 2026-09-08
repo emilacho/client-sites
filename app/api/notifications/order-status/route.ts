@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server"
+import { llamadaInterna } from "@/lib/llave-interna"
 import { origenPublico } from "@/lib/origen"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { telefonoCanonico } from "@/lib/telefono"
@@ -30,23 +31,31 @@ interface Body {
 
 const STATUS_TEMPLATES: Record<string, (orderCode: string, trackingUrl: string, etaMin?: number | null) => string | null> = {
   COOKING: (code, url) =>
-    `Tu pedido en Náufrago entró a la cocina 🍳\n\nCódigo · ${code}\nSeguilo en vivo · ${url}`,
+    `Tu pedido en Náufrago entró a la cocina 🍳\n\nCódigo · ${code}\nSíguelo en vivo · ${url}`,
   READY_FOR_PICKUP: (code, url) =>
     `Tu pedido ${code} está listo · sale en minutos 🛵\n\n${url}`,
   OUT_FOR_DELIVERY: (code, url, eta) =>
-    `Tu pedido ${code} salió hacia ti 🛵${eta ? ` · llega en ~${eta} min` : ""}\n\nSeguilo · ${url}`,
+    `Tu pedido ${code} salió hacia ti 🛵${eta ? ` · llega en ~${eta} min` : ""}\n\nSíguelo · ${url}`,
   // R96.155 · 2 nuevos states derivados de geofencing rider→dropoff
   NEARING_DESTINATION: (code) =>
-    `El motorizado está cerca 📍\n\nTu pedido ${code} casi llega · prepará el efectivo o el teléfono.`,
+    `El motorizado está cerca 📍\n\nTu pedido ${code} casi llega · prepara el efectivo o el teléfono.`,
   AT_DESTINATION: (code) =>
     `🚪 El motorizado llegó · sal a recibir tu pedido ${code} 🌊`,
   DELIVERED: (code, url) =>
-    `¡Llegó tu pedido ${code}! Buen provecho 🌊\n\nContanos cómo estuvo · ${url}`,
+    `¡Llegó tu pedido ${code}! Buen provecho 🌊\n\nCuéntanos cómo estuvo · ${url}`,
   CANCELLED: (code, url) =>
-    `Tu pedido ${code} fue cancelado. Si necesitas ayuda, contestá este chat.\n\n${url}`,
+    `Tu pedido ${code} fue cancelado. Si necesitas ayuda, escríbenos por el sitio.\n\n${url}`,
 }
 
 export async function POST(req: NextRequest) {
+  // R170 · esto manda WhatsApp a un cliente real. Lo llama el propio
+  // sistema cuando el pedido cambia de estado · nunca un navegador.
+  // Sin esta puerta, cualquiera que tuviera un código de pedido podía
+  // hacerle llegar avisos falsos al cliente desde el número del local.
+  if (!llamadaInterna(req)) {
+    return new Response("Not found", { status: 404 })
+  }
+
   let body: Body
   try {
     body = (await req.json()) as Body
