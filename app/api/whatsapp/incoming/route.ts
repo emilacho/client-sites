@@ -131,7 +131,14 @@ export async function POST(req: NextRequest) {
     //   2. le decia "escribenos a +593997744288" a alguien que ya estaba
     //      escribiendo, sin darle una salida distinta.
     //   3. "entra" seguia en argentino.
-    "Hola · por aquí coordinamos tu entrega. Para hacer un pedido entra a naufrago.ec · si necesitas ayuda con uno en curso, cuéntanos aquí mismo y te atendemos.",
+    // R169 · la frase anterior prometía "cuéntanos aquí mismo y te
+    // atendemos". No hay nadie del otro lado y no lo va a haber: este
+    // número responde solo. Prometer atención humana deja al cliente
+    // esperando una respuesta que nunca llega · es peor que no
+    // contestar nada, porque encima parece que lo ignoraron.
+    //
+    // Se le dice la verdad y se le da una salida que SÍ funciona.
+    "Hola · este número responde automáticamente, no lo lee una persona. Para hacer tu pedido entra a naufrago.ec · si ya tienes uno en curso, sigue su estado en el enlace que te enviamos al confirmarlo.",
   )
 }
 
