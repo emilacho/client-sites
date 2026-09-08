@@ -1,0 +1,10 @@
+import { chromium } from "playwright"
+const b = await chromium.launch()
+const p = await b.newPage({ viewport: { width: 1280, height: 900 } })
+await p.goto("https://naufrago.ec", { waitUntil: "networkidle", timeout: 90000 })
+await p.waitForTimeout(9000)
+await p.locator('button:has-text("Aceptar")').first().click().catch(() => {})
+await p.waitForTimeout(2500)
+await p.screenshot({ path: "scripts/out-isla.png" })
+await b.close()
+console.log("listo")
