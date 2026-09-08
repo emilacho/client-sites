@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cocinaAbierta, HORARIO_TEXTO } from "@/lib/horario";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { cabecerasInternas } from "@/lib/llave-interna"
 import { origenPropio } from "@/lib/origen";
 import { courierOrderRequestSchema } from "@/lib/schemas";
 import { createOrder, getDeliveryQuote } from "@/lib/courier/para-rutas";
@@ -516,8 +517,18 @@ export async function POST(request: Request) {
         const origin = origenPropio();
         await fetch(`${origin}/api/notifications/order-status`, {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: { "content-type": "application/json", ...cabecerasInternas() },
           body: JSON.stringify({ orderCode, newStatus: "ACCEPTED" }),
+        }).catch(() => {});
+
+        // R170 · el "tu pedido está confirmado" lo disparaba la pantalla
+        // del cliente, pasándole el teléfono y el enlace. Ahora sale de
+        // acá, con los datos de la ficha · nadie de afuera elige a quién
+        // le llega ni a dónde apunta el enlace.
+        await fetch(`${origin}/api/notifications/order-confirm`, {
+          method: "POST",
+          headers: { "content-type": "application/json", ...cabecerasInternas() },
+          body: JSON.stringify({ orderCode }),
         }).catch(() => {});
       }
 

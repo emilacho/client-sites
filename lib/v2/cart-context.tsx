@@ -262,10 +262,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const entry = DISCOUNT_CODES[key]
       if (!entry) return { ok: false, reason: "unknown_code" }
 
-      // R97.9 · skipServer bypass · usado por pergamino (3D scene click) ·
-      // aplica el discount local sin server validation (no tiene WhatsApp
-      // del cliente en ese momento) · validación full se ejecuta en
-      // /api/checkout/confirm cuando cliente entrega WhatsApp en el form.
+      // R97.9 · el pergamino de la isla aplica el cupón sin comprobarlo
+      // acá · en ese momento no tenemos el WhatsApp del cliente, que es
+      // con lo que se comprueba si le corresponde.
+      //
+      // R170 · esto apuntaba a /api/checkout/confirm, que ya no existe.
+      // La comprobación de verdad vive en /api/courier/order: antes de
+      // aceptar el pedido re-calcula el descuento y verifica las reglas
+      // de 24 horas y $25 acumulados contra el historial del cliente.
+      // Que el cupón se vea aplicado en la pantalla no significa que se
+      // vaya a cobrar así.
       if (opts?.skipServer) {
         setDiscount({ code: trimmed, percent: entry.percent, label: entry.label })
         return { ok: true }

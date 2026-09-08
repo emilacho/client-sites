@@ -1,3 +1,4 @@
+import { cabecerasInternas } from "@/lib/llave-interna"
 import { NextResponse } from "next/server"
 import { origenPropio } from "@/lib/origen"
 import {
@@ -319,7 +320,7 @@ export async function POST(request: Request) {
       const origin = origenPropio()
       void fetch(`${origin}/api/notifications/order-status`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", ...cabecerasInternas() },
         body: JSON.stringify({
           orderCode: nfOrder.order_code,
           newStatus: event.mappedStatus ?? event.status,
@@ -382,7 +383,7 @@ export async function POST(request: Request) {
             .eq("order_code", nfOrder.order_code)
           void fetch(`${origin}/api/notifications/order-status`, {
             method: "POST",
-            headers: { "content-type": "application/json" },
+            headers: { "content-type": "application/json", ...cabecerasInternas() },
             body: JSON.stringify({
               orderCode: nfOrder.order_code,
               newStatus: derivedSubStatus,

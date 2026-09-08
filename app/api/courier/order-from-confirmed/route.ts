@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server"
-import { llamadaInterna } from "@/lib/llave-interna"
+import { cabecerasInternas, llamadaInterna } from "@/lib/llave-interna"
 import { origenPropio, origenPublico } from "@/lib/origen"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import {
@@ -268,7 +268,7 @@ export async function POST(req: NextRequest) {
   //     dashboard tracker URL del cliente).
   void fetch(`${origenPropio()}/api/notifications/order-status`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...cabecerasInternas() },
     body: JSON.stringify({ orderCode, newStatus: "ACCEPTED" }),
     keepalive: true,
   }).catch(() => {})
