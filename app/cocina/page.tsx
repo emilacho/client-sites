@@ -310,8 +310,11 @@ export default function PantallaCocina() {
   // peor, lo contaba como pendiente de cobro: un toque y entraba a la
   // contabilidad una venta que no existió. Lo vi en la captura de la
   // prueba, no leyendo el código.
+  // 28-oct · "entregado" ya no lo marca la cocina: lo confirma el
+  // motorizado por PedidosYa. Sólo cuenta como pendiente un pedido que
+  // YA se entregó y cuya venta no entró a la contabilidad.
   const porCobrar = terminados.filter(
-    (p) => p.contabilidad !== "ok" && p.status !== "CANCELLED",
+    (p) => p.status === "DELIVERED" && p.contabilidad !== "ok",
   )
 
   // Se da por caída cuando el aparato avisa que no hay red, o cuando dos
@@ -551,7 +554,11 @@ export default function PantallaCocina() {
                   <span className="font-bold text-red-400">cancelado</span>
                 ) : p.contabilidad === "ok" ? (
                   <span className="font-bold text-emerald-400">
-                    cobrado ${Number(p.total_usd).toFixed(2)} · en contabilidad ✓
+                    entregado ${Number(p.total_usd).toFixed(2)} · en contabilidad ✓
+                  </span>
+                ) : p.status !== "DELIVERED" ? (
+                  <span className="font-bold text-sky-300">
+                    con el motorizado · lo confirma PedidosYa
                   </span>
                 ) : (
                   <button
@@ -562,7 +569,7 @@ export default function PantallaCocina() {
                   >
                     {ocupado === p.id
                       ? "…"
-                      : `Cobrado $${Number(p.total_usd).toFixed(2)}`}
+                      : `Reintentar contabilidad $${Number(p.total_usd).toFixed(2)}`}
                   </button>
                 )}
                 {p.contabilidad === "falló" ? (
