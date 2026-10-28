@@ -142,6 +142,10 @@ export default function PantallaCocina() {
   // R136 · cancelar pide DOS toques. En una cocina, un botón de cancelar
   // que borra al primer toque se aprieta sin querer con la mano llena.
   const [porCancelar, setPorCancelar] = useState<string | null>(null)
+  // 28-oct · "listo" también pide DOS toques. Un toque en el ticket lo
+  // sacaba del tablero sin pedir confirmación ni dejar volver: la cocina
+  // no podía arrepentirse de un toque sin querer.
+  const [porListo, setPorListo] = useState<string | null>(null)
   const [sonido, setSonido] = useState(false)
   // R135 · una pantalla que muestra datos viejos EN SILENCIO es peor que
   // una apagada: la cocina cree que no entró nada y el cliente espera. Se
@@ -195,7 +199,7 @@ export default function PantallaCocina() {
         cache: "no-store",
       })
       if (res.status === 401) {
-        setError("La llave no sirve · pedí la dirección completa de nuevo.")
+        setError("La llave no sirve · pide la dirección completa de nuevo.")
         return
       }
       const data = await res.json()
@@ -374,7 +378,7 @@ export default function PantallaCocina() {
           <p className="mt-1 text-base">
             {enLinea
               ? "No se puede llegar al servidor · puede haber pedidos nuevos que no ves."
-              : "La tablet se quedó sin internet · revisá el wifi."}
+              : "La tablet se quedó sin internet · revisa el wifi."}
           </p>
           <p className="mt-1 text-sm opacity-90">
             Últimos datos buenos ·{" "}
@@ -421,13 +425,36 @@ export default function PantallaCocina() {
                 <button
                   type="button"
                   disabled={ocupado === p.id}
-                  onClick={() => avanzar(p, "listo")}
+                  onClick={() => {
+                    if (porListo === p.id) {
+                      setPorListo(null)
+                      avanzar(p, "listo")
+                    } else {
+                      setPorListo(p.id)
+                      setTimeout(
+                        () => setPorListo((actual) => (actual === p.id ? null : actual)),
+                        6000,
+                      )
+                    }
+                  }}
                   className={`flex w-full items-baseline justify-between gap-2 px-3 py-2 text-left font-bold disabled:opacity-60 ${colorCabecera(min)}`}
                 >
                   <span className="font-mono text-base">{p.order_code.replace(/^NF-\d+-/, "")}</span>
                   <span className="text-sm">{min} min</span>
                   <span className="text-xs opacity-90">naufrago.ec</span>
                 </button>
+                {porListo === p.id ? (
+                  <div className="flex items-center gap-2 bg-emerald-700 px-3 py-2 text-sm font-bold text-white">
+                    <span className="flex-1">¿Listo para el motorizado? Toca el ticket otra vez para confirmar</span>
+                    <button
+                      type="button"
+                      onClick={() => setPorListo(null)}
+                      className="rounded bg-slate-950/40 px-3 py-1.5"
+                    >
+                      Volver
+                    </button>
+                  </div>
+                ) : null}
 
                 <ul className="divide-y divide-slate-700">
                   {(p.cart_lines ?? []).map((l, i) => {
