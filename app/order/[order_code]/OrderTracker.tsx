@@ -62,6 +62,11 @@ export interface OrderSnapshot {
     photoUrl?: string
     rating?: number
     tenureMonths?: number
+    /** 28-oct · posición en vivo del proveedor (la API no manda coordenadas). */
+    distance_remaining_m?: number
+    total_distance_m?: number
+    eta_min?: number
+    live_at?: string
   } | null
   /** R141 · lo devuelve la API desde siempre · faltaba declararlo acá.
    *  Se usa para decirle al cliente cancelado si le cobraron algo. */
@@ -159,7 +164,26 @@ export function OrderTracker({ initial, orderCode }: Props) {
           <SubStatusBanner
             emoji="📍"
             title="El motorizado está cerca"
-            body="Tu pedido casi llega · prepará el efectivo o el teléfono."
+            body="Tu pedido casi llega · prepara el efectivo o el teléfono."
+            tone="cyan"
+          />
+        ) : null}
+        {/* 28-oct · aviso para salir a recibir, según la posición REAL del
+            motorizado (minutos o metros que le faltan). Si ya llegó, el
+            aviso de abajo manda. */}
+        {stage === "en_route" &&
+        snap.delivery_substatus !== "AT_DESTINATION" &&
+        ((typeof snap.rider_info?.eta_min === "number" && snap.rider_info.eta_min <= 3) ||
+          (typeof snap.rider_info?.distance_remaining_m === "number" &&
+            snap.rider_info.distance_remaining_m <= 400)) ? (
+          <SubStatusBanner
+            emoji="🛵"
+            title="Ve saliendo a recibirlo"
+            body={
+              typeof snap.rider_info?.distance_remaining_m === "number"
+                ? `El motorizado está a ${snap.rider_info.distance_remaining_m} m.`
+                : "El motorizado llega en pocos minutos."
+            }
             tone="cyan"
           />
         ) : null}
@@ -880,6 +904,13 @@ function computeEtaText(snap: OrderSnapshot): string {
   }
   // For en-route, use ETA based on rider_picked_up_at + delivery_eta_minutes
   if (snap.stage === "en_route") {
+    // 28-oct · si el proveedor dio los minutos reales, mandan sobre la
+    // estimación por reloj.
+    const enVivo = snap.rider_info?.eta_min
+    if (typeof enVivo === "number") {
+      const m = Math.max(0, Math.round(enVivo))
+      return m > 0 ? `Llega en ~${m} min` : "Llegando…"
+    }
     const pickup = snap.rider_picked_up_at
       ? new Date(snap.rider_picked_up_at).getTime()
       : null

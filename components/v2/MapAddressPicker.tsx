@@ -406,6 +406,16 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
     setShowOverlay(false)
   }
 
+  // 28-oct · al abrirse la lista de sugerencias el campo se quedaba
+  // arriba, fuera de la pantalla, y para seguir escribiendo había que
+  // volver a subir. Se sube el campo a la vista UNA vez cuando aparece la
+  // lista (no en cada letra) para que campo y lista se vean juntos.
+  const listaAbierta = sugerencias.length > 0
+  useEffect(() => {
+    if (!listaAbierta) return
+    inputRef.current?.scrollIntoView({ block: "start", behavior: "smooth" })
+  }, [listaAbierta])
+
   // Sin llave o con el mapa caído · campo de texto simple.
   if (unavailable || failed) {
     return (
@@ -443,7 +453,7 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
             setTimeout(() => setSugerencias([]), 180)
           }}
           placeholder="Busca tu dirección…"
-          className="min-h-[44px] w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none"
+          className="min-h-[44px] w-full scroll-mt-4 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none"
           autoComplete="off"
         />
         {buscando && sugerencias.length === 0 ? (
@@ -454,7 +464,7 @@ export default function MapAddressPicker({ initial, onChange }: Props) {
         {sugerencias.length > 0 ? (
           <ul
             data-sugerencias="direccion"
-            className="absolute z-30 mt-1 w-full overflow-hidden rounded-md border border-cyan-500/30 bg-slate-950 shadow-xl"
+            className="absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-cyan-500/30 bg-slate-950 shadow-xl"
           >
             {sugerencias.map((s, i) => (
               <li key={i}>
