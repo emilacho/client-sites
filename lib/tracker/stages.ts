@@ -57,7 +57,7 @@ export const TRACKER_STAGES: TrackerStage[] = [
  *   PENDING            → received   (just submitted · kitchen not yet ack)
  *   ACCEPTED           → received   (kitchen confirmed but not started)
  *   PREPARING          → preparing
- *   READY              → preparing  (food ready · rider hasn't picked up · UX-wise still "kitchen done")
+ *   READY              → en_route   (28-oct · la cocina ya lo entregó al motorizado · empieza el recorrido)
  *   RIDER_PICKED_UP    → en_route   (rider has the package · canoa zarpó)
  *   IN_TRANSIT         → en_route   (rider on the way)
  *   DELIVERED          → delivered
@@ -71,8 +71,8 @@ export function stageForStatus(
     case "ACCEPTED":
       return "received"
     case "PREPARING":
-    case "READY":
       return "preparing"
+    case "READY":
     case "RIDER_PICKED_UP":
     case "IN_TRANSIT":
       return "en_route"

@@ -7,6 +7,7 @@ import {
   stageIndexForStatus,
 } from "@/lib/tracker/stages"
 import type { NaufragoOrderStatus } from "@/lib/schemas"
+import { refrescarPosicion, riderParaPantalla } from "@/lib/tracker/posicion-en-vivo"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -62,6 +63,9 @@ interface OrderRow {
   delivery_fee_usd: number
   total_usd: number
   delivery_provider: string
+  delivery_provider_order_id: string | null
+  dropoff_lat: number | null
+  dropoff_lng: number | null
   delivery_provider_tracking_url: string | null
   delivery_eta_minutes: number | null
   rider_info: RiderInfoShape | null
@@ -141,7 +145,7 @@ export async function GET(
   const { data, error } = await supabase
     .from("orders")
     .select(
-      "id, order_code, status, delivery_substatus, customer_name, customer_phone, cart_lines, subtotal_usd, discount_code, discount_usd, delivery_fee_usd, total_usd, delivery_provider, delivery_provider_tracking_url, delivery_eta_minutes, rider_info, payment_method, customer_notes, created_at, accepted_at, preparing_at, ready_at, rider_picked_up_at, in_transit_at, delivered_at, cancelled_at, cancellation_reason, delivery_photo_url, delivery_photo_lat, delivery_photo_lng, delivery_photo_at",
+      "id, order_code, status, delivery_substatus, delivery_provider_order_id, dropoff_lat, dropoff_lng, customer_name, customer_phone, cart_lines, subtotal_usd, discount_code, discount_usd, delivery_fee_usd, total_usd, delivery_provider, delivery_provider_tracking_url, delivery_eta_minutes, rider_info, payment_method, customer_notes, created_at, accepted_at, preparing_at, ready_at, rider_picked_up_at, in_transit_at, delivered_at, cancelled_at, cancellation_reason, delivery_photo_url, delivery_photo_lat, delivery_photo_lng, delivery_photo_at",
     )
     .eq("order_code", order_code.toUpperCase())
     .maybeSingle()
@@ -157,6 +161,16 @@ export async function GET(
   }
 
   const row = data as OrderRow
+  // 28-oct · con el motorizado en camino, la posición se le pregunta al
+  // proveedor (con freno por pedido) y alimenta canoa, minutos y distancia.
+  row.rider_info = (await refrescarPosicion({
+    id: row.id,
+    status: row.status,
+    delivery_provider_order_id: row.delivery_provider_order_id,
+    dropoff_lat: row.dropoff_lat,
+    dropoff_lng: row.dropoff_lng,
+    rider_info: row.rider_info as never,
+  })) as OrderRow["rider_info"]
   const stage = stageForStatus(row.status)
   const stageIndex = stageIndexForStatus(row.status)
   const canoaPct = computeCanoaPct(row)
@@ -184,7 +198,7 @@ export async function GET(
     total_usd: row.total_usd,
     delivery_provider: row.delivery_provider,
     delivery_eta_minutes: row.delivery_eta_minutes,
-    rider_info: row.rider_info,
+    rider_info: riderParaPantalla(row.rider_info as never),
     payment_method: row.payment_method,
     customer_notes: row.customer_notes,
     created_at: row.created_at,

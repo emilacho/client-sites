@@ -32,7 +32,7 @@ describe("tracker stages canon · R103", () => {
     expect(stageForStatus("PENDING")).toBe("received")
     expect(stageForStatus("ACCEPTED")).toBe("received")
     expect(stageForStatus("PREPARING")).toBe("preparing")
-    expect(stageForStatus("READY")).toBe("preparing")
+    expect(stageForStatus("READY")).toBe("en_route")
     expect(stageForStatus("RIDER_PICKED_UP")).toBe("en_route")
     expect(stageForStatus("IN_TRANSIT")).toBe("en_route")
     expect(stageForStatus("DELIVERED")).toBe("delivered")
