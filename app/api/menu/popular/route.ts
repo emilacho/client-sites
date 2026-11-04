@@ -70,6 +70,7 @@ export async function GET() {
       .select("cart_lines, created_at")
       .gte("created_at", since)
       .neq("status", "CANCELLED")
+      .eq("es_prueba", false) // R183 · lo más pedido que ve el cliente sale solo de ventas reales
       .limit(500)
 
     if (error || !rows) {
