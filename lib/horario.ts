@@ -70,7 +70,12 @@ export function ahoraEnLaCocina(): { dia: number; hora: number; minuto: number }
  * dejar pedir, Y el servidor para rechazar un pedido que llegue igual.
  * Una comprobación que sólo vive en la pantalla no es una comprobación.
  */
+/** R173 · Emilio, 04-nov: abre el local de verdad, por un rato, para que un socio en Guayaquil haga un pedido de ensayo.
+ *  Se cierra SOLO a esta hora (no hay que acordarse): pasada, vuelve el horario de siempre. Para cerrar antes, poner "". */
+export const APERTURA_TEMPORAL_HASTA = "2026-11-04T21:04:00Z"
+
 export function cocinaAbierta(esPrueba = false): boolean {
+  if (APERTURA_TEMPORAL_HASTA && Date.now() < Date.parse(APERTURA_TEMPORAL_HASTA)) return true
   // R172 · un dispositivo declarado de prueba (?prueba=1) puede ensayar un pedido con la cocina cerrada;
   // el pedido sale marcado es_prueba. Nadie más puede.
   if (esPrueba) return true
