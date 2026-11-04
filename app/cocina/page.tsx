@@ -424,6 +424,12 @@ export default function PantallaCocina() {
                       ) : null}
                     </div>
                     <p className="text-base font-semibold">{m.texto}</p>
+                    {m.nombre || m.vehiculo ? (
+                      <p className="text-sm">{[m.nombre, m.vehiculo].filter(Boolean).join(" · ")}</p>
+                    ) : null}
+                    {m.codigo ? (
+                      <p className="text-sm opacity-90">Código del envío: <span className="font-mono font-bold">{m.codigo}</span></p>
+                    ) : null}
                     {m.metros !== null ? (
                       <p className="text-sm opacity-90">
                         Le faltan {m.metros >= 1000 ? `${(m.metros / 1000).toFixed(1)} km` : `${m.metros} m`} para el cliente

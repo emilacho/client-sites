@@ -16,6 +16,10 @@ export interface MotorizadoParaCocina {
   minutos: number | null
   /** Metros que le faltan al cliente · solo cuando ya salió con el pedido. */
   metros: number | null
+  /** R178 · quién viene y con qué código se identifica el envío, para reconocerlo en la puerta. */
+  nombre?: string | null
+  vehiculo?: string | null
+  codigo?: string | null
 }
 
 const esNumero = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v)

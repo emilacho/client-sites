@@ -84,6 +84,9 @@ export async function refrescarPosicion(
     const nuevo: RiderGuardado = { ...(guardado ?? {}), live_at: new Date(ahora).toISOString() }
 
     if (esNumero(instantanea.etaMinutes)) nuevo.eta_min = instantanea.etaMinutes
+    // R178 · quién es el motorizado, si el proveedor lo dice (la cocina lo necesita para reconocerlo en la puerta)
+    if (typeof instantanea.riderInfo?.name === "string" && instantanea.riderInfo.name) nuevo.name = instantanea.riderInfo.name
+    if (typeof instantanea.riderInfo?.vehicleType === "string" && instantanea.riderInfo.vehicleType) nuevo.vehicleType = instantanea.riderInfo.vehicleType
 
     // R177 · el avance de la canoa (distancia al cliente) solo se mide DESDE que el
     // motorizado recogió el pedido. Antes de eso viene hacia el local: su distancia al

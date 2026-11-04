@@ -32,3 +32,14 @@ describe("R176 · el motorizado en la pantalla de cocina", () => {
     expect(c).toContain('p.status !== "DELIVERED" && p.status !== "CANCELLED"')
   })
 })
+
+describe("R178 · quién viene: nombre, vehículo y código del envío", () => {
+  it("la ruta los entrega y la pantalla los muestra; el nombre se guarda solo si el proveedor lo dice", () => {
+    const r = readFileSync("app/api/cocina/pedidos/route.ts", "utf8")
+    expect(r).toContain("codigo: aviso?.codigo ?? null")
+    expect(r).toContain("confirmationCode")
+    const c = readFileSync("app/cocina/page.tsx", "utf8")
+    expect(c).toContain("Código del envío")
+    expect(readFileSync("lib/tracker/posicion-en-vivo.ts", "utf8")).toContain("nuevo.name = instantanea.riderInfo.name")
+  })
+})

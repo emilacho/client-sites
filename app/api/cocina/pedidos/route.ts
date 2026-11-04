@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
   const conEnvio = pedidos.filter(
     (p) => p.delivery_provider_order_id && !["DELIVERED", "CANCELLED", "PENDING_PAYMENT"].includes(String(p.status)),
   )
-  const ultimoAviso = new Map<string, { status: string; retiro: unknown }>()
+  const ultimoAviso = new Map<string, { status: string; retiro: unknown; codigo: string | null }>()
   if (conEnvio.length > 0) {
     const { data: avisos } = await supa
       .from("courier_order_events")
@@ -95,8 +95,8 @@ export async function GET(req: NextRequest) {
       .in("pedidosya_order_id", conEnvio.map((p) => p.delivery_provider_order_id as string))
       .order("received_at", { ascending: false })
       .limit(200)
-    for (const a of (avisos ?? []) as Array<{ pedidosya_order_id: string; status: string; payload: { data?: { estimatedPickUpTime?: unknown } } | null }>) {
-      if (!ultimoAviso.has(a.pedidosya_order_id)) ultimoAviso.set(a.pedidosya_order_id, { status: a.status, retiro: a.payload?.data?.estimatedPickUpTime })
+    for (const a of (avisos ?? []) as Array<{ pedidosya_order_id: string; status: string; payload: { confirmationCode?: unknown; data?: { estimatedPickUpTime?: unknown } } | null }>) {
+      if (!ultimoAviso.has(a.pedidosya_order_id)) ultimoAviso.set(a.pedidosya_order_id, { status: a.status, retiro: a.payload?.data?.estimatedPickUpTime, codigo: typeof a.payload?.confirmationCode === "string" ? a.payload.confirmationCode : null })
     }
   }
   const motorizados = new Map<string, ReturnType<typeof motorizadoParaCocina>>()
@@ -111,7 +111,12 @@ export async function GET(req: NextRequest) {
         rider_info: ((p as { rider_info?: RiderGuardado | null }).rider_info ?? null) as RiderGuardado | null,
       })
       const aviso = ultimoAviso.get(p.delivery_provider_order_id as string)
-      motorizados.set(p.id, motorizadoParaCocina(aviso?.status, aviso?.retiro, rider))
+      motorizados.set(p.id, {
+        ...motorizadoParaCocina(aviso?.status, aviso?.retiro, rider),
+        nombre: typeof rider?.name === "string" ? rider.name : null,
+        vehiculo: typeof rider?.vehicleType === "string" ? rider.vehicleType : null,
+        codigo: aviso?.codigo ?? null,
+      })
     }),
   )
 
