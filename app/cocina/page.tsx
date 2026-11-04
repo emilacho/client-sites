@@ -37,7 +37,8 @@
  * Una vez con la llave en la dirección · `/cocina?llave=...`. Queda
  * guardada en la tablet. Sin llave no se ve nada.
  */
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import type { MotorizadoParaCocina } from "@/lib/cocina-motorizado"
 
 interface Linea {
   id?: string
@@ -71,6 +72,8 @@ interface Pedido {
   /** R164 · el cliente YA pagó pero el motorizado no se pudo pedir. */
   atencion?: boolean
   contabilidad: "ok" | "falló" | null
+  /** R176 · dónde va el motorizado de este pedido · null si aún no se pidió. */
+  motorizado?: MotorizadoParaCocina | null
 }
 
 const LLAVE_GUARDADA = "naufrago_cocina_llave"
@@ -392,6 +395,47 @@ export default function PantallaCocina() {
       {error ? (
         <p className="bg-red-950 px-3 py-2 text-sm text-red-200">{error}</p>
       ) : null}
+      {/* R176 · EL MOTORIZADO · dónde va cada envío, para saber cuándo cocinar y cuándo estar
+          pendiente de la entrega. Se actualiza solo con la misma consulta del tablero. */}
+      {(() => {
+        const enCamino = pedidos.filter(
+          (p) => p.motorizado && p.motorizado.fase !== "entregado" && p.status !== "DELIVERED" && p.status !== "CANCELLED",
+        )
+        if (enCamino.length === 0) return null
+        const color: Record<string, string> = {
+          buscando: "border-amber-500 bg-amber-950 text-amber-100",
+          va_al_local: "border-sky-500 bg-sky-950 text-sky-100",
+          en_el_local: "border-emerald-400 bg-emerald-900 text-emerald-50",
+          en_camino: "border-violet-400 bg-violet-950 text-violet-100",
+          llegando: "border-fuchsia-400 bg-fuchsia-950 text-fuchsia-100",
+        }
+        return (
+          <section data-motorizados className="border-b border-slate-700 bg-slate-950 px-3 py-3">
+            <h2 className="mb-2 text-sm font-black tracking-wide text-slate-300">🛵 MOTORIZADOS</h2>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {enCamino.map((p) => {
+                const m = p.motorizado!
+                return (
+                  <div key={p.id} data-fase={m.fase} className={`rounded-lg border-2 px-3 py-2 ${color[m.fase] ?? color.buscando}`}>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-sm font-bold">{p.customer_name} · {p.order_code}</span>
+                      {m.minutos !== null ? (
+                        <span className="text-2xl font-black tabular-nums">{m.minutos} min</span>
+                      ) : null}
+                    </div>
+                    <p className="text-base font-semibold">{m.texto}</p>
+                    {m.metros !== null ? (
+                      <p className="text-sm opacity-90">
+                        Le faltan {m.metros >= 1000 ? `${(m.metros / 1000).toFixed(1)} km` : `${m.metros} m`} para el cliente
+                      </p>
+                    ) : null}
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )
+      })()}
       {!sonido ? (
         <p className="bg-amber-500 px-3 py-2 text-center text-sm font-bold text-slate-900">
           ⚠ Esta pantalla NO va a avisar cuando entre un pedido · toca el botón
