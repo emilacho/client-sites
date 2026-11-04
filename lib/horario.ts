@@ -70,7 +70,10 @@ export function ahoraEnLaCocina(): { dia: number; hora: number; minuto: number }
  * dejar pedir, Y el servidor para rechazar un pedido que llegue igual.
  * Una comprobación que sólo vive en la pantalla no es una comprobación.
  */
-export function cocinaAbierta(): boolean {
+export function cocinaAbierta(esPrueba = false): boolean {
+  // R172 · un dispositivo declarado de prueba (?prueba=1) puede ensayar un pedido con la cocina cerrada;
+  // el pedido sale marcado es_prueba. Nadie más puede.
+  if (esPrueba) return true
   const { dia, hora } = ahoraEnLaCocina()
   if ((DIAS_CERRADOS as readonly number[]).includes(dia)) return false
   return hora >= COCINA_ABRE_H && hora < COCINA_CIERRA_H

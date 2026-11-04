@@ -46,3 +46,18 @@ describe("R172 · el pedido y la analítica llevan la marca", () => {
     expect(readFileSync("supabase/migrations/20261104_naufrago_es_prueba.sql", "utf8")).toContain("boolean not null default false")
   })
 })
+
+describe("R172 · ensayar un pedido con la cocina cerrada", () => {
+  it("solo el dispositivo de prueba pasa; la cocina cerrada sigue cerrada para los demás, en pantalla y en el servidor", async () => {
+    const { cocinaAbierta } = await import("@/lib/horario")
+    vi.useFakeTimers(); vi.setSystemTime(new Date("2026-11-04T22:00:00Z")) // miércoles 17:00 en Ecuador: cerrado
+    expect(cocinaAbierta()).toBe(false)
+    expect(cocinaAbierta(false)).toBe(false)
+    expect(cocinaAbierta(true)).toBe(true)
+    vi.useRealTimers()
+    for (const f of ["app/api/courier/order/route.ts", "app/api/courier/quote/route.ts"]) expect(readFileSync(f, "utf8")).toContain('cocinaAbierta(request.headers.get("x-naufrago-prueba") === "1")')
+    const c = readFileSync("components/v2/CartDrawer.tsx", "utf8")
+    expect(c).toContain("setAbierto(cocinaAbierta(esDispositivoDePrueba()))")
+    expect(c.match(/"x-naufrago-prueba": "1"/g)?.length).toBe(2)
+  })
+})

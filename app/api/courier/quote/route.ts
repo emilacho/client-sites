@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   // Y sobre todo: aceptar un pedido con el local cerrado significa
   // despachar un motorizado a una cocina apagada. Eso se paga (contrato
   // 2.5) y el cliente se queda sin comida.
-  if (!cocinaAbierta()) {
+  if (!cocinaAbierta(request.headers.get("x-naufrago-prueba") === "1")) {
     return NextResponse.json(
       {
         error: "local_cerrado",
