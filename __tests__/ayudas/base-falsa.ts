@@ -83,6 +83,15 @@ class Consulta implements PromiseLike<{ data: unknown; error: null }> {
     this.filtros.push((f) => (f[campo] ?? null) === valor)
     return this
   }
+  /** Como `.contains` de la base: la columna incluye todo lo de `parte`. */
+  contains(campo: string, parte: Fila) {
+    this.filtros.push((f) => {
+      const v = (f[campo] ?? {}) as Fila
+      return Object.entries(parte).every(([k, x]) => v[k] === x)
+    })
+    return this
+  }
+
   order(campo: string, o?: { ascending?: boolean }) {
     this.orden = { campo, asc: o?.ascending !== false }
     return this

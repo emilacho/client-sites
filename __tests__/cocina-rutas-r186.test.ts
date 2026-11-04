@@ -12,7 +12,7 @@ vi.mock("@/lib/supabase", () => ({ getSupabaseAdmin: () => ({ from: (t: string) 
     limit: () => Promise.resolve({ data: t === "orders" ? st.filas : [], error: null }),
     maybeSingle: async () => ({ data: st.pedido, error: null }),
     update: (c: any) => { st.ups.push(c); return { eq: async () => ({ error: null }) } },
-    insert: () => ({ then: () => undefined }) }
+    insert: () => Promise.resolve({ error: null }) }
   return q } }) }))
 beforeEach(() => { st.ups.length = 0; st.selects.length = 0 })
 const fila = (order_code: string, status: string, ready_at: string | null) => ({ id: order_code, order_code, status, ready_at, created_at: "2026-11-04T20:00:00Z", cart_lines: [], delivery_provider_order_id: null })

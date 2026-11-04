@@ -13,6 +13,7 @@ import { generateOrderCode } from "@/lib/checkout/order-code";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { telefonoCanonico } from "@/lib/telefono";
 import { cliente } from "@/cliente.config";
+import { guardarEvento } from "@/lib/eventos-pedido";
 
 export const runtime = "nodejs";
 
@@ -534,9 +535,7 @@ export async function POST(request: Request) {
         }).catch(() => {});
       }
 
-      await supabase
-        .from("order_events")
-        .insert({
+      await guardarEvento(supabase, {
           order_id: inserted.id,
           event_type: soloReservar ? "ORDER_RESERVED" : "ORDER_CREATED",
           actor: "system",
@@ -546,8 +545,7 @@ export async function POST(request: Request) {
             delivery_fee_usd: deliveryFeeUsd,
             total_usd: totalUsd,
           },
-        })
-        .then(undefined, () => {});
+        });
     }
   } catch (err) {
     console.warn("[courier-order] naufrago.orders persist failed", err);

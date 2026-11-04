@@ -1,3 +1,8 @@
+import { guardarEvento } from "@/lib/eventos-pedido"
+import type {
+  NaufragoOrderEventActor,
+  NaufragoOrderEventType,
+} from "@/lib/schemas"
 import type { NextRequest } from "next/server"
 import { cabecerasInternas, llamadaInterna } from "@/lib/llave-interna"
 import { origenPropio, origenPublico } from "@/lib/origen"
@@ -291,20 +296,16 @@ export async function POST(req: NextRequest) {
 async function logEvent(
   supa: ReturnType<typeof getSupabaseAdmin>,
   orderId: string,
-  eventType: string,
-  actor: string,
+  eventType: NaufragoOrderEventType,
+  actor: NaufragoOrderEventActor,
   payload: Record<string, unknown>,
 ): Promise<void> {
-  try {
-    await supa.from("order_events").insert({
-      order_id: orderId,
-      event_type: eventType,
-      actor,
-      payload,
-    })
-  } catch {
-    // best-effort log · no romper el flow si el insert falla
-  }
+  await guardarEvento(supa, {
+    order_id: orderId,
+    event_type: eventType,
+    actor,
+    payload,
+  })
 }
 
 async function dispatchAcceptedWhatsApp(

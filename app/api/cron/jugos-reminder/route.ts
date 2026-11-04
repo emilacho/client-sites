@@ -21,7 +21,7 @@ const REMINDER_TEMPLATE = (
 
 ¿Qué jugos naturales tienes esta semana?
 
-Respondé con los sabores · ejemplo ·
+Responde con los sabores · ejemplo ·
   "naranja y limón"
   "maracuyá, mora"
   "tamarindo + naranja"

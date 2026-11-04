@@ -3,6 +3,7 @@ import { llamadaInterna } from "@/lib/llave-interna"
 import { origenPublico } from "@/lib/origen"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { telefonoCanonico } from "@/lib/telefono"
+import { guardarEvento } from "@/lib/eventos-pedido"
 
 /**
  * POST /api/notifications/order-status · R96.110
@@ -153,7 +154,7 @@ export async function POST(req: NextRequest) {
     const data = (await res.json()) as { sid?: string }
 
     // Audit · register event para idempotency futuro.
-    await supa.from("order_events").insert({
+    await guardarEvento(supa, {
       order_id: order.id,
       event_type: "WHATSAPP_STATUS_NOTIFIED",
       actor: "system",
