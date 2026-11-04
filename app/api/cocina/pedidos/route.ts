@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { cocinaAutorizada } from "@/lib/cocina-llave"
-import { motorizadoParaCocina } from "@/lib/cocina-motorizado"
+import { motorizadoParaCocina, sigueEnCocina } from "@/lib/cocina-motorizado"
 import { refrescarPosicion, type RiderGuardado } from "@/lib/tracker/posicion-en-vivo"
 import type { NaufragoOrderStatus } from "@/lib/schemas"
 
@@ -33,7 +33,6 @@ const CLIENT_SLUG = "naufrago"
 // R164 · NEEDS_ATTENTION entra a la lista de vivos a propósito: es un
 // pedido COBRADO cuyo motorizado no se pudo pedir. Si no está entre los
 // vivos, la cocina no lo ve, el cliente pagó y nadie cocina nada.
-const VIVOS = ["PENDING", "ACCEPTED", "PREPARING", "NEEDS_ATTENTION"]
 
 export async function GET(req: NextRequest) {
   if (!(await cocinaAutorizada(req.headers.get("x-cocina-llave")))) {
@@ -127,7 +126,7 @@ export async function GET(req: NextRequest) {
       ...p,
       /** R176 · dónde va el motorizado · null si aún no se pidió. */
       motorizado: motorizados.get(p.id) ?? null,
-      vivo: VIVOS.includes(String(p.status)),
+      vivo: sigueEnCocina(String(p.status), p.ready_at),
       /** R164 · cobrado y sin motorizado · hay que pedirlo a mano. */
       atencion: String(p.status) === "NEEDS_ATTENTION",
       contabilidad: contabilidad.get(p.id) ?? null,
