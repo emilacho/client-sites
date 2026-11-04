@@ -700,7 +700,8 @@ function RiderCard({
           </div>
           {info.plate || info.vehicleType ? (
             <p className="font-mono text-[11px] text-neutral-600">
-              {info.vehicleType ?? "vehículo"} · {info.plate ?? "—"}
+              {/* R181 · una bicicleta no tiene placa: sin placa no se muestra el guion */}
+              {[info.vehicleType ?? "vehículo", info.plate].filter(Boolean).join(" · ")}
             </p>
           ) : null}
         </div>
