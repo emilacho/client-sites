@@ -394,7 +394,7 @@ function CartFooter() {
   // pantalla se cierre sola sin que nadie recargue.
   const [abierto, setAbierto] = useState(true)
   useEffect(() => {
-    const revisar = () => setAbierto(cocinaAbierta(esDispositivoDePrueba()))
+    const revisar = () => setAbierto(cocinaAbierta())
     revisar()
     const id = window.setInterval(revisar, 60_000)
     return () => window.clearInterval(id)
@@ -432,7 +432,7 @@ function CartFooter() {
     try {
       const res = await fetch("/api/courier/quote", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...(esDispositivoDePrueba() ? { "x-naufrago-prueba": "1" } : {}) },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           dropoff: {
             street: form.street,
@@ -516,7 +516,7 @@ function CartFooter() {
     try {
       const res = await fetch("/api/courier/order", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...(esDispositivoDePrueba() ? { "x-naufrago-prueba": "1" } : {}) },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           quoteToken,
           // R164 · con tarjeta el pedido se reserva y NO se despacha

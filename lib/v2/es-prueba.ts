@@ -2,8 +2,9 @@
  * Marca de prueba · R172 · un dispositivo se declara «de prueba» UNA vez
  * (abriendo el sitio con ?prueba=1) y desde ahí todo lo que haga lleva la
  * marca: el pedido (naufrago.orders.es_prueba) y cada evento de la analítica.
- * ?prueba=0 la quita. No cambia nada de lo que ve o recibe el cliente ni la
- * cocina: solo rotula, para que las pruebas no se lean como ventas reales.
+ * ?prueba=0 la quita. Solo rotula, para que las pruebas no se lean como ventas
+ * reales: no simula ni abre el local. Un pedido marcado se despacha y se cobra
+ * igual que cualquier otro, salvo que el reparto esté en modo simulado.
  */
 export const CLAVE_ES_PRUEBA = "naufrago_es_prueba"
 
