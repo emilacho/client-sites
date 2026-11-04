@@ -75,12 +75,9 @@ export function ahoraEnLaCocina(): { dia: number; hora: number; minuto: number }
 export const APERTURA_TEMPORAL_DESDE = "2026-11-04T18:00:00Z"
 export const APERTURA_TEMPORAL_HASTA = "2026-11-04T21:04:00Z"
 
-export function cocinaAbierta(esPrueba = false): boolean {
+export function cocinaAbierta(): boolean {
   const ahoraMs = Date.now()
   if (APERTURA_TEMPORAL_HASTA && ahoraMs >= Date.parse(APERTURA_TEMPORAL_DESDE) && ahoraMs < Date.parse(APERTURA_TEMPORAL_HASTA)) return true
-  // R172 · un dispositivo declarado de prueba (?prueba=1) puede ensayar un pedido con la cocina cerrada;
-  // el pedido sale marcado es_prueba. Nadie más puede.
-  if (esPrueba) return true
   const { dia, hora } = ahoraEnLaCocina()
   if ((DIAS_CERRADOS as readonly number[]).includes(dia)) return false
   return hora >= COCINA_ABRE_H && hora < COCINA_CIERRA_H

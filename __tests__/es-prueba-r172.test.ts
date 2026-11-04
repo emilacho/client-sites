@@ -47,19 +47,24 @@ describe("R172 · el pedido y la analítica llevan la marca", () => {
   })
 })
 
-describe("R172 · ensayar un pedido con la cocina cerrada", () => {
-  it("solo el dispositivo de prueba pasa; la cocina cerrada sigue cerrada para los demás, en pantalla y en el servidor", async () => {
-    const { cocinaAbierta, APERTURA_TEMPORAL_HASTA } = await import("@/lib/horario")
+describe("R184 · la marca de prueba no abre el local", () => {
+  afterEach(() => vi.useRealTimers())
+  it("con la cocina cerrada, la cabecera vieja de prueba ya no deja cotizar ni pedir", async () => {
     vi.useFakeTimers(); vi.setSystemTime(new Date("2026-11-11T22:00:00Z")) // miércoles 17:00 en Ecuador, pasada la apertura temporal: cerrado
-    expect(cocinaAbierta()).toBe(false)
-    expect(cocinaAbierta(false)).toBe(false)
-    expect(cocinaAbierta(true)).toBe(true)
-    vi.setSystemTime(Date.parse(APERTURA_TEMPORAL_HASTA) - 60_000); expect(cocinaAbierta()).toBe(true) // dentro de la apertura temporal, abierto para todos
-    vi.setSystemTime(Date.parse(APERTURA_TEMPORAL_HASTA) + 60_000); expect(cocinaAbierta()).toBe(false) // pasada la hora, vuelve solo
-    vi.useRealTimers()
-    for (const f of ["app/api/courier/order/route.ts", "app/api/courier/quote/route.ts"]) expect(readFileSync(f, "utf8")).toContain('cocinaAbierta(request.headers.get("x-naufrago-prueba") === "1")')
-    const c = readFileSync("components/v2/CartDrawer.tsx", "utf8")
-    expect(c).toContain("setAbierto(cocinaAbierta(esDispositivoDePrueba()))")
-    expect(c.match(/"x-naufrago-prueba": "1"/g)?.length).toBe(2)
+    const cuerpo = JSON.stringify({ quoteToken: "t", customer: { name: "A", phone: "0999999999" }, dropoff: { street: "x" }, lines: [{ id: "1", name: "j", priceUsd: 1, qty: 1 }], esPrueba: true })
+    const pedir = (ruta: string) => new Request("http://x/api/courier/" + ruta, { method: "POST", headers: { "Content-Type": "application/json", "x-naufrago-prueba": "1" }, body: cuerpo })
+    const { POST: cotizar } = await import("@/app/api/courier/quote/route")
+    expect((await (await cotizar(pedir("quote"))).json()).error).toBe("local_cerrado")
+    for (const f of ["app/api/courier/order/route.ts", "app/api/courier/quote/route.ts", "components/v2/CartDrawer.tsx"]) {
+      const codigo = readFileSync(f, "utf8")
+      expect(codigo).toContain("cocinaAbierta()")
+      expect(codigo).not.toContain("x-naufrago-prueba")
+    }
+  })
+  it("la apertura temporal sigue valiendo para todos y vuelve sola", async () => {
+    const { cocinaAbierta, APERTURA_TEMPORAL_HASTA } = await import("@/lib/horario")
+    vi.useFakeTimers()
+    vi.setSystemTime(Date.parse(APERTURA_TEMPORAL_HASTA) - 60_000); expect(cocinaAbierta()).toBe(true)
+    vi.setSystemTime(Date.parse(APERTURA_TEMPORAL_HASTA) + 60_000); expect(cocinaAbierta()).toBe(false)
   })
 })
