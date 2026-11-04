@@ -16,11 +16,15 @@ export interface MotorizadoParaCocina {
   minutos: number | null
   /** Metros que le faltan al cliente · solo cuando ya salió con el pedido. */
   metros: number | null
+  /** La frase para leer de un vistazo: «El motorizado llega al local en aproximadamente 5 min». null si no se sabe el tiempo. */
+  frase: string | null
   /** R178 · quién viene y con qué código se identifica el envío, para reconocerlo en la puerta. */
   nombre?: string | null
   vehiculo?: string | null
   codigo?: string | null
 }
+
+const enMinutos = (m: number): string => (m <= 1 ? "1 min" : `${m} min`)
 
 const esNumero = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v)
 
@@ -29,6 +33,12 @@ const minutosHasta = (iso: unknown, ahora: number): number | null => {
   const t = Date.parse(iso)
   return Number.isFinite(t) ? Math.max(0, Math.round((t - ahora) / 60_000)) : null
 }
+
+type SinFrase = Omit<MotorizadoParaCocina, "frase">
+const conFrase = (m: SinFrase, hacia: string | null): MotorizadoParaCocina => ({
+  ...m,
+  frase: hacia && m.minutos !== null ? `El motorizado llega ${hacia} en aproximadamente ${enMinutos(m.minutos)}` : null,
+})
 
 /** `estadoProveedor` = el último aviso de PedidosYa (CONFIRMED, IN_PROGRESS, NEAR_PICKUP, PICKED_UP, NEAR_DROPOFF, COMPLETED). */
 export function motorizadoParaCocina(
@@ -41,16 +51,16 @@ export function motorizadoParaCocina(
   const metros = rider && esNumero(rider.distance_remaining_m) ? Math.round(rider.distance_remaining_m) : null
   switch ((estadoProveedor ?? "").toUpperCase()) {
     case "IN_PROGRESS":
-      return { fase: "va_al_local", texto: "Motorizado asignado · va hacia el local", minutos: minutosHasta(retiroEstimado, ahora), metros: null }
+      return conFrase({ fase: "va_al_local", texto: "Motorizado asignado · va hacia el local", minutos: minutosHasta(retiroEstimado, ahora), metros: null }, "al local")
     case "NEAR_PICKUP":
-      return { fase: "en_el_local", texto: "Motorizado llegando al local · ten el pedido listo", minutos: minutosHasta(retiroEstimado, ahora), metros: null }
+      return conFrase({ fase: "en_el_local", texto: "Motorizado llegando al local · ten el pedido listo", minutos: minutosHasta(retiroEstimado, ahora), metros: null }, "al local")
     case "PICKED_UP":
-      return { fase: "en_camino", texto: "Ya salió con el pedido", minutos: eta, metros }
+      return conFrase({ fase: "en_camino", texto: "Ya salió con el pedido", minutos: eta, metros }, "donde el cliente")
     case "NEAR_DROPOFF":
-      return { fase: "llegando", texto: "Llegando donde el cliente", minutos: eta, metros }
+      return conFrase({ fase: "llegando", texto: "Llegando donde el cliente", minutos: eta, metros }, "donde el cliente")
     case "COMPLETED":
-      return { fase: "entregado", texto: "Entregado", minutos: null, metros: null }
+      return conFrase({ fase: "entregado", texto: "Entregado", minutos: null, metros: null }, null)
     default:
-      return { fase: "buscando", texto: "Buscando motorizado · PedidosYa aún no asigna a nadie", minutos: minutosHasta(retiroEstimado, ahora), metros: null }
+      return conFrase({ fase: "buscando", texto: "Buscando motorizado · PedidosYa aún no asigna a nadie", minutos: minutosHasta(retiroEstimado, ahora), metros: null }, null)
   }
 }

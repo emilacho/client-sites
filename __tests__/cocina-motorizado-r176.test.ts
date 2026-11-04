@@ -9,12 +9,12 @@ const retiro = "2026-11-04T18:58:00Z" // en 8 min
 describe("R176 · el motorizado en la pantalla de cocina", () => {
   it("antes de recoger, los minutos son los que faltan para que llegue al local", () => {
     expect(motorizadoParaCocina("CONFIRMED", retiro, null, AHORA)).toMatchObject({ fase: "buscando", minutos: 8, metros: null })
-    expect(motorizadoParaCocina("IN_PROGRESS", retiro, null, AHORA)).toMatchObject({ fase: "va_al_local", minutos: 8 })
+    expect(motorizadoParaCocina("IN_PROGRESS", retiro, null, AHORA)).toMatchObject({ fase: "va_al_local", minutos: 8, frase: "El motorizado llega al local en aproximadamente 8 min" })
     expect(motorizadoParaCocina("NEAR_PICKUP", retiro, null, AHORA)).toMatchObject({ fase: "en_el_local" })
     expect(motorizadoParaCocina("NEAR_PICKUP", retiro, null, AHORA).texto).toContain("ten el pedido listo")
   })
   it("ya con el pedido, los minutos y los metros son los que faltan para el cliente", () => {
-    expect(motorizadoParaCocina("PICKED_UP", retiro, { eta_min: 12.4, distance_remaining_m: 3180.6 }, AHORA)).toEqual({ fase: "en_camino", texto: "Ya salió con el pedido", minutos: 12, metros: 3181 })
+    expect(motorizadoParaCocina("PICKED_UP", retiro, { eta_min: 12.4, distance_remaining_m: 3180.6 }, AHORA)).toEqual({ fase: "en_camino", texto: "Ya salió con el pedido", minutos: 12, metros: 3181, frase: "El motorizado llega donde el cliente en aproximadamente 12 min" })
     expect(motorizadoParaCocina("NEAR_DROPOFF", null, { eta_min: 1, distance_remaining_m: 90 }, AHORA)).toMatchObject({ fase: "llegando", minutos: 1, metros: 90 })
     expect(motorizadoParaCocina("COMPLETED", null, null, AHORA).fase).toBe("entregado")
   })
@@ -41,5 +41,15 @@ describe("R178 · quién viene: nombre, vehículo y código del envío", () => {
     const c = readFileSync("app/cocina/page.tsx", "utf8")
     expect(c).toContain("Código del envío")
     expect(readFileSync("lib/tracker/posicion-en-vivo.ts", "utf8")).toContain("nuevo.name = instantanea.riderInfo.name")
+  })
+})
+
+describe("R178 · la frase de los minutos", () => {
+  it("dice «llega ... en aproximadamente N min»; sin tiempo conocido no inventa nada", () => {
+    expect(motorizadoParaCocina("PICKED_UP", null, { eta_min: 0.2 }, AHORA).frase).toBe("El motorizado llega donde el cliente en aproximadamente 1 min")
+    expect(motorizadoParaCocina("PICKED_UP", null, null, AHORA).frase).toBeNull()
+    expect(motorizadoParaCocina("CONFIRMED", retiro, null, AHORA).frase).toBeNull() // buscando: aún no hay quién llegue
+    expect(motorizadoParaCocina("COMPLETED", null, null, AHORA).frase).toBeNull()
+    expect(readFileSync("app/cocina/page.tsx", "utf8")).toContain("{m.frase ?")
   })
 })

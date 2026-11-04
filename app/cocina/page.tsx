@@ -419,10 +419,8 @@ export default function PantallaCocina() {
                   <div key={p.id} data-fase={m.fase} className={`rounded-lg border-2 px-3 py-2 ${color[m.fase] ?? color.buscando}`}>
                     <div className="flex items-baseline justify-between gap-2">
                       <span className="text-sm font-bold">{p.customer_name} · {p.order_code}</span>
-                      {m.minutos !== null ? (
-                        <span className="text-2xl font-black tabular-nums">{m.minutos} min</span>
-                      ) : null}
                     </div>
+                    {m.frase ? <p className="text-lg font-black">{m.frase}</p> : null}
                     <p className="text-base font-semibold">{m.texto}</p>
                     {m.nombre || m.vehiculo ? (
                       <p className="text-sm">{[m.nombre, m.vehiculo].filter(Boolean).join(" · ")}</p>
