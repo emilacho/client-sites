@@ -8,6 +8,8 @@
  * como distinct_id (más estable que el anonymous).
  */
 
+import { esDispositivoDePrueba } from "@/lib/v2/es-prueba"
+
 const POSTHOG_HOST =
   process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com"
 const DISTINCT_ID_KEY = "naufrago_ph_distinct_id"
@@ -74,6 +76,8 @@ export function track(
     distinct_id: distinctId,
     properties: {
       ...properties,
+      // R172 · el dispositivo de prueba rotula cada evento para que la analítica lo excluya
+      ...(esDispositivoDePrueba() ? { es_prueba: true } : {}),
       $current_url:
         typeof window !== "undefined" ? window.location.href : undefined,
       $referrer: typeof document !== "undefined" ? document.referrer : undefined,

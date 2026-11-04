@@ -184,7 +184,7 @@ export async function POST(request: Request) {
   // Y sobre todo: aceptar un pedido con el local cerrado significa
   // despachar un motorizado a una cocina apagada. Eso se paga (contrato
   // 2.5) y el cliente se queda sin comida.
-  if (!cocinaAbierta()) {
+  if (!cocinaAbierta(request.headers.get("x-naufrago-prueba") === "1")) {
     return NextResponse.json(
       {
         error: "local_cerrado",
@@ -432,6 +432,8 @@ export async function POST(request: Request) {
         // del local. Mezclarla inflaría los ingresos y la contabilidad
         // no cerraría contra la caja.
         tip_usd: parsed.data.tipUsd ?? 0,
+        // R172 · prueba = modo simulado del courier o dispositivo declarado de prueba
+        es_prueba: mockMode || parsed.data.esPrueba === true,
         delivery_eta_minutes: etaMinutes,
         delivery_provider: "PEDIDOSYA_COURIER",
         delivery_provider_order_id: courierResult?.orderId ?? null,

@@ -101,6 +101,8 @@ export const courierOrderRequestSchema = z.object({
    *  en el total del local ni en lo que se le ordena cobrar al
    *  repartidor. Tope $50 · una propina mayor es un dedo equivocado. */
   tipUsd: z.number().min(0).max(50).optional(),
+  /** R172 · el dispositivo se declaró de prueba (?prueba=1): el pedido queda marcado es_prueba. */
+  esPrueba: z.boolean().optional(),
 })
 export type CourierOrderRequest = z.infer<typeof courierOrderRequestSchema>
 

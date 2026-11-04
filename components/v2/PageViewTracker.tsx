@@ -7,6 +7,7 @@
 import { useEffect, Suspense } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 import { pageview } from "@/lib/v2/posthog-track"
+import { declararPruebaDesdeLaDireccion } from "@/lib/v2/es-prueba"
 
 function Tracker() {
   const pathname = usePathname()
@@ -15,6 +16,7 @@ function Tracker() {
   useEffect(() => {
     if (!pathname) return
     const search = searchParams.toString()
+    declararPruebaDesdeLaDireccion(search)
     pageview({
       $pathname: pathname,
       $search: search ? `?${search}` : undefined,

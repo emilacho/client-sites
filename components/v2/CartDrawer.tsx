@@ -37,6 +37,7 @@ import MapAddressPicker from "./MapAddressPicker"
 import { CajitaPayphone } from "./CajitaPayphone"
 import { PaymentForm } from "./PaymentForm"
 import { track } from "@/lib/v2/posthog-track"
+import { esDispositivoDePrueba } from "@/lib/v2/es-prueba"
 import { useLoyaltyBalance } from "@/lib/v2/use-loyalty-balance"
 import { cocinaAbierta, HORARIO_TEXTO } from "@/lib/horario"
 
@@ -393,7 +394,7 @@ function CartFooter() {
   // pantalla se cierre sola sin que nadie recargue.
   const [abierto, setAbierto] = useState(true)
   useEffect(() => {
-    const revisar = () => setAbierto(cocinaAbierta())
+    const revisar = () => setAbierto(cocinaAbierta(esDispositivoDePrueba()))
     revisar()
     const id = window.setInterval(revisar, 60_000)
     return () => window.clearInterval(id)
@@ -431,7 +432,7 @@ function CartFooter() {
     try {
       const res = await fetch("/api/courier/quote", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(esDispositivoDePrueba() ? { "x-naufrago-prueba": "1" } : {}) },
         body: JSON.stringify({
           dropoff: {
             street: form.street,
@@ -515,7 +516,7 @@ function CartFooter() {
     try {
       const res = await fetch("/api/courier/order", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(esDispositivoDePrueba() ? { "x-naufrago-prueba": "1" } : {}) },
         body: JSON.stringify({
           quoteToken,
           // R164 · con tarjeta el pedido se reserva y NO se despacha
@@ -540,6 +541,7 @@ function CartFooter() {
             notes: l.notes,
           })),
           tipUsd: cart.tipUsd > 0 ? cart.tipUsd : undefined,
+          esPrueba: esDispositivoDePrueba() || undefined,
           // R144 · lo que el cliente VIO como envío y el cupón que
           // aplicó. El servidor no los cree a ciegas: re-calcula el
           // descuento y re-cotiza el envío · esto es respaldo y
