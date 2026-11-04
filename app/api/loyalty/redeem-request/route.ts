@@ -3,6 +3,7 @@ import { createHash, randomInt } from "node:crypto"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 import { telefonoCanonico } from "@/lib/telefono"
+import { claveObligatoria } from "@/lib/claves"
 
 /**
  * POST /api/loyalty/redeem-request · R96.111
@@ -19,11 +20,10 @@ export const runtime = "nodejs"
 const CLIENT_SLUG = "naufrago"
 const PURPOSE = "loyalty_redeem"
 const TTL_MIN = 5
-const OTP_SALT = process.env.OTP_SALT ?? "naufrago-otp-2026"
 
 
 function hashCode(code: string): string {
-  return createHash("sha256").update(`${OTP_SALT}|${code}`).digest("hex")
+  return createHash("sha256").update(`${claveObligatoria("OTP_SALT")}|${code}`).digest("hex")
 }
 
 async function sendOtpWhatsApp(phone: string, code: string): Promise<boolean> {
