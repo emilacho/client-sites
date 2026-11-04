@@ -10,6 +10,7 @@ import { buildStagePayload, sendPushForOrder } from "@/lib/push-server"
 import { earnPerlas } from "@/lib/loyalty-server"
 import { enviarVentaALoyverse } from "@/lib/loyverse"
 import { haversineMeters, deriveDeliveryStatus } from "@/lib/geo"
+import { guardarEvento } from "@/lib/eventos-pedido"
 
 export const runtime = "nodejs"
 // R187 · al entregar, esta ruta manda la venta a Loyverse. Con 10 s podía cortarse
@@ -307,9 +308,7 @@ export async function POST(request: Request) {
           entregadoEn,
         })
         if (!("yaEstaba" in venta)) {
-          await supabase
-            .from("order_events")
-            .insert({
+          await guardarEvento(supabase, {
               order_id: nfOrder.id,
               event_type: venta.ok ? "ACCOUNTING_SYNCED" : "ACCOUNTING_SYNC_FAILED",
               actor: "system",
@@ -317,7 +316,6 @@ export async function POST(request: Request) {
                 ? { receipt: venta.receiptNumber }
                 : { motivo: venta.motivo },
             })
-            .then(undefined, () => {})
         }
       }
 

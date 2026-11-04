@@ -179,6 +179,7 @@ export const PAYMENT_STATUSES = [
 ] as const
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number]
 
+// R190 · Debe ser igual a la restricción de la base; una prueba lo vigila.
 export const NAUFRAGO_ORDER_EVENT_TYPES = [
   "ORDER_CREATED",
   "PAYMENT_AUTHORIZED",
@@ -186,6 +187,8 @@ export const NAUFRAGO_ORDER_EVENT_TYPES = [
   "PAYMENT_FAILED",
   "KITCHEN_ACCEPTED",
   "KITCHEN_REJECTED",
+  "KITCHEN_NOTIFIED",
+  "KITCHEN_NOTIFY_FAILED",
   "PREPARING_STARTED",
   "READY_FOR_PICKUP",
   "COURIER_DISPATCHED",
@@ -197,7 +200,25 @@ export const NAUFRAGO_ORDER_EVENT_TYPES = [
   "CANCELLED",
   "STATUS_OVERRIDE_MANUAL",
   "WEBHOOK_RECEIVED",
+  "ACCOUNTING_SYNCED",
+  "ACCOUNTING_SYNC_FAILED",
+  "ORDER_RESERVED",
+  "DISPATCH_FAILED_AFTER_PAYMENT",
+  "WHATSAPP_CONFIRM_SENT",
+  "WHATSAPP_STATUS_NOTIFIED",
 ] as const
+export const NAUFRAGO_ORDER_EVENT_ACTORS = [
+  "system",
+  "customer",
+  "staff",
+  "webhook:pedidosya-courier",
+  "webhook:rappi",
+  "webhook:uber-eats",
+  "webhook:payment",
+] as const
+export type NaufragoOrderEventActor =
+  (typeof NAUFRAGO_ORDER_EVENT_ACTORS)[number]
+
 export type NaufragoOrderEventType =
   (typeof NAUFRAGO_ORDER_EVENT_TYPES)[number]
 

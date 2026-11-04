@@ -28,6 +28,7 @@ import { getSupabaseAdmin } from "@/lib/supabase"
 import { cabecerasInternas } from "@/lib/llave-interna"
 import { origenPropio } from "@/lib/origen"
 import { cliente } from "@/cliente.config"
+import { guardarEvento } from "@/lib/eventos-pedido"
 
 export interface ResultadoDespacho {
   ok: boolean
@@ -156,18 +157,12 @@ export async function despacharPedidoPagado(
       .from("orders")
       .update({ status: "NEEDS_ATTENTION" })
       .eq("id", pedido.id)
-    await supabase
-      .from("order_events")
-      .insert({
+    await guardarEvento(supabase, {
         order_id: pedido.id,
         event_type: "DISPATCH_FAILED_AFTER_PAYMENT",
         actor: "system",
         payload: { motivo: ultimoError },
       })
-      .then(
-        () => {},
-        () => {},
-      )
     console.error(
       `[despachar-pagado] ${orderCode} COBRADO PERO SIN DESPACHAR · ${ultimoError}`,
     )
@@ -186,18 +181,12 @@ export async function despacharPedidoPagado(
     })
     .eq("id", pedido.id)
 
-  await supabase
-    .from("order_events")
-    .insert({
+  await guardarEvento(supabase, {
       order_id: pedido.id,
       event_type: "ORDER_CREATED",
       actor: "system",
       payload: { despues_del_pago: true, envio_id: envio.orderId },
     })
-    .then(
-      () => {},
-      () => {},
-    )
 
   // Recién ahora el cliente recibe su aviso · el pedido existe de verdad.
   const origin = origenPropio()

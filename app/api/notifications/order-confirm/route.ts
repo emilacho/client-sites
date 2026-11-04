@@ -3,6 +3,7 @@ import { llamadaInterna } from "@/lib/llave-interna"
 import { origenPublico } from "@/lib/origen"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { cliente } from "@/cliente.config"
+import { guardarEvento } from "@/lib/eventos-pedido"
 
 /**
  * El primer aviso al cliente · "tu pedido está confirmado".
@@ -157,18 +158,12 @@ export async function POST(req: NextRequest) {
     }
     const enviado = (await res.json()) as { sid?: string }
 
-    await supa
-      .from("order_events")
-      .insert({
+    await guardarEvento(supa, {
         order_id: pedido.id,
         event_type: "WHATSAPP_CONFIRM_SENT",
         actor: "system",
         payload: { sid: enviado.sid ?? null },
       })
-      .then(
-        () => {},
-        () => {},
-      )
 
     return Response.json({ ok: true, sent: true, sid: enviado.sid ?? null })
   } catch (err) {

@@ -4,6 +4,7 @@ import { cocinaAutorizada } from "@/lib/cocina-llave"
 import { enviarVentaALoyverse } from "@/lib/loyverse"
 import { cancelarEnvio } from "@/lib/courier/para-rutas"
 import { devolverPerlasDelPedido } from "@/lib/loyalty-server"
+import { guardarEvento } from "@/lib/eventos-pedido"
 
 /**
  * POST /api/cocina/avanzar · R132
@@ -166,15 +167,12 @@ export async function POST(req: NextRequest) {
       return Response.json({ ok: false, error: errorEscritura.message }, { status: 500 })
     }
 
-    await supa
-      .from("order_events")
-      .insert({
+    await guardarEvento(supa, {
         order_id: orderId,
         event_type: destino.evento,
         actor: "staff",
         payload: { desde: pedido.status, pantalla: "cocina" },
       })
-      .then(undefined, () => {})
   }
 
   // ── R159 · cancelar de verdad, no sólo en nuestra pantalla ────────
@@ -260,15 +258,12 @@ export async function POST(req: NextRequest) {
       contabilidad = "ok"
     } else {
       contabilidad = venta.ok ? "ok" : "falló"
-      await supa
-        .from("order_events")
-        .insert({
+      await guardarEvento(supa, {
           order_id: orderId,
           event_type: venta.ok ? "ACCOUNTING_SYNCED" : "ACCOUNTING_SYNC_FAILED",
           actor: "staff",
           payload: venta.ok ? { receipt: venta.receiptNumber } : { motivo: venta.motivo },
         })
-        .then(undefined, () => {})
     }
   }
 

@@ -24,6 +24,7 @@ import { confirmarCobro } from "@/lib/pagos/payphone"
 import { despacharPedidoPagado } from "@/lib/checkout/despachar-pagado"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { cliente } from "@/cliente.config"
+import { guardarEvento } from "@/lib/eventos-pedido"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -63,10 +64,10 @@ async function marcarPedidoPagado(
       })
       .eq("id", fila.id)
 
-    await supa.from("order_events").insert({
+    await guardarEvento(supa, {
       order_id: fila.id,
       event_type: "PAYMENT_CAPTURED",
-      actor: "payphone",
+      actor: "webhook:payment",
       payload: {
         autorizacion: datos.autorizacion,
         tarjeta: datos.marca,

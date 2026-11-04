@@ -29,7 +29,12 @@ vi.mock("@/lib/supabase", () => ({
   getSupabaseAdmin: () => ({
     from: (tabla: string) => {
       if (tabla === "order_events") {
-        return { insert: (...a: unknown[]) => ({ then: () => insert(...a) }) }
+        return { insert: (...a: unknown[]) => ({
+          then: (ok: (r: { error: null }) => unknown) => {
+            insert(...a)
+            return ok({ error: null })
+          },
+        }) }
       }
       return {
         select: () => ({
