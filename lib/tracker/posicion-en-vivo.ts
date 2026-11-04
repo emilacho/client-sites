@@ -85,11 +85,22 @@ export async function refrescarPosicion(
 
     if (esNumero(instantanea.etaMinutes)) nuevo.eta_min = instantanea.etaMinutes
 
+    // R177 · el avance de la canoa (distancia al cliente) solo se mide DESDE que el
+    // motorizado recogió el pedido. Antes de eso viene hacia el local: su distancia al
+    // cliente no es "recorrido", y con cada salto del GPS la canoa subía (40 %) y bajaba (1 %).
+    const recogido = fila.status === "RIDER_PICKED_UP" || fila.status === "IN_TRANSIT"
+    if (!recogido) {
+      delete nuevo.distance_remaining_m
+      delete nuevo.total_distance_m
+    }
+
     if (esNumero(lat) && esNumero(lng)) {
       nuevo.latitude = lat
       nuevo.longitude = lng
-      if (esNumero(fila.dropoff_lat) && esNumero(fila.dropoff_lng)) {
-        const quedan = haversineMeters(lat, lng, fila.dropoff_lat, fila.dropoff_lng)
+      if (recogido && esNumero(fila.dropoff_lat) && esNumero(fila.dropoff_lng)) {
+        let quedan = haversineMeters(lat, lng, fila.dropoff_lat, fila.dropoff_lng)
+        // Nunca retrocede: un rodeo o un salto del GPS no devuelve la canoa atrás.
+        if (esNumero(guardado?.distance_remaining_m)) quedan = Math.min(quedan, guardado.distance_remaining_m)
         nuevo.distance_remaining_m = Math.round(quedan)
         // El recorrido total: del local al cliente. Si no se conoce el
         // local, se usa la mayor distancia vista (la primera medición).

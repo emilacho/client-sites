@@ -85,6 +85,8 @@ interface OrderRow {
 
 function computeCanoaPct(row: OrderRow): number {
   if (row.status === "DELIVERED") return 100
+  // R177 · hasta que el motorizado recoge el pedido, la canoa no zarpa.
+  if (row.status !== "RIDER_PICKED_UP" && row.status !== "IN_TRANSIT") return 0
   const stage = stageForStatus(row.status)
   if (stage !== "en_route") return 0
 

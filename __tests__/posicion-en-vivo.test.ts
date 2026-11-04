@@ -82,6 +82,27 @@ describe("posición del motorizado en vivo", () => {
     expect(update).toHaveBeenCalledTimes(1)
   })
 
+  it("R177 · antes de recoger no hay recorrido: viene hacia el local, así que no guarda distancias y borra las que hubiera", async () => {
+    getStatus.mockResolvedValue({ etaMinutes: 10, riderInfo: { latitude: -2.1850, longitude: -79.8891 } })
+    const r = await refrescarPosicion(
+      fila({ status: "READY", rider_info: { distance_remaining_m: 120, total_distance_m: 196, live_at: new Date(AHORA - 60_000).toISOString() } }),
+      AHORA,
+    )
+    expect(r?.eta_min).toBe(10)
+    expect(r?.distance_remaining_m).toBeUndefined()
+    expect(r?.total_distance_m).toBeUndefined()
+  })
+
+  it("R177 · ya recogido, lo que falta nunca retrocede aunque el GPS salte atrás", async () => {
+    getStatus.mockResolvedValue({ etaMinutes: 4, riderInfo: { latitude: -2.1850, longitude: -79.8891 } }) // ~450 m del cliente
+    const r = await refrescarPosicion(
+      fila({ rider_info: { distance_remaining_m: 300, total_distance_m: 900, live_at: new Date(AHORA - 60_000).toISOString() } }),
+      AHORA,
+    )
+    expect(r?.distance_remaining_m).toBe(300) // ya estuvo a 300 m: no vuelve a 450
+    expect(r?.total_distance_m).toBe(900)
+  })
+
   it("en simulacro no consulta", async () => {
     process.env.PEDIDOSYA_COURIER_MOCK = "true"
     await refrescarPosicion(fila(), AHORA)
