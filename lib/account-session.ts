@@ -8,8 +8,8 @@
  * - Sin JWT lib · base64url + HMAC bastante para nuestro threat model.
  */
 import { createHmac, timingSafeEqual } from "node:crypto"
+import { claveObligatoria } from "@/lib/claves"
 
-const SECRET = process.env.ACCOUNT_SESSION_SECRET ?? "naufrago-dev-secret-rotate"
 const TTL_MS = 90 * 24 * 3600_000
 export const COOKIE_NAME = "naufrago_session"
 
@@ -37,7 +37,7 @@ export interface AccountSession {
 export function signSession(payload: { whatsapp: string }): string {
   const json = JSON.stringify({ whatsapp: payload.whatsapp, iat: Date.now() })
   const data = b64url(json)
-  const sig = b64url(createHmac("sha256", SECRET).update(data).digest())
+  const sig = b64url(createHmac("sha256", claveObligatoria("ACCOUNT_SESSION_SECRET")).update(data).digest())
   return `${data}.${sig}`
 }
 
@@ -46,7 +46,7 @@ export function verifySession(token: string | undefined | null): AccountSession 
   const parts = token.split(".")
   if (parts.length !== 2) return null
   const [data, sig] = parts
-  const expectedSig = b64url(createHmac("sha256", SECRET).update(data).digest())
+  const expectedSig = b64url(createHmac("sha256", claveObligatoria("ACCOUNT_SESSION_SECRET")).update(data).digest())
   if (sig.length !== expectedSig.length) return null
   try {
     if (!timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))) return null

@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server"
 import { createHash } from "node:crypto"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
+import { claveObligatoria } from "@/lib/claves"
 
 /**
  * POST /api/ruleta/spin · R96.98 · cofre ruleta · 1 spin por
@@ -20,7 +21,6 @@ export const runtime = "nodejs"
 
 const CLIENT_SLUG = "naufrago"
 const COOLDOWN_HOURS = 24
-const IP_SALT = process.env.RULETA_IP_SALT ?? "naufrago-ruleta-2026"
 
 interface SpinBody {
   fingerprint?: unknown
@@ -50,7 +50,7 @@ function pickPrize(): { prize: Prize; index: number } {
 }
 
 function hashIp(ip: string): string {
-  return createHash("sha256").update(`${IP_SALT}|${ip}`).digest("hex")
+  return createHash("sha256").update(`${claveObligatoria("RULETA_IP_SALT")}|${ip}`).digest("hex")
 }
 
 export async function POST(req: NextRequest) {
@@ -80,7 +80,15 @@ export async function POST(req: NextRequest) {
     typeof body.fingerprint === "string" ? body.fingerprint.slice(0, 128) : null
 
   const ip = getClientIp(req)
-  const ipHash = ip !== "unknown" ? hashIp(ip) : null
+  let ipHash: string | null
+  try {
+    ipHash = ip !== "unknown" ? hashIp(ip) : null
+  } catch (err) {
+    return Response.json(
+      { ok: false, error: err instanceof Error ? err.message : "unknown" },
+      { status: 500 },
+    )
+  }
 
   if (!fingerprint && !ipHash) {
     return Response.json(

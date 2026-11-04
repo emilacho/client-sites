@@ -3,6 +3,7 @@ import { createHash } from "node:crypto"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { signSession, buildCookieValue } from "@/lib/account-session"
 import { telefonoCanonico } from "@/lib/telefono"
+import { claveObligatoria } from "@/lib/claves"
 
 /**
  * POST /api/account/login-confirm · R96.112
@@ -19,11 +20,10 @@ export const runtime = "nodejs"
 const CLIENT_SLUG = "naufrago"
 const PURPOSE = "account_login"
 const MAX_ATTEMPTS = 3
-const OTP_SALT = process.env.OTP_SALT ?? "naufrago-otp-2026"
 
 
 function hashCode(code: string): string {
-  return createHash("sha256").update(`${OTP_SALT}|${code}`).digest("hex")
+  return createHash("sha256").update(`${claveObligatoria("OTP_SALT")}|${code}`).digest("hex")
 }
 
 export async function POST(req: NextRequest) {

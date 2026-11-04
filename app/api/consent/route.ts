@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server"
 import { createHash } from "node:crypto"
 import { createClient } from "@supabase/supabase-js"
 import { getSupabaseAdmin } from "@/lib/supabase"
+import { claveObligatoria } from "@/lib/claves"
 
 /**
  * POST /api/consent · R96.129 · LOPDP Ecuador art. 24
@@ -15,7 +16,6 @@ import { getSupabaseAdmin } from "@/lib/supabase"
 export const runtime = "nodejs"
 
 const CLIENT_SLUG = "naufrago"
-const IP_SALT = process.env.CONSENT_IP_SALT ?? "naufrago-consent-2026"
 
 function getClientIp(req: NextRequest): string {
   const fwd = req.headers.get("x-forwarded-for")
@@ -26,7 +26,7 @@ function getClientIp(req: NextRequest): string {
 }
 
 function hashIp(ip: string): string {
-  return createHash("sha256").update(`${IP_SALT}|${ip}`).digest("hex")
+  return createHash("sha256").update(`${claveObligatoria("CONSENT_IP_SALT")}|${ip}`).digest("hex")
 }
 
 async function resolveCustomerId(token: string | null): Promise<string | null> {
@@ -77,7 +77,15 @@ export async function POST(req: NextRequest) {
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : null
   const customerId = await resolveCustomerId(token)
   const ip = getClientIp(req)
-  const ipHash = ip !== "unknown" ? hashIp(ip) : null
+  let ipHash: string | null
+  try {
+    ipHash = ip !== "unknown" ? hashIp(ip) : null
+  } catch (err) {
+    return Response.json(
+      { ok: false, error: err instanceof Error ? err.message : "unknown" },
+      { status: 500 },
+    )
+  }
   const userAgent = req.headers.get("user-agent")?.slice(0, 300) ?? null
 
   try {

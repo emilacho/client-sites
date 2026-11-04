@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js"
 import { createHash } from "node:crypto"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { telefonoCanonico } from "@/lib/telefono"
+import { claveObligatoria } from "@/lib/claves"
 
 /**
  * POST /api/customer/change-whatsapp-confirm · R96.119
@@ -23,11 +24,10 @@ export const runtime = "nodejs"
 const CLIENT_SLUG = "naufrago"
 const PURPOSE = "change_whatsapp"
 const MAX_ATTEMPTS = 3
-const OTP_SALT = process.env.OTP_SALT ?? "naufrago-otp-2026"
 
 
 function hashCode(code: string): string {
-  return createHash("sha256").update(`${OTP_SALT}|${code}`).digest("hex")
+  return createHash("sha256").update(`${claveObligatoria("OTP_SALT")}|${code}`).digest("hex")
 }
 
 async function resolveCustomer(token: string): Promise<{ id: string; currentWhatsapp: string | null } | null> {
