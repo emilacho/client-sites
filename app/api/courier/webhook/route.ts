@@ -12,8 +12,10 @@ import { enviarVentaALoyverse } from "@/lib/loyverse"
 import { haversineMeters, deriveDeliveryStatus } from "@/lib/geo"
 
 export const runtime = "nodejs"
-// PedidosYa retries non-2xx responses · keep this route fast.
-export const maxDuration = 10
+// R187 · al entregar, esta ruta manda la venta a Loyverse. Con 10 s podía cortarse
+// tras crear el recibo y antes de anotarlo, y el reintento de PedidosYa la duplicaría.
+// Máximo del plan (regla de límites al máximo).
+export const maxDuration = 800
 
 /**
  * Round 74 · PedidosYa Courier · webhook receiver.
@@ -130,6 +132,12 @@ export async function POST(request: Request) {
       // Si el estado no tiene traducción, no se toca el pedido.
       const orderUpdate: Record<string, unknown> = {}
       if (event.mappedStatus) orderUpdate.status = event.mappedStatus
+      // R188 · la hora de entrega se guarda una sola vez: un aviso repetido no la mueve.
+      const entregadoEn =
+        event.mappedStatus === "DELIVERED"
+          ? (nfOrder.delivered_at ?? new Date().toISOString())
+          : null
+      if (entregadoEn) orderUpdate.delivered_at = entregadoEn
       const p = event.payload as Record<string, unknown> | undefined
 
       // R96.19 · driver auto-fill · si payload trae rider info ·
@@ -296,7 +304,7 @@ export async function POST(request: Request) {
           deliveryFeeUsd: Number(nfOrder.delivery_fee_usd ?? 0),
           totalUsd: Number(nfOrder.total_usd ?? 0),
           notes: nfOrder.customer_notes ?? null,
-          entregadoEn: nfOrder.delivered_at ?? null,
+          entregadoEn,
         })
         if (!("yaEstaba" in venta)) {
           await supabase
