@@ -37,6 +37,7 @@ import MapAddressPicker from "./MapAddressPicker"
 import { CajitaPayphone } from "./CajitaPayphone"
 import { PaymentForm } from "./PaymentForm"
 import { track } from "@/lib/v2/posthog-track"
+import { esDispositivoDePrueba } from "@/lib/v2/es-prueba"
 import { useLoyaltyBalance } from "@/lib/v2/use-loyalty-balance"
 import { cocinaAbierta, HORARIO_TEXTO } from "@/lib/horario"
 
@@ -540,6 +541,7 @@ function CartFooter() {
             notes: l.notes,
           })),
           tipUsd: cart.tipUsd > 0 ? cart.tipUsd : undefined,
+          esPrueba: esDispositivoDePrueba() || undefined,
           // R144 · lo que el cliente VIO como envío y el cupón que
           // aplicó. El servidor no los cree a ciegas: re-calcula el
           // descuento y re-cotiza el envío · esto es respaldo y
