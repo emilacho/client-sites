@@ -49,11 +49,13 @@ describe("R172 · el pedido y la analítica llevan la marca", () => {
 
 describe("R172 · ensayar un pedido con la cocina cerrada", () => {
   it("solo el dispositivo de prueba pasa; la cocina cerrada sigue cerrada para los demás, en pantalla y en el servidor", async () => {
-    const { cocinaAbierta } = await import("@/lib/horario")
-    vi.useFakeTimers(); vi.setSystemTime(new Date("2026-11-04T22:00:00Z")) // miércoles 17:00 en Ecuador: cerrado
+    const { cocinaAbierta, APERTURA_TEMPORAL_HASTA } = await import("@/lib/horario")
+    vi.useFakeTimers(); vi.setSystemTime(new Date("2026-11-11T22:00:00Z")) // miércoles 17:00 en Ecuador, pasada la apertura temporal: cerrado
     expect(cocinaAbierta()).toBe(false)
     expect(cocinaAbierta(false)).toBe(false)
     expect(cocinaAbierta(true)).toBe(true)
+    vi.setSystemTime(Date.parse(APERTURA_TEMPORAL_HASTA) - 60_000); expect(cocinaAbierta()).toBe(true) // dentro de la apertura temporal, abierto para todos
+    vi.setSystemTime(Date.parse(APERTURA_TEMPORAL_HASTA) + 60_000); expect(cocinaAbierta()).toBe(false) // pasada la hora, vuelve solo
     vi.useRealTimers()
     for (const f of ["app/api/courier/order/route.ts", "app/api/courier/quote/route.ts"]) expect(readFileSync(f, "utf8")).toContain('cocinaAbierta(request.headers.get("x-naufrago-prueba") === "1")')
     const c = readFileSync("components/v2/CartDrawer.tsx", "utf8")
