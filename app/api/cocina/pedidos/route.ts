@@ -22,17 +22,14 @@ export const dynamic = "force-dynamic"
 const CLIENT_SLUG = "naufrago"
 
 /**
- * Los que siguen EN LA COCINA · los únicos que ocupan el tablero.
+ * Los que siguen EN LA COCINA los decide sigueEnCocina (lib/cocina-motorizado).
  *
- * READY queda AFUERA a propósito: en el KDS de Loyverse, cuando se toca
- * la cabecera el ticket desaparece del tablero. Acá igual · pasa a la
- * lista de terminados, que es donde se cobra. Si READY siguiera acá, el
- * ticket se quedaría pegado en pantalla después de darlo por listo, que
- * es justo lo que pasó la primera vez que lo probé.
+ * Como en el KDS de Loyverse, al tocar la cabecera el ticket sale del tablero y
+ * pasa a la lista de terminados, donde se cobra. R185 · eso vale para el READY
+ * que marcó la cocina (con ready_at); el READY que puso PedidosYa se queda.
+ * R164 · NEEDS_ATTENTION también se queda: es un pedido COBRADO cuyo motorizado
+ * no se pudo pedir; si no está a la vista, el cliente pagó y nadie cocina nada.
  */
-// R164 · NEEDS_ATTENTION entra a la lista de vivos a propósito: es un
-// pedido COBRADO cuyo motorizado no se pudo pedir. Si no está entre los
-// vivos, la cocina no lo ve, el cliente pagó y nadie cocina nada.
 
 export async function GET(req: NextRequest) {
   if (!(await cocinaAutorizada(req.headers.get("x-cocina-llave")))) {
