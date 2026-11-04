@@ -94,6 +94,54 @@ export async function POST(req: NextRequest) {
     return Response.json({ ok: false, error: "pedido_cancelado" }, { status: 409 })
   }
 
+  // ── La cocina anuncia "listo"; la ENTREGA la confirma el motorizado ──
+  //
+  // Emilio, 28-oct: la cocina avisa que el pedido está listo para
+  // entregarlo al motorizado · "entregado" lo dice el motorizado a
+  // través de PedidosYa (aviso COMPLETED de /api/courier/webhook).
+  // Antes un toque en "Cobrado" (la lista de terminados) marcaba el
+  // pedido como entregado 14 s después de "listo", sin que saliera
+  // ninguna moto, y le avisaba al cliente que su comida había llegado.
+  //
+  // `entregado` queda sólo para REINTENTAR la contabilidad de un pedido
+  // que el motorizado YA entregó: no cambia el estado ni la hora.
+  const soloContabilidad = paso === "entregado"
+  if (soloContabilidad && pedido.status !== "DELIVERED") {
+    return Response.json(
+      {
+        ok: false,
+        error: "lo_marca_el_motorizado",
+        message: "La entrega la confirma el motorizado por PedidosYa, no la cocina.",
+      },
+      { status: 409 },
+    )
+  }
+  // Los pasos de cocina sólo van hacia adelante: no se vuelve a
+  // "preparando" un pedido que ya salió ni se "acepta" uno ya listo.
+  const RANGO: Record<string, number> = {
+    PENDING: 0,
+    NEEDS_ATTENTION: 0,
+    ACCEPTED: 1,
+    PREPARING: 2,
+    READY: 3,
+    RIDER_PICKED_UP: 4,
+    IN_TRANSIT: 5,
+    DELIVERED: 6,
+  }
+  const RANGO_DEL_PASO: Record<string, number> = { aceptar: 1, preparar: 2, listo: 3 }
+  if (
+    paso in RANGO_DEL_PASO &&
+    (RANGO[String(pedido.status)] ?? 0) >= RANGO_DEL_PASO[paso]
+  ) {
+    return Response.json(
+      { ok: false, error: "paso_ya_dado", estadoActual: pedido.status },
+      { status: 409 },
+    )
+  }
+  if (paso === "cancelar" && pedido.status === "DELIVERED") {
+    return Response.json({ ok: false, error: "pedido_entregado" }, { status: 409 })
+  }
+
   const destino = PASOS[paso]
   const ahora = new Date().toISOString()
 
@@ -105,24 +153,26 @@ export async function POST(req: NextRequest) {
     cambios.cancellation_reason = "Cancelado desde la pantalla de cocina"
   }
 
-  const { error: errorEscritura } = await supa
-    .from("orders")
-    .update(cambios)
-    .eq("id", orderId)
+  if (!soloContabilidad) {
+    const { error: errorEscritura } = await supa
+      .from("orders")
+      .update(cambios)
+      .eq("id", orderId)
 
-  if (errorEscritura) {
-    return Response.json({ ok: false, error: errorEscritura.message }, { status: 500 })
+    if (errorEscritura) {
+      return Response.json({ ok: false, error: errorEscritura.message }, { status: 500 })
+    }
+
+    await supa
+      .from("order_events")
+      .insert({
+        order_id: orderId,
+        event_type: destino.evento,
+        actor: "staff",
+        payload: { desde: pedido.status, pantalla: "cocina" },
+      })
+      .then(undefined, () => {})
   }
-
-  await supa
-    .from("order_events")
-    .insert({
-      order_id: orderId,
-      event_type: destino.evento,
-      actor: "staff",
-      payload: { desde: pedido.status, pantalla: "cocina" },
-    })
-    .then(undefined, () => {})
 
   // ── R159 · cancelar de verdad, no sólo en nuestra pantalla ────────
   //
@@ -200,7 +250,7 @@ export async function POST(req: NextRequest) {
       deliveryFeeUsd: Number(pedido.delivery_fee_usd ?? 0),
       totalUsd: Number(pedido.total_usd ?? 0),
       notes: pedido.customer_notes ?? null,
-      entregadoEn: ahora,
+      entregadoEn: pedido.delivered_at ?? ahora,
     })
 
     if ("yaEstaba" in venta) {
