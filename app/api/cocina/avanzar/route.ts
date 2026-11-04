@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
   const { data: pedido, error: errorLectura } = await supa
     .from("orders")
     .select(
-      "id, order_code, status, cart_lines, delivery_fee_usd, total_usd, customer_notes, delivered_at, delivery_provider_order_id",
+      "id, order_code, status, ready_at, cart_lines, delivery_fee_usd, total_usd, customer_notes, delivered_at, delivery_provider_order_id",
     )
     .eq("id", orderId)
     .maybeSingle()
@@ -129,7 +129,10 @@ export async function POST(req: NextRequest) {
     DELIVERED: 6,
   }
   const RANGO_DEL_PASO: Record<string, number> = { aceptar: 1, preparar: 2, listo: 3 }
+  // R185 · READY sin hora lo puso PedidosYa, no la cocina: el «listo» sigue pendiente.
+  const listoPendiente = paso === "listo" && pedido.status === "READY" && !pedido.ready_at
   if (
+    !listoPendiente &&
     paso in RANGO_DEL_PASO &&
     (RANGO[String(pedido.status)] ?? 0) >= RANGO_DEL_PASO[paso]
   ) {

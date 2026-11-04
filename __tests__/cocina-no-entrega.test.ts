@@ -94,8 +94,15 @@ describe("la cocina no marca entregado", () => {
     expect(update).not.toHaveBeenCalled()
   })
 
-  it("listo sobre un pedido ya READY se rechaza", async () => {
-    estado.pedido = pedido("READY")
+  it("R185 · listo sobre un READY que puso PedidosYa (sin hora de listo) sí se registra", async () => {
+    estado.pedido = pedido("READY", { ready_at: null })
+    const res = await pedir("listo")
+    expect(res.status).toBe(200)
+    expect(update.mock.calls[0][0]).toMatchObject({ status: "READY", ready_at: expect.any(String) })
+  })
+
+  it("listo sobre un pedido ya READY por la cocina se rechaza", async () => {
+    estado.pedido = pedido("READY", { ready_at: "2026-11-04T20:00:00Z" })
     const r = await pedir("listo")
     expect(r.status).toBe(409)
     expect((await r.json()).error).toBe("paso_ya_dado")

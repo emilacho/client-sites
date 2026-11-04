@@ -64,3 +64,14 @@ export function motorizadoParaCocina(
       return conFrase({ fase: "buscando", texto: "Buscando motorizado · PedidosYa aún no asigna a nadie", minutos: minutosHasta(retiroEstimado, ahora), metros: null }, null)
   }
 }
+
+/**
+ * R185 · ¿el ticket sigue en el tablero de la cocina?
+ * PedidosYa también pasa el pedido a READY cuando el motorizado va en camino al
+ * local, sin que nadie haya cocinado. El «listo» de la cocina es el que deja
+ * la hora en ready_at: sin esa hora, el ticket no se puede ir del tablero.
+ */
+const EN_LA_COCINA = ["PENDING", "ACCEPTED", "PREPARING", "NEEDS_ATTENTION"]
+export function sigueEnCocina(status: string, readyAt: string | null | undefined): boolean {
+  return EN_LA_COCINA.includes(status) || (status === "READY" && !readyAt)
+}
