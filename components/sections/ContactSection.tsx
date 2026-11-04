@@ -25,7 +25,7 @@ import { cliente, instagramLink, whatsappLink } from "@/cliente.config"
 const FAQ = [
   {
     q: "¿Cómo hago mi pedido?",
-    a: "Escríbenos al WhatsApp 0997744288 con lo que se te antoja. Te confirmamos disponibilidad del día, te pasamos el total y te decimos cuándo lo tienes listo. Sin apps, sin formularios.",
+    a: "Escríbenos al WhatsApp 0997397988 con lo que se te antoja. Te confirmamos disponibilidad del día, te pasamos el total y te decimos cuándo lo tienes listo. Sin apps, sin formularios.",
   },
   {
     q: "¿A dónde entregan?",

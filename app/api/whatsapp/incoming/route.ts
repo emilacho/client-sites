@@ -29,7 +29,7 @@ import { firmaValida, direccionVerificada } from "@/lib/whatsapp/firma"
 export const runtime = "nodejs"
 
 const CLIENT_SLUG = "naufrago"
-const ADMIN_WA = process.env.NAUFRAGO_ADMIN_WHATSAPP ?? "593997744288"
+const ADMIN_WA = process.env.NAUFRAGO_ADMIN_WHATSAPP ?? "593997397988"
 
 const SABORES_CATALOG = [
   { id: "naranja", label: "Naranja", aliases: ["naranja", "naranjas"] },

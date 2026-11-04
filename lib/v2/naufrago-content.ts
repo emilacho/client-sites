@@ -614,7 +614,7 @@ export const naufragoAssets = {
 } as const
 
 // ── WhatsApp checkout template · spec-pinned ──────────────────────────
-export const WHATSAPP_E164 = "593997744288"
+export const WHATSAPP_E164 = "593997397988"
 
 export interface CartLine {
   id: string

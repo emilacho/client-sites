@@ -76,7 +76,7 @@ export default function GlobalError({
             Volver a intentar
           </button>
           <a
-            href="https://wa.me/593997744288"
+            href="https://wa.me/593997397988"
             style={{
               display: "block",
               marginTop: 12,

@@ -829,7 +829,7 @@ function motivoParaElCliente(razon: string | null): string {
 
 function CancelledBanner({ snap }: { snap: OrderSnapshot }) {
   const sinCobro = snap.payment_method === "CASH_ON_DELIVERY"
-  const wa = `https://wa.me/593997744288?text=${encodeURIComponent(
+  const wa = `https://wa.me/593997397988?text=${encodeURIComponent(
     `Hola, mi pedido ${snap.order_code} figura cancelado. ¿Me ayudan?`,
   )}`
   return (

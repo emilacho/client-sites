@@ -55,8 +55,8 @@ export const cliente: ClienteConfig = {
     process.env.NEXT_PUBLIC_SITE_URL ?? "https://client-sites-template.vercel.app",
   description:
     "Ceviche y encebollado con el marisco más fresco de Olón, hecho con alma de playa y entregado directo a tu puerta. Porque el mar no debería estar lejos del almuerzo.",
-  whatsappE164: "593997744288",
-  whatsappDisplay: "0997744288",
+  whatsappE164: "593997397988",
+  whatsappDisplay: "0997397988",
   instagram: "naufrago.ec",
   address: "Avenida 8 NO · Urdenor 1 · Tarqui, Guayaquil",
   // R162 · el horario sale de `lib/horario.ts` · acá ya no se escribe a

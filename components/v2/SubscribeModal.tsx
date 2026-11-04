@@ -83,7 +83,7 @@ export function SubscribeModal({ open, onClose }: SubscribeModalProps) {
         const map: Record<string, string> = {
           invalid_name: "Ingresá tu nombre (2-80 caracteres).",
           invalid_whatsapp:
-            "WhatsApp inválido · usá formato 0997744288 o 593997744288.",
+            "WhatsApp inválido · usá formato 0991234567 o 593991234567.",
           invalid_email: "Email inválido.",
           no_opt_in: "Marcá al menos una de las opciones.",
         }
@@ -166,7 +166,7 @@ export function SubscribeModal({ open, onClose }: SubscribeModalProps) {
                   required
                   type="tel"
                   inputMode="tel"
-                  placeholder="WhatsApp · 0997744288"
+                  placeholder="WhatsApp · 0991234567"
                   value={form.whatsapp}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, whatsapp: e.target.value }))

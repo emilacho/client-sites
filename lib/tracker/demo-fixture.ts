@@ -79,7 +79,7 @@ export function buildDemoSnapshot(stageParam: string | undefined) {
       stageKey === "3"
         ? {
             name: "Juan C.",
-            phone: "+593997744288",
+            phone: "+593990000001",
             plate: "ABC-123",
             vehicleType: "moto",
             // R96.19 · driver profile enrichment · auto-fill demo

@@ -59,6 +59,6 @@ export const FAQ: FaqItem[] = [
   {
     question: "¿Qué hago si mi pedido llega frío · tarde o con problemas?",
     answer:
-      "Escríbenos por WhatsApp al 0997744288 · te respondemos al instante · resolvemos con reposición · descuento o reembolso según el caso. Tu derecho está protegido bajo la Ley de Defensa del Consumidor de Ecuador.",
+      "Escríbenos por WhatsApp al 0997397988 · te respondemos al instante · resolvemos con reposición · descuento o reembolso según el caso. Tu derecho está protegido bajo la Ley de Defensa del Consumidor de Ecuador.",
   },
 ]
