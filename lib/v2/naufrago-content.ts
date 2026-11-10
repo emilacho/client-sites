@@ -602,7 +602,9 @@ export const naufragoAssets = {
   // Originales y `-compact` sin tocar en el bucket · volver atrás = revertir
   // estas URLs.
   island:    `${ASSET_BASE}/3d-models/island-low-poly-lite.glb`,
-  character: `${ASSET_BASE}/3d-models/character-castaway-confused-scratch-lite.glb`,
+  // 10-nov · el esqueleto que saluda (pedido de Emilio · versión B de la prueba A/B). El que se rasca la cabeza
+  // sigue en el bucket: volver atrás = `${ASSET_BASE}/3d-models/character-castaway-confused-scratch-lite.glb`
+  character: `${ASSET_BASE}/3d-models/character-castaway-big-wave-hello-lite.glb`,
   sign:      `${ASSET_BASE}/3d-models/sign-naufrago-lite.glb`,
   surfboard: `${ASSET_BASE}/3d-models/surfboard-old-lite.glb`,
   cangrejo:  `${ASSET_BASE}/3d-models/cangrejo-lite.glb`,

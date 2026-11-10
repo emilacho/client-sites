@@ -86,6 +86,22 @@ const RECETAS = [
     simplificar: null,
   },
   {
+    // 10-nov · pedido de Emilio: el esqueleto que saluda (estudio, pieza d8f2194d · Meshy · «Big_Wave_Hello»)
+    // reemplaza al que se rasca la cabeza. Mismo esqueleto de 24 huesos y misma escala que el anterior, así que
+    // entra en su lugar sin tocar la escena. La fuente es la copia de NUESTRO almacén (oficina-creativos), que
+    // se pasa con --fuente-saludo=<dirección>; el anterior queda en el bucket como respaldo.
+    key: "saludo",
+    fuente: process.argv.find((a) => a.startsWith("--fuente-saludo="))?.split("=").slice(1).join("="),
+    local: process.argv.find((a) => a.startsWith("--local-saludo="))?.split("=").slice(1).join("="),
+    destino: "character-castaway-big-wave-hello-lite.glb",
+    color: 1024, relieve: 512, otras: 512,
+    // Emilio eligió la versión B de la prueba A/B (10-nov 16:53Z): malla simplificada, 313 mil → 53 mil triángulos, 3,26 → 1,30 MB,
+    // sin deformarse en el saludo (evidencia en el vault: raw/evidencia/2026-11-10-esqueleto-saludo/prueba-AB).
+    // --simplificar-saludo / --error-saludo solo para volver a probar otra proporción
+    simplificar: Number(process.argv.find((a) => a.startsWith("--simplificar-saludo="))?.split("=")[1]) || 0.1,
+    error: Number(process.argv.find((a) => a.startsWith("--error-saludo="))?.split("=")[1]) || 0.003,
+  },
+  {
     key: "letrero",
     fuente: `${PUBLIC_BASE}/sign-naufrago.glb`,
     destino: "sign-naufrago-lite.glb",
@@ -133,6 +149,8 @@ const RECETAS = [
 ]
 
 async function leerLlave() {
+  // primero la del entorno (doppler run -p zero-risk -c prd -- node …); el archivo local queda de respaldo
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) return process.env.SUPABASE_SERVICE_ROLE_KEY
   const envPath = path.resolve(ROOT, "..", "zero-risk-platform", ".env.local")
   const raw = await fs.readFile(envPath, "utf8")
   for (const line of raw.split(/\r?\n/)) {
@@ -273,7 +291,7 @@ async function main() {
     if (r.simplificar) {
       await doc.transform(
         weld(),
-        simplify({ simplifier: MeshoptSimplifier, ratio: r.simplificar, error: 0.001 }),
+        simplify({ simplifier: MeshoptSimplifier, ratio: r.simplificar, error: r.error ?? 0.001 }),
       )
     }
 

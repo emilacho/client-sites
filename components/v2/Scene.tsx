@@ -1840,14 +1840,18 @@ function IslandWithCharacter({ qaMode }: { qaMode: boolean }) {
       >
         {/* Round 32 · pull character into the user-marked zone next
             to the chest · X 0 → -0.3 (more negative, closer to chest
-            at X=-0.76), Z 0.3 → -0.2 (back from shoreline). */}
-        <CharacterModel scale={0.6} position={[-0.3, 0, -0.2]} />
+            at X=-0.76), Z 0.3 → -0.2 (back from shoreline).
+            10-nov · esqueleto que saluda · pedido de Emilio: «los pies están enterrados en la arena y está muy
+            pegado a la palmera». Medido: en [-0.3, 0, -0.2] los pies quedaban ~11 cm bajo la arena y la mano que
+            saluda rozaba el tronco central. Va al claro entre la palmera central y la derecha, detrás del letrero:
+            X 0.8, Z -0.8, Y 0.128 (pies entre -1 y +1 cm de la arena en todo el saludo; ~11 cm de holgura). */}
+        <CharacterModel scale={0.6} position={[0.8, 0.128, -0.8]} />
         {/* Speech bubble anchored above the character head · uses drei
             <Html occlude> so it hides behind the geometry properly. */}
         <Html
           /* Round 32 · speech bubble anchor follows the character
              XZ move · stays 2.0u above the head. */
-          position={[-0.3, 2.0, -0.2]}
+          position={[0.8, 2.0, -0.8]}
           center
           distanceFactor={6}
           occlude
