@@ -1,0 +1,195 @@
+{
+ "_nota": "Foto VIVA de CC3 (raw/evidencia/2026-11-10-esquema-naufrago/foto-de-lo-vivo-antes.json, medida solo leyendo, 2026-11-10T17:25:20.086Z), convertida al formato del generador sin cambiar ningún permiso.",
+ "medido_en": "2026-11-10T17:25:20.086Z",
+ "tablas": [
+  {
+   "nombre": "consent_log",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+   "nombre": "courier_order_events",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+   "nombre": "courier_orders",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+   "nombre": "courier_token_cache",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+   "nombre": "customers",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+   "nombre": "drivers",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+   "nombre": "dynamic_options",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+   "nombre": "easy_orders",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+   "nombre": "juice_admin_log",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+   "nombre": "loyalty_balance",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+   "nombre": "loyalty_ledger",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+   "nombre": "loyverse_item_map",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+   "nombre": "order_events",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+   "nombre": "order_reviews",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+   "nombre": "orders",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+   "nombre": "otp_codes",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+   "nombre": "promo_usage",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+   "nombre": "push_subscriptions",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+   "nombre": "ruleta_spins",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+   "nombre": "subscribers",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+   "nombre": "voice_calls",
+   "tipo": "r",
+   "dueno": "postgres",
+   "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  }
+ ],
+ "contadores": [],
+ "funciones": [
+  {
+   "nombre": "drivers_touch_updated_at",
+   "args": "",
+   "dueno": "postgres",
+   "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+  },
+  {
+   "nombre": "dynamic_options_touch",
+   "args": "",
+   "dueno": "postgres",
+   "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+  },
+  {
+   "nombre": "gen_order_code",
+   "args": "",
+   "dueno": "postgres",
+   "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+  },
+  {
+   "nombre": "loyalty_balance_touch",
+   "args": "",
+   "dueno": "postgres",
+   "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+  },
+  {
+   "nombre": "subscribers_touch_updated_at",
+   "args": "",
+   "dueno": "postgres",
+   "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+  }
+ ],
+ "por_omision": [
+  {
+   "creador": "postgres",
+   "tipo": "S",
+   "acl": "{anon=rwU/postgres,authenticated=rwU/postgres,service_role=rwU/postgres}"
+  },
+  {
+   "creador": "postgres",
+   "tipo": "f",
+   "acl": "{anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+  },
+  {
+   "creador": "postgres",
+   "tipo": "r",
+   "acl": "{anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  }
+ ],
+ "esquema": [
+  {
+   "nspname": "naufrago",
+   "dueno": "postgres",
+   "acl": "{postgres=UC/postgres,anon=U/postgres,authenticated=U/postgres,service_role=UC/postgres}"
+  }
+ ],
+ "por_omision_global": [],
+ "control": [
+  {
+   "control_true": true
+  }
+ ]
+}

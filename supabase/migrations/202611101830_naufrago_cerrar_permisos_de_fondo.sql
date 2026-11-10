@@ -1,0 +1,125 @@
+-- Cierre de los permisos de fondo del esquema naufrago · GO-LENOVO «dale Emilio» 10-nov 17:15Z · generado por scripts/naufrago-permisos.mjs
+-- Foto de lo vivo: 2026-11-10T17:25:20.086Z (21 tablas, 5 funciones, 0 contadores, 3 valores por omisión)
+-- A «todos», anónimos y cuentas con sesión: nada sobre tablas, contadores ni funciones de naufrago, y lo nuevo no nace abierto.
+-- No toca filas, reglas, el dueño ni la llave del servidor. Reversa exacta: supabase/reversas/ (mismo nombre, _REVERSA).
+begin;
+-- 1 · lo vivo tiene que ser IGUAL a la foto; si algo cambió, se detiene sin tocar nada
+do $$
+declare n int;
+begin
+  if (select relacl::text from pg_class where oid = 'naufrago.consent_log'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.consent_log'; end if;
+  if (select relacl::text from pg_class where oid = 'naufrago.courier_order_events'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.courier_order_events'; end if;
+  if (select relacl::text from pg_class where oid = 'naufrago.courier_orders'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.courier_orders'; end if;
+  if (select relacl::text from pg_class where oid = 'naufrago.courier_token_cache'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.courier_token_cache'; end if;
+  if (select relacl::text from pg_class where oid = 'naufrago.customers'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.customers'; end if;
+  if (select relacl::text from pg_class where oid = 'naufrago.drivers'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.drivers'; end if;
+  if (select relacl::text from pg_class where oid = 'naufrago.dynamic_options'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.dynamic_options'; end if;
+  if (select relacl::text from pg_class where oid = 'naufrago.easy_orders'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.easy_orders'; end if;
+  if (select relacl::text from pg_class where oid = 'naufrago.juice_admin_log'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.juice_admin_log'; end if;
+  if (select relacl::text from pg_class where oid = 'naufrago.loyalty_balance'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.loyalty_balance'; end if;
+  if (select relacl::text from pg_class where oid = 'naufrago.loyalty_ledger'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.loyalty_ledger'; end if;
+  if (select relacl::text from pg_class where oid = 'naufrago.loyverse_item_map'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.loyverse_item_map'; end if;
+  if (select relacl::text from pg_class where oid = 'naufrago.order_events'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.order_events'; end if;
+  if (select relacl::text from pg_class where oid = 'naufrago.order_reviews'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.order_reviews'; end if;
+  if (select relacl::text from pg_class where oid = 'naufrago.orders'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.orders'; end if;
+  if (select relacl::text from pg_class where oid = 'naufrago.otp_codes'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.otp_codes'; end if;
+  if (select relacl::text from pg_class where oid = 'naufrago.promo_usage'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.promo_usage'; end if;
+  if (select relacl::text from pg_class where oid = 'naufrago.push_subscriptions'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.push_subscriptions'; end if;
+  if (select relacl::text from pg_class where oid = 'naufrago.ruleta_spins'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.ruleta_spins'; end if;
+  if (select relacl::text from pg_class where oid = 'naufrago.subscribers'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.subscribers'; end if;
+  if (select relacl::text from pg_class where oid = 'naufrago.voice_calls'::regclass) is distinct from '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: naufrago.voice_calls'; end if;
+  if (select proacl::text from pg_proc where oid = 'naufrago.drivers_touch_updated_at()'::regprocedure) is distinct from '{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}' then raise exception 'cambió desde la foto: naufrago.drivers_touch_updated_at()'; end if;
+  if (select proacl::text from pg_proc where oid = 'naufrago.dynamic_options_touch()'::regprocedure) is distinct from '{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}' then raise exception 'cambió desde la foto: naufrago.dynamic_options_touch()'; end if;
+  if (select proacl::text from pg_proc where oid = 'naufrago.gen_order_code()'::regprocedure) is distinct from '{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}' then raise exception 'cambió desde la foto: naufrago.gen_order_code()'; end if;
+  if (select proacl::text from pg_proc where oid = 'naufrago.loyalty_balance_touch()'::regprocedure) is distinct from '{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}' then raise exception 'cambió desde la foto: naufrago.loyalty_balance_touch()'; end if;
+  if (select proacl::text from pg_proc where oid = 'naufrago.subscribers_touch_updated_at()'::regprocedure) is distinct from '{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}' then raise exception 'cambió desde la foto: naufrago.subscribers_touch_updated_at()'; end if;
+  select count(*) into n from pg_class where relnamespace = 'naufrago'::regnamespace and relkind in ('r','p','v','m','f'); if n <> 21 then raise exception 'cambió desde la foto: % tablas', n; end if;
+  select count(*) into n from pg_class where relnamespace = 'naufrago'::regnamespace and relkind = 'S'; if n <> 0 then raise exception 'cambió desde la foto: % contadores', n; end if;
+  select count(*) into n from pg_proc where pronamespace = 'naufrago'::regnamespace; if n <> 5 then raise exception 'cambió desde la foto: % funciones', n; end if;
+  select count(*) into n from pg_default_acl where defaclnamespace = 'naufrago'::regnamespace; if n <> 3 then raise exception 'cambió desde la foto: % valores por omisión', n; end if;
+  if (select defaclacl::text from pg_default_acl where defaclnamespace = 'naufrago'::regnamespace and defaclrole = 'postgres'::regrole and defaclobjtype = 'S') is distinct from '{anon=rwU/postgres,authenticated=rwU/postgres,service_role=rwU/postgres}' then raise exception 'cambió desde la foto: por omisión postgres S'; end if;
+  if (select defaclacl::text from pg_default_acl where defaclnamespace = 'naufrago'::regnamespace and defaclrole = 'postgres'::regrole and defaclobjtype = 'f') is distinct from '{anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}' then raise exception 'cambió desde la foto: por omisión postgres f'; end if;
+  if (select defaclacl::text from pg_default_acl where defaclnamespace = 'naufrago'::regnamespace and defaclrole = 'postgres'::regrole and defaclobjtype = 'r') is distinct from '{anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' then raise exception 'cambió desde la foto: por omisión postgres r'; end if;
+end $$;
+-- 2 · quitar
+revoke all on naufrago.consent_log from public, anon, authenticated;
+revoke all on naufrago.courier_order_events from public, anon, authenticated;
+revoke all on naufrago.courier_orders from public, anon, authenticated;
+revoke all on naufrago.courier_token_cache from public, anon, authenticated;
+revoke all on naufrago.customers from public, anon, authenticated;
+revoke all on naufrago.drivers from public, anon, authenticated;
+revoke all on naufrago.dynamic_options from public, anon, authenticated;
+revoke all on naufrago.easy_orders from public, anon, authenticated;
+revoke all on naufrago.juice_admin_log from public, anon, authenticated;
+revoke all on naufrago.loyalty_balance from public, anon, authenticated;
+revoke all on naufrago.loyalty_ledger from public, anon, authenticated;
+revoke all on naufrago.loyverse_item_map from public, anon, authenticated;
+revoke all on naufrago.order_events from public, anon, authenticated;
+revoke all on naufrago.order_reviews from public, anon, authenticated;
+revoke all on naufrago.orders from public, anon, authenticated;
+revoke all on naufrago.otp_codes from public, anon, authenticated;
+revoke all on naufrago.promo_usage from public, anon, authenticated;
+revoke all on naufrago.push_subscriptions from public, anon, authenticated;
+revoke all on naufrago.ruleta_spins from public, anon, authenticated;
+revoke all on naufrago.subscribers from public, anon, authenticated;
+revoke all on naufrago.voice_calls from public, anon, authenticated;
+revoke all on function naufrago.drivers_touch_updated_at() from public, anon, authenticated;
+revoke all on function naufrago.dynamic_options_touch() from public, anon, authenticated;
+revoke all on function naufrago.gen_order_code() from public, anon, authenticated;
+revoke all on function naufrago.loyalty_balance_touch() from public, anon, authenticated;
+revoke all on function naufrago.subscribers_touch_updated_at() from public, anon, authenticated;
+alter default privileges for role postgres in schema naufrago revoke all on sequences from public, anon, authenticated;
+alter default privileges for role postgres in schema naufrago revoke all on functions from public, anon, authenticated;
+alter default privileges for role postgres in schema naufrago revoke all on tables from public, anon, authenticated;
+-- 3 · comprobar: afuera no queda nada y el servidor conserva lo suyo
+do $$
+begin
+  if has_table_privilege('anon', 'naufrago.consent_log', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.consent_log', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.consent_log'; end if;
+  if not has_table_privilege('service_role', 'naufrago.consent_log', 'SELECT') then raise exception 'el servidor perdió: naufrago.consent_log'; end if;
+  if has_table_privilege('anon', 'naufrago.courier_order_events', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.courier_order_events', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.courier_order_events'; end if;
+  if not has_table_privilege('service_role', 'naufrago.courier_order_events', 'SELECT') then raise exception 'el servidor perdió: naufrago.courier_order_events'; end if;
+  if has_table_privilege('anon', 'naufrago.courier_orders', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.courier_orders', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.courier_orders'; end if;
+  if not has_table_privilege('service_role', 'naufrago.courier_orders', 'SELECT') then raise exception 'el servidor perdió: naufrago.courier_orders'; end if;
+  if has_table_privilege('anon', 'naufrago.courier_token_cache', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.courier_token_cache', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.courier_token_cache'; end if;
+  if not has_table_privilege('service_role', 'naufrago.courier_token_cache', 'SELECT') then raise exception 'el servidor perdió: naufrago.courier_token_cache'; end if;
+  if has_table_privilege('anon', 'naufrago.customers', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.customers', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.customers'; end if;
+  if not has_table_privilege('service_role', 'naufrago.customers', 'SELECT') then raise exception 'el servidor perdió: naufrago.customers'; end if;
+  if has_table_privilege('anon', 'naufrago.drivers', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.drivers', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.drivers'; end if;
+  if not has_table_privilege('service_role', 'naufrago.drivers', 'SELECT') then raise exception 'el servidor perdió: naufrago.drivers'; end if;
+  if has_table_privilege('anon', 'naufrago.dynamic_options', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.dynamic_options', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.dynamic_options'; end if;
+  if not has_table_privilege('service_role', 'naufrago.dynamic_options', 'SELECT') then raise exception 'el servidor perdió: naufrago.dynamic_options'; end if;
+  if has_table_privilege('anon', 'naufrago.easy_orders', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.easy_orders', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.easy_orders'; end if;
+  if not has_table_privilege('service_role', 'naufrago.easy_orders', 'SELECT') then raise exception 'el servidor perdió: naufrago.easy_orders'; end if;
+  if has_table_privilege('anon', 'naufrago.juice_admin_log', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.juice_admin_log', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.juice_admin_log'; end if;
+  if not has_table_privilege('service_role', 'naufrago.juice_admin_log', 'SELECT') then raise exception 'el servidor perdió: naufrago.juice_admin_log'; end if;
+  if has_table_privilege('anon', 'naufrago.loyalty_balance', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.loyalty_balance', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.loyalty_balance'; end if;
+  if not has_table_privilege('service_role', 'naufrago.loyalty_balance', 'SELECT') then raise exception 'el servidor perdió: naufrago.loyalty_balance'; end if;
+  if has_table_privilege('anon', 'naufrago.loyalty_ledger', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.loyalty_ledger', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.loyalty_ledger'; end if;
+  if not has_table_privilege('service_role', 'naufrago.loyalty_ledger', 'SELECT') then raise exception 'el servidor perdió: naufrago.loyalty_ledger'; end if;
+  if has_table_privilege('anon', 'naufrago.loyverse_item_map', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.loyverse_item_map', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.loyverse_item_map'; end if;
+  if not has_table_privilege('service_role', 'naufrago.loyverse_item_map', 'SELECT') then raise exception 'el servidor perdió: naufrago.loyverse_item_map'; end if;
+  if has_table_privilege('anon', 'naufrago.order_events', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.order_events', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.order_events'; end if;
+  if not has_table_privilege('service_role', 'naufrago.order_events', 'SELECT') then raise exception 'el servidor perdió: naufrago.order_events'; end if;
+  if has_table_privilege('anon', 'naufrago.order_reviews', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.order_reviews', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.order_reviews'; end if;
+  if not has_table_privilege('service_role', 'naufrago.order_reviews', 'SELECT') then raise exception 'el servidor perdió: naufrago.order_reviews'; end if;
+  if has_table_privilege('anon', 'naufrago.orders', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.orders', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.orders'; end if;
+  if not has_table_privilege('service_role', 'naufrago.orders', 'SELECT') then raise exception 'el servidor perdió: naufrago.orders'; end if;
+  if has_table_privilege('anon', 'naufrago.otp_codes', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.otp_codes', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.otp_codes'; end if;
+  if not has_table_privilege('service_role', 'naufrago.otp_codes', 'SELECT') then raise exception 'el servidor perdió: naufrago.otp_codes'; end if;
+  if has_table_privilege('anon', 'naufrago.promo_usage', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.promo_usage', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.promo_usage'; end if;
+  if not has_table_privilege('service_role', 'naufrago.promo_usage', 'SELECT') then raise exception 'el servidor perdió: naufrago.promo_usage'; end if;
+  if has_table_privilege('anon', 'naufrago.push_subscriptions', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.push_subscriptions', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.push_subscriptions'; end if;
+  if not has_table_privilege('service_role', 'naufrago.push_subscriptions', 'SELECT') then raise exception 'el servidor perdió: naufrago.push_subscriptions'; end if;
+  if has_table_privilege('anon', 'naufrago.ruleta_spins', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.ruleta_spins', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.ruleta_spins'; end if;
+  if not has_table_privilege('service_role', 'naufrago.ruleta_spins', 'SELECT') then raise exception 'el servidor perdió: naufrago.ruleta_spins'; end if;
+  if has_table_privilege('anon', 'naufrago.subscribers', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.subscribers', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.subscribers'; end if;
+  if not has_table_privilege('service_role', 'naufrago.subscribers', 'SELECT') then raise exception 'el servidor perdió: naufrago.subscribers'; end if;
+  if has_table_privilege('anon', 'naufrago.voice_calls', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or has_table_privilege('authenticated', 'naufrago.voice_calls', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') then raise exception 'sigue abierta: naufrago.voice_calls'; end if;
+  if not has_table_privilege('service_role', 'naufrago.voice_calls', 'SELECT') then raise exception 'el servidor perdió: naufrago.voice_calls'; end if;
+  if has_function_privilege('anon', 'naufrago.drivers_touch_updated_at()', 'EXECUTE') or has_function_privilege('authenticated', 'naufrago.drivers_touch_updated_at()', 'EXECUTE') then raise exception 'sigue abierta: naufrago.drivers_touch_updated_at()'; end if;
+  if has_function_privilege('anon', 'naufrago.dynamic_options_touch()', 'EXECUTE') or has_function_privilege('authenticated', 'naufrago.dynamic_options_touch()', 'EXECUTE') then raise exception 'sigue abierta: naufrago.dynamic_options_touch()'; end if;
+  if has_function_privilege('anon', 'naufrago.gen_order_code()', 'EXECUTE') or has_function_privilege('authenticated', 'naufrago.gen_order_code()', 'EXECUTE') then raise exception 'sigue abierta: naufrago.gen_order_code()'; end if;
+  if has_function_privilege('anon', 'naufrago.loyalty_balance_touch()', 'EXECUTE') or has_function_privilege('authenticated', 'naufrago.loyalty_balance_touch()', 'EXECUTE') then raise exception 'sigue abierta: naufrago.loyalty_balance_touch()'; end if;
+  if has_function_privilege('anon', 'naufrago.subscribers_touch_updated_at()', 'EXECUTE') or has_function_privilege('authenticated', 'naufrago.subscribers_touch_updated_at()', 'EXECUTE') then raise exception 'sigue abierta: naufrago.subscribers_touch_updated_at()'; end if;
+end $$;
+commit;
