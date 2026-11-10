@@ -1,6 +1,6 @@
 {
- "_nota": "PROVISIONAL · reconstruida de la medición de CC3 del 10-nov (raw/evidencia/2026-11-10-esquema-naufrago/medicion.json + NOTA-CC3 proacl de las 5 funciones). La definitiva es la foto viva que saca CC3 con scripts/medir-acl-naufrago.mjs justo antes de aplicar.",
- "medido_en": "2026-11-10T16:20:00Z (medición CC3)",
+ "_nota": "Foto VIVA de CC3 (raw/evidencia/2026-11-10-esquema-naufrago/foto-de-lo-vivo-antes.json, medida solo leyendo, 2026-11-10T17:25:20.086Z), convertida al formato del generador sin cambiar ningún permiso.",
+ "medido_en": "2026-11-10T17:25:20.086Z",
  "tablas": [
   {
    "nombre": "consent_log",
@@ -135,35 +135,30 @@
    "nombre": "drivers_touch_updated_at",
    "args": "",
    "dueno": "postgres",
-   "definidor": false,
    "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
   },
   {
    "nombre": "dynamic_options_touch",
    "args": "",
    "dueno": "postgres",
-   "definidor": false,
    "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
   },
   {
    "nombre": "gen_order_code",
    "args": "",
    "dueno": "postgres",
-   "definidor": false,
    "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
   },
   {
    "nombre": "loyalty_balance_touch",
    "args": "",
    "dueno": "postgres",
-   "definidor": false,
    "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
   },
   {
    "nombre": "subscribers_touch_updated_at",
    "args": "",
    "dueno": "postgres",
-   "definidor": false,
    "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
   }
  ],
@@ -182,6 +177,19 @@
    "creador": "postgres",
    "tipo": "r",
    "acl": "{anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  }
+ ],
+ "esquema": [
+  {
+   "nspname": "naufrago",
+   "dueno": "postgres",
+   "acl": "{postgres=UC/postgres,anon=U/postgres,authenticated=U/postgres,service_role=UC/postgres}"
+  }
+ ],
+ "por_omision_global": [],
+ "control": [
+  {
+   "control_true": true
   }
  ]
 }

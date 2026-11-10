@@ -1,4 +1,4 @@
--- Reversa exacta del cierre de permisos de fondo de naufrago · devuelve lo que estaba en la foto de lo vivo (2026-11-10T16:20:00Z (medición CC3))
+-- Reversa exacta del cierre de permisos de fondo de naufrago · devuelve lo que estaba en la foto de lo vivo (2026-11-10T17:25:20.086Z)
 begin;
 grant insert, select, update, delete, truncate, references, trigger, maintain on naufrago.consent_log to anon;
 grant insert, select, update, delete, truncate, references, trigger, maintain on naufrago.consent_log to authenticated;

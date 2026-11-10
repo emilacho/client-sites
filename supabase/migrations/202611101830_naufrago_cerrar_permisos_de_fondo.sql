@@ -1,5 +1,5 @@
 -- Cierre de los permisos de fondo del esquema naufrago · GO-LENOVO «dale Emilio» 10-nov 17:15Z · generado por scripts/naufrago-permisos.mjs
--- Foto de lo vivo: 2026-11-10T16:20:00Z (medición CC3) (21 tablas, 5 funciones, 0 contadores, 3 valores por omisión)
+-- Foto de lo vivo: 2026-11-10T17:25:20.086Z (21 tablas, 5 funciones, 0 contadores, 3 valores por omisión)
 -- A «todos», anónimos y cuentas con sesión: nada sobre tablas, contadores ni funciones de naufrago, y lo nuevo no nace abierto.
 -- No toca filas, reglas, el dueño ni la llave del servidor. Reversa exacta: supabase/reversas/ (mismo nombre, _REVERSA).
 begin;
