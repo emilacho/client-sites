@@ -1,0 +1,127 @@
+/**
+ * Tarjeta de residente · la lista de vecinos de Emilio (12-nov · CC3).
+ */
+import { describe, expect, it } from "vitest"
+import { baseFalsa } from "./__stubs__/base-residentes-falsa"
+import { anularCodigo, codigosParaImprimir, darDeBaja, generarCodigos, listarCodigos, listarVecinos } from "@/lib/residentes-admin"
+
+const RELOJ = () => "2026-11-12T18:00:00Z"
+
+describe("generar códigos", () => {
+  it("crea los que se piden, todos con el formato NAU- + 6", async () => {
+    const b = baseFalsa({}, RELOJ)
+    const hechos = await generarCodigos(b.base, 5)
+    expect(hechos).toHaveLength(5)
+    for (const c of hechos) expect(c).toMatch(/^NAU-[2-9A-HJKMNP-Z]{6}$/)
+    expect(b.tablas.residente_codigos.map((c) => c.codigo)).toEqual(hechos)
+  })
+
+  it("si un código ya existía, prueba otro y no lo repite", async () => {
+    const b = baseFalsa({ residente_codigos: [{ id: "c0", codigo: "NAU-AAAAAA", usado_en: null, anulado_en: null, residente_id: null }] }, RELOJ)
+    const salen = ["NAU-AAAAAA", "NAU-BBBBBB", "NAU-AAAAAA", "NAU-CCCCCC"]
+    const hechos = await generarCodigos(b.base, 2, () => salen.shift() as string)
+    expect(hechos).toEqual(["NAU-BBBBBB", "NAU-CCCCCC"])
+    expect(b.tablas.residente_codigos).toHaveLength(3)
+  })
+
+  it("de 1 a 50 por vez", async () => {
+    const b = baseFalsa({}, RELOJ)
+    await expect(generarCodigos(b.base, 0)).rejects.toThrow(/de 1 a 50/)
+    await expect(generarCodigos(b.base, 51)).rejects.toThrow(/de 1 a 50/)
+    await expect(generarCodigos(b.base, Number.NaN)).rejects.toThrow(/de 1 a 50/)
+    expect(b.tablas.residente_codigos).toHaveLength(0)
+  })
+
+  it("si la base falla por otra cosa, se detiene", async () => {
+    const b = baseFalsa({}, RELOJ)
+    b.romperCon(() => ({ code: "57P01", message: "se cayó" }))
+    await expect(generarCodigos(b.base, 3)).rejects.toThrow(/no se pudo guardar/)
+  })
+})
+
+describe("anular y dar de baja", () => {
+  const inicial = () => ({
+    residente_codigos: [
+      { id: "c-libre", codigo: "NAU-AAAAAA", creado_en: "2026-11-12T10:00:00Z", usado_en: null, anulado_en: null, residente_id: null },
+      { id: "c-usado", codigo: "NAU-BBBBBB", creado_en: "2026-11-12T09:00:00Z", usado_en: "2026-11-12T11:00:00Z", anulado_en: null, residente_id: "r-ana" },
+    ],
+    residentes: [{ id: "r-ana", numero: 7, nombre: "Ana", whatsapp_e164: "593991234567", creado_en: "2026-11-12T11:00:00Z", baja_en: null, baja_motivo: null }],
+  })
+
+  it("anula un código sin usar, una sola vez", async () => {
+    const b = baseFalsa(inicial(), RELOJ)
+    expect(await anularCodigo(b.base, "c-libre")).toBe(true)
+    expect(b.tablas.residente_codigos.find((c) => c.id === "c-libre")?.anulado_en).toBeTruthy()
+    expect(await anularCodigo(b.base, "c-libre")).toBe(false)
+  })
+
+  it("no anula un código ya usado", async () => {
+    const b = baseFalsa(inicial(), RELOJ)
+    expect(await anularCodigo(b.base, "c-usado")).toBe(false)
+    expect(b.tablas.residente_codigos.find((c) => c.id === "c-usado")?.anulado_en).toBeNull()
+  })
+
+  it("da de baja con el motivo limpio, y una segunda baja no cambia nada", async () => {
+    const b = baseFalsa(inicial(), RELOJ)
+    expect(await darDeBaja(b.base, "r-ana", "  perdió   el celular ")).toBe(true)
+    const ana = b.tablas.residentes[0]
+    expect(ana.baja_en).toBeTruthy()
+    expect(ana.baja_motivo).toBe("perdió el celular")
+    const primera = ana.baja_en
+    expect(await darDeBaja(b.base, "r-ana", "otra")).toBe(false)
+    expect(ana.baja_en).toBe(primera)
+    expect(ana.baja_motivo).toBe("perdió el celular")
+  })
+
+  it("una baja sin motivo guarda vacío, no un texto en blanco", async () => {
+    const b = baseFalsa(inicial(), RELOJ)
+    await darDeBaja(b.base, "r-ana", "   ")
+    expect(b.tablas.residentes[0].baja_motivo).toBeNull()
+  })
+})
+
+describe("leer la lista", () => {
+  it("cuenta solo las visitas válidas como visitas, y la última es la más nueva", async () => {
+    const b = baseFalsa({
+      residentes: [
+        { id: "r-ana", numero: 7, nombre: "Ana", whatsapp_e164: "593991234567", creado_en: "2026-11-01T11:00:00Z", baja_en: null, baja_motivo: null },
+        { id: "r-luis", numero: 3, nombre: "Luis", whatsapp_e164: "593990000000", creado_en: "2026-11-01T11:00:00Z", baja_en: "2026-11-05T00:00:00Z", baja_motivo: "se mudó" },
+      ],
+      residente_visitas: [
+        { residente_id: "r-ana", resultado: "valida", validado_en: "2026-11-10T18:00:00Z" },
+        { residente_id: "r-ana", resultado: "valida", validado_en: "2026-11-11T18:00:00Z" },
+        { residente_id: "r-ana", resultado: "ya_usada_hoy", validado_en: "2026-11-11T19:00:00Z" },
+        { residente_id: "r-luis", resultado: "baja", validado_en: "2026-11-11T19:00:00Z" },
+        { residente_id: null, resultado: "no_valido", validado_en: "2026-11-11T19:00:00Z" },
+      ],
+    }, RELOJ)
+    const vs = await listarVecinos(b.base)
+    expect(vs.map((v) => [v.numero, v.visitas, v.rechazos, v.ultimaVisita])).toEqual([
+      ["R-0003", 0, 1, null],
+      ["R-0007", 2, 1, "2026-11-11T18:00:00Z"],
+    ])
+    expect(vs[0].bajaMotivo).toBe("se mudó")
+  })
+
+  it("los códigos dicen quién los usó", async () => {
+    const b = baseFalsa({
+      residentes: [{ id: "r-ana", numero: 7, nombre: "Ana" }],
+      residente_codigos: [{ id: "c1", codigo: "NAU-AAAAAA", creado_en: "2026-11-12T10:00:00Z", usado_en: "2026-11-12T11:00:00Z", anulado_en: null, residente_id: "r-ana" }],
+    }, RELOJ)
+    const cs = await listarCodigos(b.base)
+    expect(cs[0].usadoPor).toBe("R-0007 · Ana")
+  })
+
+  it("para imprimir salen solo los sin usar y sin anular, y si se piden unos, solo esos", async () => {
+    const b = baseFalsa({
+      residente_codigos: [
+        { id: "a", codigo: "NAU-AAAAAA", creado_en: "2026-11-12T10:00:00Z", usado_en: null, anulado_en: null, residente_id: null },
+        { id: "b", codigo: "NAU-BBBBBB", creado_en: "2026-11-12T10:01:00Z", usado_en: "2026-11-12T11:00:00Z", anulado_en: null, residente_id: "r" },
+        { id: "c", codigo: "NAU-CCCCCC", creado_en: "2026-11-12T10:02:00Z", usado_en: null, anulado_en: "2026-11-12T11:00:00Z", residente_id: null },
+        { id: "d", codigo: "NAU-DDDDDD", creado_en: "2026-11-12T10:03:00Z", usado_en: null, anulado_en: null, residente_id: null },
+      ],
+    }, RELOJ)
+    expect(await codigosParaImprimir(b.base, null)).toEqual(["NAU-AAAAAA", "NAU-DDDDDD"])
+    expect(await codigosParaImprimir(b.base, ["NAU-DDDDDD", "NAU-BBBBBB"])).toEqual(["NAU-DDDDDD"])
+  })
+})
