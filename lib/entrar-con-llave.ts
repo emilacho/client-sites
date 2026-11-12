@@ -14,6 +14,6 @@ export function entrarConLlave(req: NextRequest, l: Llave, destino: string): Nex
   const r = NextResponse.redirect(new URL(destino, req.nextUrl.origin), 303)
   r.headers.set("Cache-Control", "no-store")
   r.headers.set("Referrer-Policy", "no-referrer")
-  if (llaveValida(l, candidata)) r.cookies.set(l.galleta, candidata as string, opcionesGalleta())
+  if (llaveValida(l, candidata)) r.cookies.set(l.galleta, candidata as string, opcionesGalleta(req.nextUrl.hostname))
   return r
 }
