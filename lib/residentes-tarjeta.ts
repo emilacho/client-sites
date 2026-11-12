@@ -1,6 +1,7 @@
 import "server-only"
 import QRCode from "qrcode"
 import { esFicha, numeroVisible } from "@/lib/residentes"
+import { DOMINIO_RESIDENTES } from "@/lib/residentes-dominio"
 
 /**
  * La base: getSupabaseAdmin() en el sitio, una base falsa en las pruebas.
@@ -44,9 +45,12 @@ export function mesEcuador(iso: string): string {
   return `${mes} ${anio}`.trim()
 }
 
-/** Dirección que lleva el QR: la página de la caja (la arma CC3). */
-export function urlValidacion(dominio: string, ficha: string): string {
-  return `${dominio.replace(/\/$/, "")}/residentes/v/${ficha}`
+/**
+ * Dirección que lleva el QR: la página de la caja. SIEMPRE en `www` (ver `lib/residentes-dominio.ts`):
+ * si apuntara a `naufrago.ec`, la galleta de la caja guardada en `www` no viajaría.
+ */
+export function urlValidacion(ficha: string): string {
+  return `${DOMINIO_RESIDENTES}/residentes/v/${ficha}`
 }
 
 /** El QR en SVG, hecho aquí mismo (sin servicios de terceros). */

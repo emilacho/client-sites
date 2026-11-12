@@ -8,6 +8,7 @@ import { baseFalsa } from "./__stubs__/base-residentes-falsa"
 import { validarYAnotar, horaEcuador } from "@/lib/residentes-validar"
 import { LLAVE_ADMIN, LLAVE_CAJA, igual, llaveValida } from "@/lib/llave-de-aparato"
 import { entrarConLlave } from "@/lib/entrar-con-llave"
+import { dominioDeGalleta } from "@/lib/residentes-dominio"
 
 const FICHA = "AbCdEfGhIjKlMnOpQrStUv_-"
 const FICHA_BAJA = "zzzzzzzzzzzzzzzzzzzzzzzz"
@@ -127,6 +128,39 @@ describe("la llave del aparato", () => {
     expect(g?.value).toBe("llave-de-la-caja-0001")
     expect(g?.httpOnly).toBe(true)
     expect(g?.path).toBe("/residentes")
+  })
+
+  it("la galleta vale en naufrago.ec y en www (dominio .naufrago.ec), sin importar por cuál se entró", () => {
+    process.env.RESIDENTES_CAJA_LLAVE = "llave-de-la-caja-0001"
+    process.env.RESIDENTES_ADMIN_LLAVE = "llave-de-emilio-00001"
+    for (const host of ["naufrago.ec", "www.naufrago.ec", "WWW.NAUFRAGO.EC"]) {
+      const caja = entrarConLlave(new NextRequest(`https://${host}/residentes/caja?llave=llave-de-la-caja-0001`), LLAVE_CAJA, "/residentes/caja/lista")
+      const g = caja.cookies.get("naufrago_caja_llave")
+      expect(g?.domain).toBe(".naufrago.ec")
+      expect(g?.path).toBe("/residentes")
+      expect(g?.httpOnly).toBe(true)
+      expect(g?.sameSite).toBe("lax")
+      const admin = entrarConLlave(new NextRequest(`https://${host}/residentes/admin/entrar?llave=llave-de-emilio-00001`), LLAVE_ADMIN, "/residentes/admin")
+      expect(admin.cookies.get("naufrago_residentes_admin")?.domain).toBe(".naufrago.ec")
+    }
+  })
+
+  it("el dominio de la galleta se decide por el host, sin importar mayúsculas, puerto ni punto final", () => {
+    expect(dominioDeGalleta("WWW.Naufrago.EC")).toBe(".naufrago.ec")
+    expect(dominioDeGalleta("naufrago.ec:443")).toBe(".naufrago.ec")
+    expect(dominioDeGalleta("www.naufrago.ec.")).toBe(".naufrago.ec")
+    expect(dominioDeGalleta(null)).toBeUndefined()
+    expect(dominioDeGalleta("naufrago.ecuador.com")).toBeUndefined()
+  })
+
+  it("fuera de naufrago.ec (vista previa, localhost, un dominio parecido) la galleta no lleva dominio", () => {
+    process.env.RESIDENTES_CAJA_LLAVE = "llave-de-la-caja-0001"
+    for (const host of ["client-sites-template.vercel.app", "localhost:3000", "naufrago.ec.ataque.com", "falsonaufrago.ec"]) {
+      const r = entrarConLlave(new NextRequest(`https://${host}/residentes/caja?llave=llave-de-la-caja-0001`), LLAVE_CAJA, "/residentes/caja/lista")
+      const g = r.cookies.get("naufrago_caja_llave")
+      expect(g?.value).toBe("llave-de-la-caja-0001")
+      expect(g?.domain).toBeUndefined()
+    }
   })
 
   it("entrar con una llave equivocada no guarda nada", () => {

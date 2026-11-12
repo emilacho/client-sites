@@ -1,5 +1,4 @@
 import Link from "next/link"
-import { cliente } from "@/cliente.config"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { leerTarjeta, qrSvg, urlValidacion } from "@/lib/residentes-tarjeta"
 import { Marco, Kicker } from "@/components/residentes/Marco"
@@ -39,7 +38,7 @@ export default async function TarjetaResidentePage({ params }: Props) {
     )
   }
 
-  const svg = await qrSvg(urlValidacion(cliente.domain, ficha))
+  const svg = await qrSvg(urlValidacion(ficha))
 
   return (
     <Marco>

@@ -37,12 +37,11 @@ describe("mes de alta en Ecuador", () => {
 })
 
 describe("el QR", () => {
-  it("lleva a la página de la caja de esa ficha", () => {
-    expect(urlValidacion("https://naufrago.ec", FICHA)).toBe(`https://naufrago.ec/residentes/v/${FICHA}`)
-    expect(urlValidacion("https://naufrago.ec/", FICHA)).toBe(`https://naufrago.ec/residentes/v/${FICHA}`)
+  it("lleva a la página de la caja de esa ficha, SIEMPRE en www (la galleta de la caja vive ahí)", () => {
+    expect(urlValidacion(FICHA)).toBe(`https://www.naufrago.ec/residentes/v/${FICHA}`)
   })
   it("se arma en el sitio como SVG, con los colores de la marca", async () => {
-    const svg = await qrSvg(urlValidacion("https://naufrago.ec", FICHA))
+    const svg = await qrSvg(urlValidacion(FICHA))
     expect(svg.startsWith("<svg")).toBe(true)
     expect(svg).toContain("#1F1138")
     expect(svg).toContain("#F5E9D2")

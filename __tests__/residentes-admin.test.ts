@@ -83,7 +83,7 @@ describe("anular y dar de baja", () => {
 
 describe("la hoja de códigos", () => {
   it("el QR del código lleva al registro con el código ya puesto, en el dominio público", () => {
-    expect(urlRegistroConCodigo("NAU-7K3Q2X")).toBe("https://naufrago.ec/residentes?codigo=NAU-7K3Q2X")
+    expect(urlRegistroConCodigo("NAU-7K3Q2X")).toBe("https://www.naufrago.ec/residentes?codigo=NAU-7K3Q2X")
   })
 })
 

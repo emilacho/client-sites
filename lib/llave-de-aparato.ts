@@ -11,6 +11,7 @@ import "server-only"
  * valida que una lista de vecinos a la vista de cualquiera.
  */
 import { cookies } from "next/headers"
+import { dominioDeGalleta } from "@/lib/residentes-dominio"
 
 export interface Llave {
   /** Variable de entorno con la llave real. */
@@ -59,13 +60,19 @@ export function hayLlaveConfigurada(l: Llave): boolean {
   return llaveReal(l) !== null
 }
 
-/** Opciones de la galleta: solo la lee el servidor, solo por https, y viaja al abrir el enlace desde la cámara. */
-export function opcionesGalleta() {
+/**
+ * Opciones de la galleta: solo la lee el servidor, solo por https, y viaja al abrir el enlace desde la cámara.
+ * Si se entra por naufrago.ec o www.naufrago.ec, se guarda para `.naufrago.ec` y vale en los dos
+ * (ver `lib/residentes-dominio.ts`). Una galleta vieja, guardada solo para www, sigue sirviendo allí.
+ */
+export function opcionesGalleta(host?: string | null) {
+  const domain = dominioDeGalleta(host)
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
     path: "/residentes",
     maxAge: DURACION_GALLETA_S,
+    ...(domain ? { domain } : {}),
   }
 }
