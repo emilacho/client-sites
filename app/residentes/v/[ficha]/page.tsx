@@ -88,7 +88,7 @@ export default async function ValidarResidente({ params }: { params: Promise<{ f
         <Titulo>No se pudo validar</Titulo>
         <p className="mt-4">Hubo un problema con el sistema.</p>
         <p className="mt-6 rounded-xl bg-white/15 p-3 font-semibold">Cobra el precio normal.</p>
-        <p className="mt-3 text-sm opacity-80">Si se repite, avisa a Emilio.</p>
+        <p className="mt-3 text-sm opacity-80">Si se repite, avisa al encargado del local.</p>
       </Marco>
     )
   }
