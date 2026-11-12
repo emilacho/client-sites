@@ -7,7 +7,7 @@
  * Fotos viven en /public/stories/<id>.jpg · Emilio sube las imágenes
  * según las va sacando · cuando una falta · cae a emoji placeholder.
  */
-import { useEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { X, ChevronLeft, ChevronRight } from "lucide-react"
 import Image from "next/image"
@@ -102,6 +102,20 @@ export function StoriesModal({ open, onClose, onOpenMenu }: StoriesModalProps) {
   const cart = useCart()
   const [idx, setIdx] = useState(0)
   const [imgError, setImgError] = useState<Record<string, boolean>>({})
+  // la caja del texto tiene alto fijo: si el texto del plato no cabe, se avisa
+  // («▼ más») para que nadie se pierda la advertencia del encebollado
+  const textoRef = useRef<HTMLDivElement>(null)
+  const [hayMasTexto, setHayMasTexto] = useState(false)
+  useLayoutEffect(() => {
+    const el = textoRef.current
+    if (!el) return
+    el.scrollTop = 0
+    const medir = () => setHayMasTexto(el.scrollHeight - el.clientHeight - el.scrollTop > 4)
+    medir()
+    el.addEventListener("scroll", medir)
+    window.addEventListener("resize", medir)
+    return () => { el.removeEventListener("scroll", medir); window.removeEventListener("resize", medir) }
+  }, [idx, open])
 
   useEffect(() => {
     if (!open) return
@@ -165,12 +179,14 @@ export function StoriesModal({ open, onClose, onOpenMenu }: StoriesModalProps) {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: "8%", opacity: 0 }}
           transition={{ duration: 0.28 }}
-          /* R161 · antes era `overflow-hidden` y la tarjeta está centrada:
-             lo que no entraba se recortaba y NO había forma de bajar. En
-             pantallas de 375x667 y 360x640 el botón "Siguiente" quedaba
-             fuera y no se podía tocar · comprobado. Ahora la tarjeta se
-             limita al alto de la pantalla y se desplaza. */
-          className="relative z-10 max-h-[92svh] w-full max-w-sm overflow-y-auto rounded-3xl"
+          /* R161 · la tarjeta no cabía en 375x667 y "Siguiente" quedaba fuera.
+             12-nov · consejo de un cliente: la tarjeta cambiaba de tamaño en
+             cada plato (según el texto) y los botones se movían. Ahora tiene
+             SIEMPRE el mismo alto (el de la pantalla, con tope de 720 px): la
+             foto ocupa el espacio que sobra, el texto vive en una caja de alto
+             fijo con scroll propio y los botones quedan fijos abajo, visibles
+             sin scroll en el celular. */
+          className="relative z-10 flex h-[min(92svh,720px)] w-full max-w-sm flex-col overflow-hidden rounded-3xl"
           style={{
             overscrollBehavior: "contain",
             background: `linear-gradient(180deg, ${PURPLE} 0%, #1F1138 100%)`,
@@ -179,7 +195,7 @@ export function StoriesModal({ open, onClose, onOpenMenu }: StoriesModalProps) {
           }}
         >
           {/* Progress bars · stories style */}
-          <div className="flex gap-1 px-3 pt-3">
+          <div className="flex shrink-0 gap-1 px-3 pt-3">
             {DISHES.map((_, i) => (
               <div
                 key={i}
@@ -197,7 +213,7 @@ export function StoriesModal({ open, onClose, onOpenMenu }: StoriesModalProps) {
           </div>
 
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-2">
+          <div className="flex shrink-0 items-center justify-between px-4 py-2">
             <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/75">
               {idx + 1} de {DISHES.length} · Fotos del menú
             </span>
@@ -213,7 +229,8 @@ export function StoriesModal({ open, onClose, onOpenMenu }: StoriesModalProps) {
 
           {/* Image / emoji */}
           <div
-            className="relative aspect-square w-full overflow-hidden"
+            data-marco-foto
+            className="relative min-h-0 w-full flex-1 overflow-hidden"
             style={{ background: SAND }}
           >
             {hasImg ? (
@@ -255,10 +272,26 @@ export function StoriesModal({ open, onClose, onOpenMenu }: StoriesModalProps) {
           </div>
 
           {/* Body · nombre + poética + warning + CTA */}
-          <div className="space-y-3 px-5 py-4">
-            <h3 className="font-[family-name:var(--font-bebas),sans-serif] text-3xl tracking-wider text-white">
+          <div className="shrink-0 space-y-3 px-5 py-4">
+            <h3
+              title={current.name}
+              className="truncate font-[family-name:var(--font-bebas),sans-serif] text-3xl tracking-wider text-white"
+            >
               {current.name}
             </h3>
+            {/* alto fijo: un texto largo se lee con scroll aquí adentro, sin agrandar la tarjeta */}
+            <div className="relative">
+            <div
+              ref={textoRef}
+              data-texto-plato
+              className="h-24 space-y-2 overflow-y-auto pr-1"
+              style={{
+                overscrollBehavior: "contain",
+                ...(hayMasTexto
+                  ? { maskImage: "linear-gradient(180deg, #000 70%, transparent)", WebkitMaskImage: "linear-gradient(180deg, #000 70%, transparent)" }
+                  : {}),
+              }}
+            >
             <p className="font-[family-name:var(--font-handwritten),cursive] text-base italic leading-relaxed text-white/90">
               {current.poetic}
             </p>
@@ -278,6 +311,13 @@ export function StoriesModal({ open, onClose, onOpenMenu }: StoriesModalProps) {
                 </p>
               </div>
             ) : null}
+            </div>
+            {hayMasTexto ? (
+              <span data-hay-mas className="pointer-events-none absolute bottom-0 right-1 font-mono text-[9px] uppercase tracking-[0.18em] text-white/60">
+                ▼ más
+              </span>
+            ) : null}
+            </div>
             <button
               type="button"
               onClick={handleCta}
