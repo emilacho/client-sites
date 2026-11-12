@@ -18,7 +18,7 @@ const diaEc = (iso: string) =>
 /** El `max_rows` del proyecto de Supabase de Náufrago (medido por CC6 el 12-nov). */
 export const MAX_FILAS = 1000
 
-export function baseFalsa(inicial: Partial<Tablas> = {}, reloj: () => string = () => new Date().toISOString()) {
+export function baseFalsa(inicial: Partial<Tablas> = {}, reloj: () => string = () => new Date().toISOString(), maxFilas: number = MAX_FILAS) {
   const t: Tablas = { residentes: [], residente_codigos: [], residente_visitas: [], ...structuredClone(inicial) }
   let idVisita = t.residente_visitas.length
   let idCodigo = 0
@@ -83,7 +83,7 @@ export function baseFalsa(inicial: Partial<Tablas> = {}, reloj: () => string = (
       }
       if (rango) filas = filas.slice(rango[0], rango[1] + 1)
       // como el `max_rows` del proyecto: nunca más de 1000 filas por pedido, y sin avisar
-      filas = filas.slice(0, Math.min(tope, MAX_FILAS))
+      filas = filas.slice(0, Math.min(tope, maxFilas))
       if (tabla === "residente_codigos") {
         filas = filas.map((c) => {
           const r = t.residentes.find((x) => x.id === c.residente_id)

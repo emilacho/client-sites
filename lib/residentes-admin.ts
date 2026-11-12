@@ -12,6 +12,8 @@ export interface Vecino {
   id: string
   numero: string
   nombre: string
+  /** Sector o barrio en Olón (obligatorio en el registro desde 6ac0850). */
+  sector: string | null
   whatsapp: string
   creadoEn: string
   bajaEn: string | null
@@ -37,28 +39,32 @@ function falla(que: string, e: { message?: string; code?: string }): never {
   throw new Error(`${que}: ${e.message ?? e.code}`)
 }
 
-/** La base entrega como máximo 1000 filas por pedido y corta callada (`max_rows` del proyecto): se lee por páginas. */
+/**
+ * La base entrega como máximo `max_rows` filas por pedido (hoy 1000) y corta callada: se lee por páginas.
+ * No se confía en ese número: se pide desde donde quedó la página anterior y se para solo cuando llega una VACÍA.
+ * Así, si alguien baja `max_rows` (p. ej. a 500), la lista sigue completa; solo cuesta un pedido más al final.
+ */
 export const FILAS_POR_PAGINA = 1000
-const TOPE_DE_PAGINAS = 200
+const TOPE_DE_FILAS = 200_000
 
 /** Lee TODAS las filas de una consulta, página por página. `armar` debe dar un orden estable (con desempate). */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function leerTodo(armar: () => any, que: string): Promise<any[]> {
   const todas: unknown[] = []
-  for (let pagina = 0; pagina < TOPE_DE_PAGINAS; pagina++) {
-    const desde = pagina * FILAS_POR_PAGINA
+  while (todas.length <= TOPE_DE_FILAS) {
+    const desde = todas.length
     const { data, error } = await armar().range(desde, desde + FILAS_POR_PAGINA - 1)
     if (error) falla(que, error)
     const filas = data ?? []
+    if (filas.length === 0) return todas
     todas.push(...filas)
-    if (filas.length < FILAS_POR_PAGINA) return todas
   }
-  throw new Error(`${que}: más de ${TOPE_DE_PAGINAS * FILAS_POR_PAGINA} filas`)
+  throw new Error(`${que}: más de ${TOPE_DE_FILAS} filas`)
 }
 
 export async function listarVecinos(base: BaseResidentes): Promise<Vecino[]> {
   const rs = await leerTodo(
-    () => base.from("residentes").select("id, numero, nombre, whatsapp_e164, creado_en, baja_en, baja_motivo").order("numero", { ascending: true }),
+    () => base.from("residentes").select("id, numero, nombre, sector, whatsapp_e164, creado_en, baja_en, baja_motivo").order("numero", { ascending: true }),
     "no se pudo leer la lista de vecinos",
   )
   const vs = await leerTodo(
@@ -87,6 +93,7 @@ export async function listarVecinos(base: BaseResidentes): Promise<Vecino[]> {
       id: r.id as string,
       numero: numeroVisible(r.numero as number),
       nombre: r.nombre as string,
+      sector: (r.sector as string | null) ?? null,
       whatsapp: r.whatsapp_e164 as string,
       creadoEn: r.creado_en as string,
       bajaEn: (r.baja_en as string | null) ?? null,

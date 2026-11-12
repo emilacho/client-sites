@@ -144,6 +144,15 @@ describe("leer la lista", () => {
     expect(new Set(cs.map((c) => c.id)).size).toBe(1234) // el desempate por id no repite ni salta filas
   })
 
+  it("si alguien baja el tope de la base (500), la lista sigue completa", async () => {
+    const vecinos = Array.from({ length: 1234 }, (_, i) => ({ id: `r${i}`, numero: i + 1, nombre: `V${i}`, sector: "La Playita", whatsapp_e164: `5939900${String(i).padStart(5, "0")}`, creado_en: "2026-01-01T00:00:00Z", baja_en: null, baja_motivo: null }))
+    const b = baseFalsa({ residentes: vecinos }, RELOJ, 500)
+    const vs = await listarVecinos(b.base)
+    expect(vs).toHaveLength(1234)
+    expect(new Set(vs.map((v) => v.id)).size).toBe(1234)
+    expect(vs[0].sector).toBe("La Playita")
+  })
+
   it("los códigos dicen quién los usó", async () => {
     const b = baseFalsa({
       residentes: [{ id: "r-ana", numero: 7, nombre: "Ana" }],

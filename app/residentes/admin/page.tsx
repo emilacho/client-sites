@@ -77,7 +77,7 @@ export default async function AdminResidentes({ searchParams }: { searchParams: 
             {vecinos.map((v) => (
               <li key={v.id} className={`py-3 ${v.bajaEn ? "opacity-60" : ""}`}>
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <p><span className="font-semibold">{v.numero}</span> · {v.nombre}</p>
+                  <p><span className="font-semibold">{v.numero}</span> · {v.nombre}{v.sector ? <span className="opacity-70"> · {v.sector}</span> : null}</p>
                   <p className="text-sm">{v.visitas} {v.visitas === 1 ? "visita" : "visitas"} · última {fecha(v.ultimaVisita)}</p>
                 </div>
                 <p className="text-sm opacity-70">+{v.whatsapp} · desde {fecha(v.creadoEn)}{v.rechazos ? ` · ${v.rechazos} escaneos no válidos` : ""}</p>
