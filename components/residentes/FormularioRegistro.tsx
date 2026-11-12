@@ -4,8 +4,8 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 
 export const MENSAJES: Record<string, string> = {
-  codigo_invalido: "Ese código no existe o ya se usó. Pídele uno nuevo a Emilio.",
-  ya_registrado: "Ese teléfono ya tiene una tarjeta. Si la perdiste, pídele ayuda a Emilio en el local.",
+  codigo_invalido: "Ese código no existe o ya se usó. Pide uno nuevo en el local.",
+  ya_registrado: "Ese teléfono ya tiene una tarjeta. Si la perdiste, pide ayuda en el local.",
   datos_invalidos: "Revisa tus datos: nombre, teléfono y sector; y, si los pusiste, el correo y el cumpleaños.",
   demasiados_intentos: "Demasiados intentos. Espera unos minutos y vuelve a probar.",
 }
@@ -57,7 +57,7 @@ export function FormularioRegistro({ codigoInicial }: { codigoInicial: string })
   return (
     <form onSubmit={enviar} className="mt-2" noValidate>
       <label className="mt-4 block">
-        <span className="mb-1.5 block text-[13px] text-[#e9dcc4]">Tu código (te lo dio Emilio)</span>
+        <span className="mb-1.5 block text-[13px] text-[#e9dcc4]">Tu código</span>
         <input
           className={`${campo} font-mono text-lg font-bold uppercase tracking-[0.25em] text-[#4DD4D8]`}
           value={codigo}
@@ -182,7 +182,7 @@ export function FormularioRegistro({ codigoInicial }: { codigoInicial: string })
       </p>
 
       <div className="mt-4 rounded-2xl border border-[#5b4a7c] bg-white/[0.04] px-3.5 py-3 text-[13px] leading-relaxed text-[#e9dcc4]">
-        🔑 Sin código no hay tarjeta. Pídeselo a Emilio en el local de Olón.
+        🔑 Sin código no hay tarjeta. Pídelo en el local de Olón.
         <br />
         Cada código sirve una sola vez.
       </div>

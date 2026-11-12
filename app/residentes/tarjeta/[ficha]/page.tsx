@@ -26,8 +26,8 @@ export default async function TarjetaResidentePage({ params }: Props) {
         </h1>
         <p className="mt-4 text-[15px] leading-relaxed text-[#e9dcc4]">
           {tarjeta.estado === "baja"
-            ? "Fue dada de baja. Si crees que es un error, pídele ayuda a Emilio en el local de Olón."
-            : "Revisa el enlace. Si todavía no tienes tarjeta, regístrate con el código que te dio Emilio."}
+            ? "Fue dada de baja. Si crees que es un error, pide ayuda en el local de Olón."
+            : "Revisa el enlace. Si todavía no tienes tarjeta, regístrate con el código que te dieron en el local."}
         </p>
         <Link
           href="/residentes"

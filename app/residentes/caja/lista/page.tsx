@@ -21,7 +21,7 @@ export default async function CajaLista() {
         ) : (
           <>
             <h1 className="mt-4 text-4xl font-[family-name:var(--font-bebas)] tracking-wide">Sin acceso</h1>
-            <p className="mt-4">Este celular todavía no es la caja. Abre el enlace con la llave que te dio Emilio.</p>
+            <p className="mt-4">Este celular todavía no es la caja. Abre el enlace con la llave de la caja.</p>
           </>
         )}
       </div>
