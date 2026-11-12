@@ -21,7 +21,7 @@ export function baseFalsa(inicial: Partial<Tablas> = {}, reloj: () => string = (
   let idCodigo = 0
   const llamadas: string[] = []
   /** Para simular una base caída: si devuelve un error, esa operación falla. */
-  let romper: ((tabla: string, op: string) => { code?: string; message?: string } | null) = () => null
+  let romper: ((tabla: string, op: string, fila?: Fila | null) => { code?: string; message?: string } | null) = () => null
 
   function consulta(tabla: keyof Tablas) {
     const filtros: Filtro[] = []
@@ -34,7 +34,7 @@ export function baseFalsa(inicial: Partial<Tablas> = {}, reloj: () => string = (
 
     const ejecutar = (): { data: any; error: any } => { // eslint-disable-line @typescript-eslint/no-explicit-any
       llamadas.push(`${op}:${tabla}`)
-      const roto = romper(tabla, op)
+      const roto = romper(tabla, op, fila)
       if (roto) return { data: null, error: roto }
       if (op === "insert") {
         const nueva: Fila = { ...fila }

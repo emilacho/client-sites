@@ -2,7 +2,7 @@
  * Tarjeta de residente · la caja (12-nov · CC3): validar + anotar en un solo paso, una vez por día de Ecuador,
  * y la llave del aparato.
  */
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { NextRequest } from "next/server"
 import { baseFalsa } from "./__stubs__/base-residentes-falsa"
 import { validarYAnotar, horaEcuador } from "@/lib/residentes-validar"
@@ -76,7 +76,7 @@ describe("validar en la caja", () => {
 
   it("un duplicado de OTRA regla no se confunde con «ya se usó hoy»", async () => {
     const b = caja(() => "2026-11-12T18:05:00Z")
-    b.romperCon((tabla, op) => (tabla === "residente_visitas" && op === "insert" ? { code: "23505", message: 'duplicate key value violates unique constraint "residente_visitas_pkey"' } : null))
+    b.romperCon((tabla, op, fila) => (tabla === "residente_visitas" && op === "insert" && fila?.resultado === "valida" ? { code: "23505", message: 'duplicate key value violates unique constraint "residente_visitas_pkey"' } : null))
     await expect(validarYAnotar(b.base, FICHA)).rejects.toThrow(/no se pudo anotar/)
   })
 
@@ -134,5 +134,30 @@ describe("la llave del aparato", () => {
     const r = entrarConLlave(new NextRequest("https://naufrago.ec/residentes/caja?llave=otra-llave-cualquiera"), LLAVE_CAJA, "/residentes/caja/lista")
     expect(r.status).toBe(303)
     expect(r.cookies.get("naufrago_caja_llave")).toBeUndefined()
+  })
+})
+
+describe("el aparato con la llave guardada", () => {
+  it("solo la galleta con la llave exacta abre, y sin llave cargada no abre ni con galleta", async () => {
+    const galletas = new Map<string, string>()
+    vi.doMock("next/headers", () => ({ cookies: async () => ({ get: (n: string) => (galletas.has(n) ? { value: galletas.get(n) } : undefined) }) }))
+    vi.resetModules()
+    const { aparatoAutorizado, LLAVE_CAJA: CAJA, LLAVE_ADMIN: ADMIN } = await import("@/lib/llave-de-aparato")
+    const antes = process.env.RESIDENTES_CAJA_LLAVE
+    try {
+      process.env.RESIDENTES_CAJA_LLAVE = "llave-de-la-caja-0001"
+      expect(await aparatoAutorizado(CAJA)).toBe(false)
+      galletas.set("naufrago_caja_llave", "llave-de-la-caja-0002")
+      expect(await aparatoAutorizado(CAJA)).toBe(false)
+      galletas.set("naufrago_caja_llave", "llave-de-la-caja-0001")
+      expect(await aparatoAutorizado(CAJA)).toBe(true)
+      expect(await aparatoAutorizado(ADMIN)).toBe(false)
+      delete process.env.RESIDENTES_CAJA_LLAVE
+      expect(await aparatoAutorizado(CAJA)).toBe(false)
+    } finally {
+      if (antes === undefined) delete process.env.RESIDENTES_CAJA_LLAVE
+      else process.env.RESIDENTES_CAJA_LLAVE = antes
+      vi.doUnmock("next/headers")
+    }
   })
 })
