@@ -15,6 +15,9 @@ export interface Tablas {
 const diaEc = (iso: string) =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "America/Guayaquil", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso))
 
+/** El `max_rows` del proyecto de Supabase de Náufrago (medido por CC6 el 12-nov). */
+export const MAX_FILAS = 1000
+
 export function baseFalsa(inicial: Partial<Tablas> = {}, reloj: () => string = () => new Date().toISOString()) {
   const t: Tablas = { residentes: [], residente_codigos: [], residente_visitas: [], ...structuredClone(inicial) }
   let idVisita = t.residente_visitas.length
@@ -28,7 +31,8 @@ export function baseFalsa(inicial: Partial<Tablas> = {}, reloj: () => string = (
     let op: "select" | "insert" | "update" = "select"
     let fila: Fila | null = null
     let cambios: Fila | null = null
-    let orden: { col: string; asc: boolean } | null = null
+    const ordenes: { col: string; asc: boolean }[] = []
+    let rango: [number, number] | null = null
     let tope = Infinity
     let uno = false
 
@@ -64,11 +68,22 @@ export function baseFalsa(inicial: Partial<Tablas> = {}, reloj: () => string = (
         for (const f of filas) Object.assign(f, cambios)
         return { data: filas.map((f) => ({ id: f.id })), error: null }
       }
-      if (orden) {
-        const { col, asc } = orden
-        filas = [...filas].sort((a, b) => (a[col] < b[col] ? -1 : a[col] > b[col] ? 1 : 0) * (asc ? 1 : -1))
+      if (ordenes.length) {
+        // Como Postgres: entre filas empatadas el orden NO es estable de un pedido a otro (aquí cambia con cada pedido),
+        // así que leer por páginas sin desempate repite o salta filas.
+        const vuelta = llamadas.length
+        const azar = new Map(filas.map((f, i) => [f, (i * 7919 + vuelta * 104729) % 1000003]))
+        filas = [...filas].sort((a, b) => {
+          for (const { col, asc } of ordenes) {
+            const c = (a[col] < b[col] ? -1 : a[col] > b[col] ? 1 : 0) * (asc ? 1 : -1)
+            if (c) return c
+          }
+          return (azar.get(a) as number) - (azar.get(b) as number)
+        })
       }
-      filas = filas.slice(0, tope)
+      if (rango) filas = filas.slice(rango[0], rango[1] + 1)
+      // como el `max_rows` del proyecto: nunca más de 1000 filas por pedido, y sin avisar
+      filas = filas.slice(0, Math.min(tope, MAX_FILAS))
       if (tabla === "residente_codigos") {
         filas = filas.map((c) => {
           const r = t.residentes.find((x) => x.id === c.residente_id)
@@ -87,8 +102,9 @@ export function baseFalsa(inicial: Partial<Tablas> = {}, reloj: () => string = (
       is(col: string, v: unknown) { filtros.push((f) => (f[col] ?? null) === v); return q },
       not(col: string, _op: string, v: unknown) { filtros.push((f) => (f[col] ?? null) !== v); return q },
       in(col: string, vs: unknown[]) { filtros.push((f) => vs.includes(f[col])); return q },
-      order(col: string, o: { ascending: boolean }) { orden = { col, asc: o.ascending }; return q },
+      order(col: string, o: { ascending: boolean }) { ordenes.push({ col, asc: o.ascending }); return q },
       limit(n: number) { tope = n; return q },
+      range(desde: number, hasta: number) { rango = [desde, hasta]; return q },
       maybeSingle() { uno = true; return q },
       then(ok: (r: unknown) => unknown, mal?: (e: unknown) => unknown) {
         try { return Promise.resolve(ejecutar()).then(ok, mal) } catch (e) { return mal ? mal(e) : Promise.reject(e) }

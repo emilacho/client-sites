@@ -37,22 +37,43 @@ function falla(que: string, e: { message?: string; code?: string }): never {
   throw new Error(`${que}: ${e.message ?? e.code}`)
 }
 
+/** La base entrega como máximo 1000 filas por pedido y corta callada (`max_rows` del proyecto): se lee por páginas. */
+export const FILAS_POR_PAGINA = 1000
+const TOPE_DE_PAGINAS = 200
+
+/** Lee TODAS las filas de una consulta, página por página. `armar` debe dar un orden estable (con desempate). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function leerTodo(armar: () => any, que: string): Promise<any[]> {
+  const todas: unknown[] = []
+  for (let pagina = 0; pagina < TOPE_DE_PAGINAS; pagina++) {
+    const desde = pagina * FILAS_POR_PAGINA
+    const { data, error } = await armar().range(desde, desde + FILAS_POR_PAGINA - 1)
+    if (error) falla(que, error)
+    const filas = data ?? []
+    todas.push(...filas)
+    if (filas.length < FILAS_POR_PAGINA) return todas
+  }
+  throw new Error(`${que}: más de ${TOPE_DE_PAGINAS * FILAS_POR_PAGINA} filas`)
+}
+
 export async function listarVecinos(base: BaseResidentes): Promise<Vecino[]> {
-  const { data: rs, error } = await base
-    .from("residentes")
-    .select("id, numero, nombre, whatsapp_e164, creado_en, baja_en, baja_motivo")
-    .order("numero", { ascending: true })
-  if (error) falla("no se pudo leer la lista de vecinos", error)
-  const { data: vs, error: ev } = await base
-    .from("residente_visitas")
-    .select("residente_id, resultado, validado_en")
-    .not("residente_id", "is", null)
-    .order("validado_en", { ascending: false })
-    .limit(20000)
-  if (ev) falla("no se pudieron leer las visitas", ev)
+  const rs = await leerTodo(
+    () => base.from("residentes").select("id, numero, nombre, whatsapp_e164, creado_en, baja_en, baja_motivo").order("numero", { ascending: true }),
+    "no se pudo leer la lista de vecinos",
+  )
+  const vs = await leerTodo(
+    () =>
+      base
+        .from("residente_visitas")
+        .select("id, residente_id, resultado, validado_en")
+        .not("residente_id", "is", null)
+        .order("validado_en", { ascending: false })
+        .order("id", { ascending: false }),
+    "no se pudieron leer las visitas",
+  )
 
   const cuenta = new Map<string, { visitas: number; ultima: string | null; rechazos: number }>()
-  for (const v of vs ?? []) {
+  for (const v of vs) {
     const c = cuenta.get(v.residente_id) ?? { visitas: 0, ultima: null, rechazos: 0 }
     if (v.resultado === "valida") {
       c.visitas++
@@ -60,7 +81,7 @@ export async function listarVecinos(base: BaseResidentes): Promise<Vecino[]> {
     } else c.rechazos++
     cuenta.set(v.residente_id, c)
   }
-  return (rs ?? []).map((r: Record<string, unknown>) => {
+  return rs.map((r: Record<string, unknown>) => {
     const c = cuenta.get(r.id as string)
     return {
       id: r.id as string,
@@ -78,13 +99,16 @@ export async function listarVecinos(base: BaseResidentes): Promise<Vecino[]> {
 }
 
 export async function listarCodigos(base: BaseResidentes): Promise<Codigo[]> {
-  const { data, error } = await base
-    .from("residente_codigos")
-    .select("id, codigo, creado_en, usado_en, anulado_en, residentes!residente_codigos_residente_fk(numero, nombre)")
-    .order("creado_en", { ascending: false })
-    .limit(1000)
-  if (error) falla("no se pudieron leer los códigos", error)
-  return (data ?? []).map((c: Record<string, unknown>) => {
+  const data = await leerTodo(
+    () =>
+      base
+        .from("residente_codigos")
+        .select("id, codigo, creado_en, usado_en, anulado_en, residentes!residente_codigos_residente_fk(numero, nombre)")
+        .order("creado_en", { ascending: false })
+        .order("id", { ascending: false }),
+    "no se pudieron leer los códigos",
+  )
+  return data.map((c: Record<string, unknown>) => {
     const r = c.residentes as { numero: number; nombre: string } | null
     return {
       id: c.id as string,

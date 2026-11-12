@@ -110,6 +110,40 @@ describe("leer la lista", () => {
     expect(vs[0].bajaMotivo).toBe("se mudó")
   })
 
+  it("con más de 1000 visitas no se pierde ninguna (la base corta en 1000 por pedido)", async () => {
+    const visitas = Array.from({ length: 2500 }, (_, i) => ({
+      id: i + 1,
+      residente_id: i % 2 ? "r-ana" : "r-luis",
+      resultado: i % 5 === 0 ? "ya_usada_hoy" : "valida",
+      validado_en: new Date(Date.UTC(2026, 0, 1) + i * 3_600_000).toISOString(),
+    }))
+    const b = baseFalsa({
+      residentes: [
+        { id: "r-ana", numero: 1, nombre: "Ana", whatsapp_e164: "593991234567", creado_en: "2026-01-01T00:00:00Z", baja_en: null, baja_motivo: null },
+        { id: "r-luis", numero: 2, nombre: "Luis", whatsapp_e164: "593990000000", creado_en: "2026-01-01T00:00:00Z", baja_en: null, baja_motivo: null },
+      ],
+      residente_visitas: visitas,
+    }, RELOJ)
+    const vs = await listarVecinos(b.base)
+    const esperado = (id: string) => {
+      const suyas = visitas.filter((v) => v.residente_id === id)
+      const validas = suyas.filter((v) => v.resultado === "valida")
+      return [validas.length, suyas.length - validas.length, validas[validas.length - 1].validado_en]
+    }
+    expect(vs.map((v) => [v.visitas, v.rechazos, v.ultimaVisita])).toEqual([esperado("r-ana"), esperado("r-luis")])
+    expect(vs[0].visitas + vs[0].rechazos + vs[1].visitas + vs[1].rechazos).toBe(2500)
+  })
+
+  it("con exactamente 1000, y con más de 1000 vecinos y códigos, salen todos", async () => {
+    const vecinos = Array.from({ length: 1000 }, (_, i) => ({ id: `r${i}`, numero: i + 1, nombre: `V${i}`, whatsapp_e164: `5939900${String(i).padStart(5, "0")}`, creado_en: "2026-01-01T00:00:00Z", baja_en: null, baja_motivo: null }))
+    const codigos = Array.from({ length: 1234 }, (_, i) => ({ id: `c${String(i).padStart(5, "0")}`, codigo: `NAU-${String(i).padStart(6, "2")}`, creado_en: "2026-01-01T00:00:00Z", usado_en: null, anulado_en: null, residente_id: null }))
+    const b = baseFalsa({ residentes: vecinos, residente_codigos: codigos }, RELOJ)
+    expect(await listarVecinos(b.base)).toHaveLength(1000)
+    const cs = await listarCodigos(b.base)
+    expect(cs).toHaveLength(1234)
+    expect(new Set(cs.map((c) => c.id)).size).toBe(1234) // el desempate por id no repite ni salta filas
+  })
+
   it("los códigos dicen quién los usó", async () => {
     const b = baseFalsa({
       residentes: [{ id: "r-ana", numero: 7, nombre: "Ana" }],
