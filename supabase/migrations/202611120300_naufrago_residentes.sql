@@ -24,9 +24,21 @@ create table naufrago.residentes (
   whatsapp_e164  text not null check (whatsapp_e164 ~ '^[0-9]{8,15}$'),
   ficha          text not null unique check (ficha ~ '^[A-Za-z0-9_-]{24}$'),
   codigo_id      uuid not null unique references naufrago.residente_codigos(id),
+  sector         text not null check (char_length(btrim(sector)) between 2 and 60),
+  correo         text check (correo is null or (char_length(correo) <= 120 and correo ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$')),
+  cumple_dia     smallint,
+  cumple_mes     smallint,
+  acepta_novedades_en timestamptz,
   creado_en      timestamptz not null default now(),
   baja_en        timestamptz,
-  baja_motivo    text
+  baja_motivo    text,
+  -- cumpleaños sin año: día y mes juntos o ninguno, y un día que exista en ese mes (29-feb vale)
+  constraint residentes_cumple_valido check (
+    (cumple_dia is null and cumple_mes is null)
+    or (cumple_dia is not null and cumple_mes is not null
+        and cumple_mes between 1 and 12 and cumple_dia between 1 and
+        case when cumple_mes = 2 then 29 when cumple_mes in (4, 6, 9, 11) then 30 else 31 end)
+  )
 );
 -- un teléfono tiene UNA tarjeta activa (si se da de baja, puede volver con un código nuevo)
 create unique index residentes_whatsapp_activo on naufrago.residentes (whatsapp_e164) where baja_en is null;
@@ -51,7 +63,10 @@ alter table naufrago.residentes        enable row level security;
 alter table naufrago.residente_visitas enable row level security;
 
 -- 4 · registro en un solo paso: bloquea el código, comprueba, crea la tarjeta y marca el código
-create function naufrago.registrar_residente(p_codigo text, p_nombre text, p_whatsapp text, p_ficha text)
+-- acepta novedades = la casilla marcada; se guarda con fecha y hora (null = no aceptó)
+create function naufrago.registrar_residente(
+  p_codigo text, p_nombre text, p_whatsapp text, p_ficha text,
+  p_sector text, p_correo text, p_cumple_dia smallint, p_cumple_mes smallint, p_acepta_novedades boolean)
 returns jsonb
 language plpgsql
 security invoker
@@ -70,8 +85,10 @@ begin
     return jsonb_build_object('resultado', 'ya_registrado');
   end if;
   begin
-    insert into naufrago.residentes (nombre, whatsapp_e164, ficha, codigo_id)
-      values (btrim(p_nombre), p_whatsapp, p_ficha, v_codigo.id)
+    insert into naufrago.residentes
+        (nombre, whatsapp_e164, ficha, codigo_id, sector, correo, cumple_dia, cumple_mes, acepta_novedades_en)
+      values (btrim(p_nombre), p_whatsapp, p_ficha, v_codigo.id, btrim(p_sector), nullif(lower(btrim(p_correo)), ''),
+              p_cumple_dia, p_cumple_mes, case when p_acepta_novedades then now() end)
       returning * into v_res;
   exception when unique_violation then
     get stacked diagnostics v_restr = constraint_name;
@@ -103,8 +120,8 @@ begin
     execute format('grant usage, select on sequence %s to service_role', s);
   end loop;
 end $$;
-revoke all on function naufrago.registrar_residente(text, text, text, text) from public, anon, authenticated;
-grant execute on function naufrago.registrar_residente(text, text, text, text) to service_role;
+revoke all on function naufrago.registrar_residente(text, text, text, text, text, text, smallint, smallint, boolean) from public, anon, authenticated;
+grant execute on function naufrago.registrar_residente(text, text, text, text, text, text, smallint, smallint, boolean) to service_role;
 
 -- 6 · comprobar al final; si algo quedó abierto, se deshace todo
 do $$
@@ -125,11 +142,11 @@ begin
       raise exception 'contador abierto: %', s;
     end if;
   end loop;
-  if has_function_privilege('anon', 'naufrago.registrar_residente(text, text, text, text)', 'EXECUTE')
-     or has_function_privilege('authenticated', 'naufrago.registrar_residente(text, text, text, text)', 'EXECUTE') then
+  if has_function_privilege('anon', 'naufrago.registrar_residente(text, text, text, text, text, text, smallint, smallint, boolean)', 'EXECUTE')
+     or has_function_privilege('authenticated', 'naufrago.registrar_residente(text, text, text, text, text, text, smallint, smallint, boolean)', 'EXECUTE') then
     raise exception 'función abierta: registrar_residente';
   end if;
-  if not has_function_privilege('service_role', 'naufrago.registrar_residente(text, text, text, text)', 'EXECUTE') then
+  if not has_function_privilege('service_role', 'naufrago.registrar_residente(text, text, text, text, text, text, smallint, smallint, boolean)', 'EXECUTE') then
     raise exception 'el servidor no puede registrar';
   end if;
 end $$;

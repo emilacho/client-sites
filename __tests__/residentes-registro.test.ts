@@ -33,7 +33,7 @@ const pedir = (body: unknown) =>
       body: typeof body === "string" ? body : JSON.stringify(body),
     }) as any,
   )
-const valido = { codigo: "nau 7k3q2x", nombre: "  María  Rodríguez ", whatsapp: "099 123 4567" }
+const valido = { codigo: "nau 7k3q2x", nombre: "  María  Rodríguez ", whatsapp: "099 123 4567", sector: " La Playa " }
 
 describe("registro de residente", () => {
   beforeEach(() => {
@@ -53,6 +53,25 @@ describe("registro de residente", () => {
     expect(args.p_nombre).toBe("María Rodríguez")
     expect(args.p_whatsapp).toBe("593991234567")
     expect(args.p_ficha).toMatch(/^[A-Za-z0-9_-]{24}$/)
+    expect(args.p_sector).toBe("La Playa")
+    expect(args.p_correo).toBeNull()
+    expect(args.p_cumple_dia).toBeNull()
+    expect(args.p_cumple_mes).toBeNull()
+    expect(args.p_acepta_novedades).toBe(false)
+  })
+
+  it("los opcionales llegan limpios a la base: correo en minúsculas y cumpleaños como números", async () => {
+    await pedir({ ...valido, correo: " Maria@Mail.COM ", cumpleDia: "29", cumpleMes: 2, aceptaNovedades: true })
+    const { args } = st.llamadas[0]
+    expect(args.p_correo).toBe("maria@mail.com")
+    expect(args.p_cumple_dia).toBe(29)
+    expect(args.p_cumple_mes).toBe(2)
+    expect(args.p_acepta_novedades).toBe(true)
+  })
+
+  it("«acepto novedades» solo cuenta con un true de verdad (la casilla nace sin marcar)", async () => {
+    for (const x of ["true", 1, "sí", undefined]) await pedir({ ...valido, aceptaNovedades: x })
+    expect(st.llamadas.map((l) => l.args.p_acepta_novedades)).toEqual([false, false, false, false])
   })
 
   it("cada registro lleva una ficha distinta", async () => {
@@ -82,7 +101,7 @@ describe("registro de residente", () => {
   })
 
   it("nombre o teléfono que no sirven → 400 sin tocar la base", async () => {
-    for (const malo of [{ ...valido, nombre: "A" }, { ...valido, whatsapp: "12" }, { ...valido, whatsapp: 5 }, "no es json", null]) {
+    for (const malo of [{ ...valido, nombre: "A" }, { ...valido, whatsapp: "12" }, { ...valido, whatsapp: 5 }, { ...valido, sector: "" }, { ...valido, sector: undefined }, { ...valido, correo: "no-es-correo" }, { ...valido, cumpleDia: 31, cumpleMes: 4 }, { ...valido, cumpleDia: 5 }, "no es json", null]) {
       const res = await pedir(malo)
       expect(res.status).toBe(400)
       expect((await res.json()).error).toBe("datos_invalidos")

@@ -6,9 +6,13 @@ import { useRouter } from "next/navigation"
 export const MENSAJES: Record<string, string> = {
   codigo_invalido: "Ese código no existe o ya se usó. Pídele uno nuevo a Emilio.",
   ya_registrado: "Ese teléfono ya tiene una tarjeta. Si la perdiste, pídele ayuda a Emilio en el local.",
-  datos_invalidos: "Revisa tu nombre y tu teléfono.",
+  datos_invalidos: "Revisa tus datos: nombre, teléfono y sector; y, si los pusiste, el correo y el cumpleaños.",
   demasiados_intentos: "Demasiados intentos. Espera unos minutos y vuelve a probar.",
 }
+const MESES = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+]
 const MENSAJE_GENERAL = "No pudimos crear tu tarjeta. Prueba otra vez en un momento."
 
 const campo =
@@ -19,6 +23,11 @@ export function FormularioRegistro({ codigoInicial }: { codigoInicial: string })
   const [codigo, setCodigo] = useState(codigoInicial)
   const [nombre, setNombre] = useState("")
   const [whatsapp, setWhatsapp] = useState("")
+  const [sector, setSector] = useState("")
+  const [correo, setCorreo] = useState("")
+  const [cumpleDia, setCumpleDia] = useState("")
+  const [cumpleMes, setCumpleMes] = useState("")
+  const [aceptaNovedades, setAceptaNovedades] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -31,7 +40,7 @@ export function FormularioRegistro({ codigoInicial }: { codigoInicial: string })
       const res = await fetch("/api/residentes/registro", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ codigo, nombre, whatsapp }),
+        body: JSON.stringify({ codigo, nombre, whatsapp, sector, correo, cumpleDia, cumpleMes, aceptaNovedades }),
       })
       const json = (await res.json().catch(() => null)) as { ok?: boolean; ficha?: string; error?: string } | null
       if (json?.ok && json.ficha) {
@@ -86,6 +95,73 @@ export function FormularioRegistro({ codigoInicial }: { codigoInicial: string })
           required
         />
       </label>
+      <label className="mt-4 block">
+        <span className="mb-1.5 block text-[13px] text-[#e9dcc4]">Sector o barrio en Olón</span>
+        <input
+          className={campo}
+          value={sector}
+          onChange={(e) => setSector(e.target.value)}
+          placeholder="Ej.: Centro, La Playa, Curía"
+          maxLength={60}
+          required
+        />
+      </label>
+      <label className="mt-4 block">
+        <span className="mb-1.5 block text-[13px] text-[#e9dcc4]">
+          Correo <span className="text-[#b9abcf]">(opcional)</span>
+        </span>
+        <input
+          className={campo}
+          value={correo}
+          onChange={(e) => setCorreo(e.target.value)}
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          maxLength={120}
+        />
+      </label>
+      <fieldset className="mt-4">
+        <legend className="mb-1.5 block text-[13px] text-[#e9dcc4]">
+          Cumpleaños <span className="text-[#b9abcf]">(opcional · día y mes)</span>
+        </legend>
+        <div className="grid grid-cols-[2fr_3fr] gap-2.5">
+          <select
+            aria-label="Día del cumpleaños"
+            className={campo}
+            value={cumpleDia}
+            onChange={(e) => setCumpleDia(e.target.value)}
+          >
+            <option value="">Día</option>
+            {Array.from({ length: 31 }, (_, i) => (
+              <option key={i + 1} value={i + 1}>
+                {i + 1}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Mes del cumpleaños"
+            className={campo}
+            value={cumpleMes}
+            onChange={(e) => setCumpleMes(e.target.value)}
+          >
+            <option value="">Mes</option>
+            {MESES.map((m, i) => (
+              <option key={m} value={i + 1}>
+                {m}
+              </option>
+            ))}
+          </select>
+        </div>
+      </fieldset>
+      <label className="mt-4 flex items-start gap-3 text-[14px] leading-snug text-[#e9dcc4]">
+        <input
+          type="checkbox"
+          checked={aceptaNovedades}
+          onChange={(e) => setAceptaNovedades(e.target.checked)}
+          className="mt-0.5 h-5 w-5 shrink-0 accent-[#4DD4D8]"
+        />
+        Acepto recibir novedades de Náufrago por WhatsApp
+      </label>
 
       {error && (
         <p role="alert" className="mt-4 rounded-xl border border-[#E5553F] bg-[#4a1a22] px-3.5 py-3 text-sm text-[#f3d3cc]">
@@ -101,15 +177,15 @@ export function FormularioRegistro({ codigoInicial }: { codigoInicial: string })
       >
         {enviando ? "Creando…" : "Crear mi tarjeta"}
       </button>
+      <p className="mt-2.5 text-center text-[13px] leading-relaxed text-[#b9abcf]">
+        Tus datos solo los usa Náufrago y no se comparten.
+      </p>
 
       <div className="mt-4 rounded-2xl border border-[#5b4a7c] bg-white/[0.04] px-3.5 py-3 text-[13px] leading-relaxed text-[#e9dcc4]">
         🔑 Sin código no hay tarjeta. Pídeselo a Emilio en el local de Olón.
         <br />
         Cada código sirve una sola vez.
       </div>
-      <p className="mt-3.5 text-center text-[13px] leading-relaxed text-[#b9abcf]">
-        Tu nombre y teléfono solo se usan para la tarjeta.
-      </p>
     </form>
   )
 }

@@ -6,7 +6,10 @@ import {
   esFicha,
   generarCodigo,
   generarFicha,
+  limpiarCorreo,
+  limpiarCumple,
   limpiarNombre,
+  limpiarSector,
   normalizarCodigo,
   numeroVisible,
 } from "@/lib/residentes"
@@ -62,6 +65,32 @@ describe("nombre y número", () => {
     expect(numeroVisible(7)).toBe("R-0007")
     expect(numeroVisible(427)).toBe("R-0427")
     expect(numeroVisible(12345)).toBe("R-12345")
+  })
+})
+
+describe("sector, correo y cumpleaños", () => {
+  it("el sector es obligatorio y se limpia como el nombre", () => {
+    expect(limpiarSector("  La   Playa ")).toBe("La Playa")
+    expect(limpiarSector("")).toBeNull()
+    expect(limpiarSector(undefined)).toBeNull()
+  })
+  it("correo opcional: vacío vale, mal escrito no", () => {
+    expect(limpiarCorreo(undefined)).toBeNull()
+    expect(limpiarCorreo("   ")).toBeNull()
+    expect(limpiarCorreo(" Ana@Mail.COM ")).toBe("ana@mail.com")
+    expect(limpiarCorreo("ana@mail")).toBe("invalido")
+    expect(limpiarCorreo("a b@c.d")).toBe("invalido")
+    expect(limpiarCorreo(`${"x".repeat(115)}@m.com`)).toBe("invalido")
+    expect(limpiarCorreo(5)).toBe("invalido")
+  })
+  it("cumpleaños: día y mes juntos o nada; el día tiene que existir en ese mes", () => {
+    expect(limpiarCumple(undefined, undefined)).toBeNull()
+    expect(limpiarCumple("", "")).toBeNull()
+    expect(limpiarCumple("29", "2")).toEqual({ dia: 29, mes: 2 })
+    expect(limpiarCumple(31, 12)).toEqual({ dia: 31, mes: 12 })
+    for (const [d, m] of [[30, 2], [31, 4], [31, 11], [0, 5], [5, 13], [5, 0], [5, ""], ["", 5], [1.5, 3], ["x", 3]]) {
+      expect(limpiarCumple(d, m)).toBe("invalido")
+    }
   })
 })
 

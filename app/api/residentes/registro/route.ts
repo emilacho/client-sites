@@ -2,12 +2,21 @@ import type { NextRequest } from "next/server"
 import { getSupabaseAdmin } from "@/lib/supabase"
 import { telefonoCanonico } from "@/lib/telefono"
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
-import { generarFicha, limpiarNombre, normalizarCodigo } from "@/lib/residentes"
+import {
+  generarFicha,
+  limpiarCorreo,
+  limpiarCumple,
+  limpiarNombre,
+  limpiarSector,
+  normalizarCodigo,
+} from "@/lib/residentes"
 
 /**
  * POST /api/residentes/registro · tarjeta de residente de Olón.
  *
- * Body · { codigo, nombre, whatsapp }
+ * Body · { codigo, nombre, whatsapp, sector, correo?, cumpleDia?, cumpleMes?, aceptaNovedades? }
+ *   sector (barrio en Olón) es obligatorio · correo y cumpleaños (día y mes, sin año) son opcionales
+ *   aceptaNovedades: solo `true` cuenta; la base guarda la fecha y hora en que aceptó
  * Respuestas:
  *   200 { ok: true, ficha }                       → la página va a /residentes/tarjeta/<ficha>
  *   400 { ok: false, error: "datos_invalidos" }   → nombre o teléfono que no sirven
@@ -46,7 +55,10 @@ export async function POST(req: NextRequest) {
   const codigo = normalizarCodigo(body.codigo)
   const nombre = limpiarNombre(body.nombre)
   const whatsapp = telefonoCanonico(typeof body.whatsapp === "string" ? body.whatsapp : null)
-  if (!nombre || !whatsapp) {
+  const sector = limpiarSector(body.sector)
+  const correo = limpiarCorreo(body.correo)
+  const cumple = limpiarCumple(body.cumpleDia, body.cumpleMes)
+  if (!nombre || !whatsapp || !sector || correo === "invalido" || cumple === "invalido") {
     return Response.json({ ok: false, error: "datos_invalidos" }, { status: 400 })
   }
   if (!codigo) {
@@ -59,6 +71,12 @@ export async function POST(req: NextRequest) {
       p_nombre: nombre,
       p_whatsapp: whatsapp,
       p_ficha: generarFicha(),
+      p_sector: sector,
+      p_correo: correo,
+      p_cumple_dia: cumple?.dia ?? null,
+      p_cumple_mes: cumple?.mes ?? null,
+      // solo un «true» de verdad cuenta como aceptado (la casilla nace sin marcar)
+      p_acepta_novedades: body.aceptaNovedades === true,
     })
     if (error) throw error
     const r = (data ?? {}) as { resultado?: string; ficha?: string }

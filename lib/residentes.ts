@@ -50,6 +50,36 @@ export function limpiarNombre(crudo: unknown): string | null {
   return n.length >= 2 && n.length <= 60 ? n : null
 }
 
+/** Sector o barrio en Olón: mismas reglas que el nombre (2 a 60). */
+export const limpiarSector = limpiarNombre
+
+/**
+ * Correo opcional. Vacío → «sin correo» (null, válido). Mal escrito → «invalido».
+ * Misma regla que la base (algo@algo.algo, máx. 120).
+ */
+export function limpiarCorreo(crudo: unknown): string | null | "invalido" {
+  if (crudo === undefined || crudo === null) return null
+  if (typeof crudo !== "string") return "invalido"
+  const c = crudo.trim().toLowerCase()
+  if (!c) return null
+  return c.length <= 120 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c) ? c : "invalido"
+}
+
+const DIAS_DEL_MES = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+/**
+ * Cumpleaños opcional, sin año: día y mes juntos, o ninguno. 29 de febrero vale.
+ * Devuelve {dia, mes}, null (no lo puso) o «invalido».
+ */
+export function limpiarCumple(diaCrudo: unknown, mesCrudo: unknown): { dia: number; mes: number } | null | "invalido" {
+  const vacio = (x: unknown) => x === undefined || x === null || x === ""
+  if (vacio(diaCrudo) && vacio(mesCrudo)) return null
+  if (vacio(diaCrudo) || vacio(mesCrudo)) return "invalido"
+  const dia = Number(diaCrudo), mes = Number(mesCrudo)
+  if (!Number.isInteger(dia) || !Number.isInteger(mes) || mes < 1 || mes > 12) return "invalido"
+  return dia >= 1 && dia <= DIAS_DEL_MES[mes - 1] ? { dia, mes } : "invalido"
+}
+
 /** «R-0007» · el número visible de la tarjeta. */
 export function numeroVisible(numero: number): string {
   return `R-${String(numero).padStart(4, "0")}`
