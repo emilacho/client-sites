@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest"
 import { baseFalsa } from "./__stubs__/base-residentes-falsa"
 import { anularCodigo, codigosParaImprimir, darDeBaja, generarCodigos, listarCodigos, listarVecinos } from "@/lib/residentes-admin"
+import { urlRegistroConCodigo } from "@/lib/residentes-hoja"
 
 const RELOJ = () => "2026-11-12T18:00:00Z"
 
@@ -77,6 +78,12 @@ describe("anular y dar de baja", () => {
     const b = baseFalsa(inicial(), RELOJ)
     await darDeBaja(b.base, "r-ana", "   ")
     expect(b.tablas.residentes[0].baja_motivo).toBeNull()
+  })
+})
+
+describe("la hoja de códigos", () => {
+  it("el QR del código lleva al registro con el código ya puesto, en el dominio público", () => {
+    expect(urlRegistroConCodigo("NAU-7K3Q2X")).toBe("https://naufrago.ec/residentes?codigo=NAU-7K3Q2X")
   })
 })
 
