@@ -151,6 +151,7 @@ describe("leer la lista", () => {
     expect(vs).toHaveLength(1234)
     expect(new Set(vs.map((v) => v.id)).size).toBe(1234)
     expect(vs[0].sector).toBe("La Playita")
+    expect(vs[0].cedula).toBeNull() // los registros de antes de la cédula siguen saliendo, sin cédula
   })
 
   it("los códigos dicen quién los usó", async () => {

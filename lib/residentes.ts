@@ -65,19 +65,37 @@ export function limpiarCorreo(crudo: unknown): string | null | "invalido" {
   return c.length <= 120 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c) ? c : "invalido"
 }
 
-const DIAS_DEL_MES = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+/**
+ * Cédula OBLIGATORIA: solo números, de 6 a 15 dígitos. Se quitan espacios y guiones. No se valida el
+ * dígito verificador: valen cédulas de otros países y pasaportes numéricos. Misma regla que la base.
+ */
+export function limpiarCedula(crudo: unknown): string | null {
+  if (typeof crudo !== "string") return null
+  const c = crudo.replace(/[\s-]/g, "")
+  return /^[0-9]{6,15}$/.test(c) ? c : null
+}
 
 /**
- * Cumpleaños opcional, sin año: día y mes juntos, o ninguno. 29 de febrero vale.
- * Devuelve {dia, mes}, null (no lo puso) o «invalido».
+ * Fecha de nacimiento opcional (día, mes y año): los tres juntos, o ninguno.
+ * Tiene que existir (29-feb solo en bisiesto), desde 1900 y no en el futuro (día de Ecuador).
+ * Devuelve «AAAA-MM-DD», null (no la puso) o «invalido».
  */
-export function limpiarCumple(diaCrudo: unknown, mesCrudo: unknown): { dia: number; mes: number } | null | "invalido" {
+export function limpiarFechaNacimiento(
+  diaCrudo: unknown,
+  mesCrudo: unknown,
+  anioCrudo: unknown,
+  hoy: Date = new Date(),
+): string | null | "invalido" {
   const vacio = (x: unknown) => x === undefined || x === null || x === ""
-  if (vacio(diaCrudo) && vacio(mesCrudo)) return null
-  if (vacio(diaCrudo) || vacio(mesCrudo)) return "invalido"
-  const dia = Number(diaCrudo), mes = Number(mesCrudo)
-  if (!Number.isInteger(dia) || !Number.isInteger(mes) || mes < 1 || mes > 12) return "invalido"
-  return dia >= 1 && dia <= DIAS_DEL_MES[mes - 1] ? { dia, mes } : "invalido"
+  const partes = [diaCrudo, mesCrudo, anioCrudo]
+  if (partes.every(vacio)) return null
+  if (partes.some(vacio)) return "invalido"
+  const [dia, mes, anio] = partes.map(Number)
+  if (![dia, mes, anio].every(Number.isInteger) || anio < 1900 || mes < 1 || mes > 12 || dia < 1) return "invalido"
+  const f = new Date(Date.UTC(anio, mes - 1, dia))
+  if (f.getUTCFullYear() !== anio || f.getUTCMonth() !== mes - 1 || f.getUTCDate() !== dia) return "invalido"
+  const iso = `${anio}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`
+  return iso <= diaEcuador(hoy) ? iso : "invalido"
 }
 
 /** «R-0007» · el número visible de la tarjeta. */
