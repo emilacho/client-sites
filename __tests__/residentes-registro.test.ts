@@ -33,7 +33,7 @@ const pedir = (body: unknown) =>
       body: typeof body === "string" ? body : JSON.stringify(body),
     }) as any,
   )
-const valido = { codigo: "nau 7k3q2x", nombre: "  María  Rodríguez ", whatsapp: "099 123 4567", sector: " La Playa " }
+const valido = { codigo: "nau 7k3q2x", nombre: "  María  Rodríguez ", cedula: " 0912-345 678 ", whatsapp: "099 123 4567", sector: " La Playa " }
 
 describe("registro de residente", () => {
   beforeEach(() => {
@@ -55,18 +55,27 @@ describe("registro de residente", () => {
     expect(args.p_ficha).toMatch(/^[A-Za-z0-9_-]{24}$/)
     expect(args.p_sector).toBe("La Playa")
     expect(args.p_correo).toBeNull()
-    expect(args.p_cumple_dia).toBeNull()
-    expect(args.p_cumple_mes).toBeNull()
+    expect(args.p_cedula).toBe("0912345678")
+    expect(args.p_fecha_nacimiento).toBeNull()
     expect(args.p_acepta_novedades).toBe(false)
+    expect(Object.keys(args).sort()).toEqual(
+      ["p_acepta_novedades", "p_cedula", "p_codigo", "p_correo", "p_fecha_nacimiento", "p_ficha", "p_nombre", "p_sector", "p_whatsapp"],
+    )
   })
 
-  it("los opcionales llegan limpios a la base: correo en minúsculas y cumpleaños como números", async () => {
-    await pedir({ ...valido, correo: " Maria@Mail.COM ", cumpleDia: "29", cumpleMes: 2, aceptaNovedades: true })
+  it("los opcionales llegan limpios a la base: correo en minúsculas y fecha de nacimiento con año", async () => {
+    await pedir({ ...valido, correo: " Maria@Mail.COM ", nacimientoDia: "29", nacimientoMes: 2, nacimientoAnio: "2000", aceptaNovedades: true })
     const { args } = st.llamadas[0]
     expect(args.p_correo).toBe("maria@mail.com")
-    expect(args.p_cumple_dia).toBe(29)
-    expect(args.p_cumple_mes).toBe(2)
+    expect(args.p_fecha_nacimiento).toBe("2000-02-29")
     expect(args.p_acepta_novedades).toBe(true)
+  })
+
+  it("cédula con tarjeta activa → 409 cedula_registrada", async () => {
+    st.respuesta = { data: { resultado: "cedula_registrada" }, error: null }
+    const res = await pedir(valido)
+    expect(res.status).toBe(409)
+    expect(await res.json()).toEqual({ ok: false, error: "cedula_registrada" })
   })
 
   it("«acepto novedades» solo cuenta con un true de verdad (la casilla nace sin marcar)", async () => {
@@ -101,7 +110,7 @@ describe("registro de residente", () => {
   })
 
   it("nombre o teléfono que no sirven → 400 sin tocar la base", async () => {
-    for (const malo of [{ ...valido, nombre: "A" }, { ...valido, whatsapp: "12" }, { ...valido, whatsapp: 5 }, { ...valido, sector: "" }, { ...valido, sector: undefined }, { ...valido, correo: "no-es-correo" }, { ...valido, cumpleDia: 31, cumpleMes: 4 }, { ...valido, cumpleDia: 5 }, "no es json", null]) {
+    for (const malo of [{ ...valido, nombre: "A" }, { ...valido, whatsapp: "12" }, { ...valido, whatsapp: 5 }, { ...valido, sector: "" }, { ...valido, sector: undefined }, { ...valido, correo: "no-es-correo" }, { ...valido, cedula: undefined }, { ...valido, cedula: "" }, { ...valido, cedula: "12345" }, { ...valido, cedula: "AB123456" }, { ...valido, nacimientoDia: 31, nacimientoMes: 4, nacimientoAnio: 1990 }, { ...valido, nacimientoDia: 5, nacimientoMes: 3 }, { ...valido, nacimientoDia: 1, nacimientoMes: 1, nacimientoAnio: 2999 }, "no es json", null]) {
       const res = await pedir(malo)
       expect(res.status).toBe(400)
       expect((await res.json()).error).toBe("datos_invalidos")

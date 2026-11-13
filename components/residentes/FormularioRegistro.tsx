@@ -6,13 +6,17 @@ import { useRouter } from "next/navigation"
 export const MENSAJES: Record<string, string> = {
   codigo_invalido: "Ese código no existe o ya se usó. Pide uno nuevo en el local.",
   ya_registrado: "Ese teléfono ya tiene una tarjeta. Si la perdiste, pide ayuda en el local.",
-  datos_invalidos: "Revisa tus datos: nombre, teléfono y sector; y, si los pusiste, el correo y el cumpleaños.",
+  cedula_registrada: "Esta cédula ya tiene tarjeta. Si la perdiste, pide ayuda en el local.",
+  datos_invalidos:
+    "Revisa tus datos: nombre, cédula, teléfono y sector; y, si los pusiste, el correo y la fecha de nacimiento.",
   demasiados_intentos: "Demasiados intentos. Espera unos minutos y vuelve a probar.",
 }
 const MESES = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
 ]
+// del año en curso hacia atrás, hasta 1900 (misma regla que la base)
+const ANIOS = Array.from({ length: new Date().getFullYear() - 1900 + 1 }, (_, i) => new Date().getFullYear() - i)
 const MENSAJE_GENERAL = "No pudimos crear tu tarjeta. Prueba otra vez en un momento."
 
 const campo =
@@ -25,8 +29,10 @@ export function FormularioRegistro({ codigoInicial }: { codigoInicial: string })
   const [whatsapp, setWhatsapp] = useState("")
   const [sector, setSector] = useState("")
   const [correo, setCorreo] = useState("")
-  const [cumpleDia, setCumpleDia] = useState("")
-  const [cumpleMes, setCumpleMes] = useState("")
+  const [cedula, setCedula] = useState("")
+  const [nacimientoDia, setNacimientoDia] = useState("")
+  const [nacimientoMes, setNacimientoMes] = useState("")
+  const [nacimientoAnio, setNacimientoAnio] = useState("")
   const [aceptaNovedades, setAceptaNovedades] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -40,7 +46,9 @@ export function FormularioRegistro({ codigoInicial }: { codigoInicial: string })
       const res = await fetch("/api/residentes/registro", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ codigo, nombre, whatsapp, sector, correo, cumpleDia, cumpleMes, aceptaNovedades }),
+        body: JSON.stringify({
+          codigo, nombre, cedula, whatsapp, sector, correo, nacimientoDia, nacimientoMes, nacimientoAnio, aceptaNovedades,
+        }),
       })
       const json = (await res.json().catch(() => null)) as { ok?: boolean; ficha?: string; error?: string } | null
       if (json?.ok && json.ficha) {
@@ -78,6 +86,19 @@ export function FormularioRegistro({ codigoInicial }: { codigoInicial: string })
           onChange={(e) => setNombre(e.target.value)}
           autoComplete="name"
           maxLength={60}
+          required
+        />
+      </label>
+      <label className="mt-4 block">
+        <span className="mb-1.5 block text-[13px] text-[#e9dcc4]">Cédula</span>
+        <input
+          className={campo}
+          value={cedula}
+          onChange={(e) => setCedula(e.target.value)}
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder="Solo números"
+          maxLength={20}
           required
         />
       </label>
@@ -122,14 +143,14 @@ export function FormularioRegistro({ codigoInicial }: { codigoInicial: string })
       </label>
       <fieldset className="mt-4">
         <legend className="mb-1.5 block text-[13px] text-[#e9dcc4]">
-          Cumpleaños <span className="text-[#b9abcf]">(opcional · día y mes)</span>
+          Fecha de nacimiento <span className="text-[#b9abcf]">(opcional)</span>
         </legend>
-        <div className="grid grid-cols-[2fr_3fr] gap-2.5">
+        <div className="grid grid-cols-[2fr_3fr_2.5fr] gap-2">
           <select
-            aria-label="Día del cumpleaños"
+            aria-label="Día de nacimiento"
             className={campo}
-            value={cumpleDia}
-            onChange={(e) => setCumpleDia(e.target.value)}
+            value={nacimientoDia}
+            onChange={(e) => setNacimientoDia(e.target.value)}
           >
             <option value="">Día</option>
             {Array.from({ length: 31 }, (_, i) => (
@@ -139,15 +160,28 @@ export function FormularioRegistro({ codigoInicial }: { codigoInicial: string })
             ))}
           </select>
           <select
-            aria-label="Mes del cumpleaños"
+            aria-label="Mes de nacimiento"
             className={campo}
-            value={cumpleMes}
-            onChange={(e) => setCumpleMes(e.target.value)}
+            value={nacimientoMes}
+            onChange={(e) => setNacimientoMes(e.target.value)}
           >
             <option value="">Mes</option>
             {MESES.map((m, i) => (
               <option key={m} value={i + 1}>
                 {m}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Año de nacimiento"
+            className={campo}
+            value={nacimientoAnio}
+            onChange={(e) => setNacimientoAnio(e.target.value)}
+          >
+            <option value="">Año</option>
+            {ANIOS.map((a) => (
+              <option key={a} value={a}>
+                {a}
               </option>
             ))}
           </select>

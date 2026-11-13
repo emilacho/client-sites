@@ -5,7 +5,8 @@ import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 import {
   generarFicha,
   limpiarCorreo,
-  limpiarCumple,
+  limpiarCedula,
+  limpiarFechaNacimiento,
   limpiarNombre,
   limpiarSector,
   normalizarCodigo,
@@ -14,14 +15,16 @@ import {
 /**
  * POST /api/residentes/registro · tarjeta de residente de Olón.
  *
- * Body · { codigo, nombre, whatsapp, sector, correo?, cumpleDia?, cumpleMes?, aceptaNovedades? }
- *   sector (barrio en Olón) es obligatorio · correo y cumpleaños (día y mes, sin año) son opcionales
+ * Body · { codigo, nombre, whatsapp, cedula, sector, correo?, nacimientoDia?, nacimientoMes?, nacimientoAnio?, aceptaNovedades? }
+ *   cédula (6 a 15 dígitos) y sector (barrio en Olón) son obligatorios · correo y fecha de nacimiento
+ *   (día, mes y año) son opcionales
  *   aceptaNovedades: solo `true` cuenta; la base guarda la fecha y hora en que aceptó
  * Respuestas:
  *   200 { ok: true, ficha }                       → la página va a /residentes/tarjeta/<ficha>
- *   400 { ok: false, error: "datos_invalidos" }   → nombre o teléfono que no sirven
+ *   400 { ok: false, error: "datos_invalidos" }   → algún dato que no sirve
  *   404 { ok: false, error: "codigo_invalido" }   → no existe, ya se usó o está anulado
  *   409 { ok: false, error: "ya_registrado" }     → ese teléfono ya tiene tarjeta activa
+ *   409 { ok: false, error: "cedula_registrada" } → esa cédula ya tiene tarjeta activa
  *   429 { ok: false, error: "demasiados_intentos" }
  *   500 { ok: false, error: "error_interno" }
  *
@@ -57,8 +60,9 @@ export async function POST(req: NextRequest) {
   const whatsapp = telefonoCanonico(typeof body.whatsapp === "string" ? body.whatsapp : null)
   const sector = limpiarSector(body.sector)
   const correo = limpiarCorreo(body.correo)
-  const cumple = limpiarCumple(body.cumpleDia, body.cumpleMes)
-  if (!nombre || !whatsapp || !sector || correo === "invalido" || cumple === "invalido") {
+  const cedula = limpiarCedula(body.cedula)
+  const nacimiento = limpiarFechaNacimiento(body.nacimientoDia, body.nacimientoMes, body.nacimientoAnio)
+  if (!nombre || !whatsapp || !cedula || !sector || correo === "invalido" || nacimiento === "invalido") {
     return Response.json({ ok: false, error: "datos_invalidos" }, { status: 400 })
   }
   if (!codigo) {
@@ -73,8 +77,8 @@ export async function POST(req: NextRequest) {
       p_ficha: generarFicha(),
       p_sector: sector,
       p_correo: correo,
-      p_cumple_dia: cumple?.dia ?? null,
-      p_cumple_mes: cumple?.mes ?? null,
+      p_cedula: cedula,
+      p_fecha_nacimiento: nacimiento,
       // solo un «true» de verdad cuenta como aceptado (la casilla nace sin marcar)
       p_acepta_novedades: body.aceptaNovedades === true,
     })
@@ -88,6 +92,9 @@ export async function POST(req: NextRequest) {
     }
     if (r.resultado === "ya_registrado") {
       return Response.json({ ok: false, error: "ya_registrado" }, { status: 409 })
+    }
+    if (r.resultado === "cedula_registrada") {
+      return Response.json({ ok: false, error: "cedula_registrada" }, { status: 409 })
     }
     throw new Error(`respuesta inesperada de registrar_residente: ${JSON.stringify(r)}`)
   } catch (e) {

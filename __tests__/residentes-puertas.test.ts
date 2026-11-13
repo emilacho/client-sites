@@ -43,7 +43,7 @@ afterAll(() => {
 })
 
 const ID = "00000000-0000-4000-8000-000000000001"
-const vecino = { id: ID, numero: 7, nombre: "Ana Secreta", sector: "Centro", whatsapp_e164: "593991234567", creado_en: "2026-11-01T00:00:00Z", baja_en: null, baja_motivo: null, ficha: "f".repeat(24) }
+const vecino = { id: ID, numero: 7, nombre: "Ana Secreta", sector: "Centro", cedula: "0912345678", whatsapp_e164: "593991234567", creado_en: "2026-11-01T00:00:00Z", baja_en: null, baja_motivo: null, ficha: "f".repeat(24) }
 
 beforeEach(() => {
   process.env.RESIDENTES_CAJA_LLAVE = LLAVE_CAJA
@@ -76,8 +76,9 @@ describe("/residentes/admin · la lista de vecinos", () => {
 
   it("control · con la llave de Emilio lee la base", async () => {
     conLlaveDeEmilio()
-    await AdminResidentes({ searchParams: Promise.resolve({}) })
+    const h = await html(AdminResidentes({ searchParams: Promise.resolve({}) }))
     expect(b.llamadas).toContain("select:residentes")
+    expect(h).toContain("C.I. 0912345678") // la lista de Emilio muestra la cédula
   })
 })
 

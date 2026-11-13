@@ -7,7 +7,8 @@ import {
   generarCodigo,
   generarFicha,
   limpiarCorreo,
-  limpiarCumple,
+  limpiarCedula,
+  limpiarFechaNacimiento,
   limpiarNombre,
   limpiarSector,
   normalizarCodigo,
@@ -68,7 +69,7 @@ describe("nombre y número", () => {
   })
 })
 
-describe("sector, correo y cumpleaños", () => {
+describe("sector, correo, cédula y fecha de nacimiento", () => {
   it("el sector es obligatorio y se limpia como el nombre", () => {
     expect(limpiarSector("  La   Playa ")).toBe("La Playa")
     expect(limpiarSector("")).toBeNull()
@@ -83,13 +84,23 @@ describe("sector, correo y cumpleaños", () => {
     expect(limpiarCorreo(`${"x".repeat(115)}@m.com`)).toBe("invalido")
     expect(limpiarCorreo(5)).toBe("invalido")
   })
-  it("cumpleaños: día y mes juntos o nada; el día tiene que existir en ese mes", () => {
-    expect(limpiarCumple(undefined, undefined)).toBeNull()
-    expect(limpiarCumple("", "")).toBeNull()
-    expect(limpiarCumple("29", "2")).toEqual({ dia: 29, mes: 2 })
-    expect(limpiarCumple(31, 12)).toEqual({ dia: 31, mes: 12 })
-    for (const [d, m] of [[30, 2], [31, 4], [31, 11], [0, 5], [5, 13], [5, 0], [5, ""], ["", 5], [1.5, 3], ["x", 3]]) {
-      expect(limpiarCumple(d, m)).toBe("invalido")
+  it("cédula obligatoria: solo números, de 6 a 15, sin espacios ni guiones; no se valida el dígito verificador", () => {
+    expect(limpiarCedula(" 0912-345 678 ")).toBe("0912345678")
+    expect(limpiarCedula("123456")).toBe("123456")
+    expect(limpiarCedula("1".repeat(15))).toBe("1".repeat(15))
+    for (const x of ["", "12345", "1".repeat(16), "AB123456", "0912.345.678", undefined, null, 912345678]) {
+      expect(limpiarCedula(x)).toBeNull()
+    }
+  })
+  it("fecha de nacimiento: día, mes y año juntos o nada; tiene que existir, desde 1900 y no en el futuro (Ecuador)", () => {
+    const hoy = new Date("2026-11-13T03:00:00Z") // en Ecuador todavía es 12-nov
+    expect(limpiarFechaNacimiento(undefined, undefined, undefined, hoy)).toBeNull()
+    expect(limpiarFechaNacimiento("", "", "", hoy)).toBeNull()
+    expect(limpiarFechaNacimiento("29", "2", "2000", hoy)).toBe("2000-02-29")
+    expect(limpiarFechaNacimiento(1, 1, 1900, hoy)).toBe("1900-01-01")
+    expect(limpiarFechaNacimiento(12, 11, 2026, hoy)).toBe("2026-11-12")
+    for (const [d, m, a] of [[29, 2, 2001], [31, 4, 1990], [13, 11, 2026], [1, 1, 1899], [5, 3, ""], ["", 3, 1990], [0, 5, 1990], [5, 13, 1990], [1.5, 3, 1990], ["x", 3, 1990]]) {
+      expect(limpiarFechaNacimiento(d, m, a, hoy)).toBe("invalido")
     }
   })
 })

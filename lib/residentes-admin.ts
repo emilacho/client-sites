@@ -14,6 +14,8 @@ export interface Vecino {
   nombre: string
   /** Sector o barrio en Olón (obligatorio en el registro desde 6ac0850). */
   sector: string | null
+  /** Cédula (obligatoria desde la ADENDA 1 del 12-nov; los registros de antes no la tienen). */
+  cedula: string | null
   whatsapp: string
   creadoEn: string
   bajaEn: string | null
@@ -64,7 +66,7 @@ async function leerTodo(armar: () => any, que: string): Promise<any[]> {
 
 export async function listarVecinos(base: BaseResidentes): Promise<Vecino[]> {
   const rs = await leerTodo(
-    () => base.from("residentes").select("id, numero, nombre, sector, whatsapp_e164, creado_en, baja_en, baja_motivo").order("numero", { ascending: true }),
+    () => base.from("residentes").select("id, numero, nombre, sector, cedula, whatsapp_e164, creado_en, baja_en, baja_motivo").order("numero", { ascending: true }),
     "no se pudo leer la lista de vecinos",
   )
   const vs = await leerTodo(
@@ -94,6 +96,7 @@ export async function listarVecinos(base: BaseResidentes): Promise<Vecino[]> {
       numero: numeroVisible(r.numero as number),
       nombre: r.nombre as string,
       sector: (r.sector as string | null) ?? null,
+      cedula: (r.cedula as string | null) ?? null,
       whatsapp: r.whatsapp_e164 as string,
       creadoEn: r.creado_en as string,
       bajaEn: (r.baja_en as string | null) ?? null,

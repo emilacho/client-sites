@@ -151,6 +151,39 @@ describe("leer la lista", () => {
     expect(vs).toHaveLength(1234)
     expect(new Set(vs.map((v) => v.id)).size).toBe(1234)
     expect(vs[0].sector).toBe("La Playita")
+    expect(vs[0].cedula).toBeNull() // los registros de antes de la cédula siguen saliendo, sin cédula
+  })
+
+  it("la lista lee y devuelve la cédula (la base entrega solo las columnas que se piden)", async () => {
+    const b = baseFalsa({
+      residentes: [
+        { id: "r-ana", numero: 7, nombre: "Ana", sector: "Centro", cedula: "0912345678", whatsapp_e164: "593991234567", ficha: "f".repeat(24), creado_en: "2026-11-12T11:00:00Z", baja_en: null, baja_motivo: null },
+        { id: "r-beto", numero: 8, nombre: "Beto", sector: "Centro", cedula: null, whatsapp_e164: "593990000000", ficha: "g".repeat(24), creado_en: "2026-11-12T11:00:00Z", baja_en: null, baja_motivo: null },
+      ],
+    }, RELOJ)
+    // Como PostgREST: cada fila trae SOLO las columnas del select. Si alguien saca «cedula» del select, se pierde.
+    const pedidas: string[] = []
+    const base = {
+      from: (tabla: string) => {
+        const q = b.base.from(tabla)
+        const selectOriginal = q.select
+        const thenOriginal = q.then
+        let cols: string[] | null = null
+        q.select = (c: string) => { cols = c.split(",").map((x) => x.trim()); pedidas.push(`${tabla}:${c}`); return selectOriginal.call(q, c) }
+        q.then = (ok: (r: unknown) => unknown, mal?: (e: unknown) => unknown) =>
+          thenOriginal.call(q, (r: { data: unknown; error: unknown }) => {
+            if (tabla !== "residentes" || !cols || !Array.isArray(r.data)) return ok(r)
+            const c = cols
+            return ok({ ...r, data: r.data.map((f: Record<string, unknown>) => Object.fromEntries(c.filter((k) => k in f).map((k) => [k, f[k]]))) })
+          }, mal)
+        return q
+      },
+    }
+    const vs = await listarVecinos(base as typeof b.base)
+    expect(pedidas.some((p) => p.startsWith("residentes:") && /\bcedula\b/.test(p))).toBe(true)
+    expect(pedidas.some((p) => p.startsWith("residentes:") && /\bficha\b/.test(p))).toBe(false) // la ficha no sale de la base para la lista
+    expect(vs.find((v) => v.id === "r-ana")?.cedula).toBe("0912345678")
+    expect(vs.find((v) => v.id === "r-beto")?.cedula).toBeNull()
   })
 
   it("los códigos dicen quién los usó", async () => {

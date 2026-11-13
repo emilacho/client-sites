@@ -80,7 +80,7 @@ export default async function AdminResidentes({ searchParams }: { searchParams: 
                   <p><span className="font-semibold">{v.numero}</span> · {v.nombre}{v.sector ? <span className="opacity-70"> · {v.sector}</span> : null}</p>
                   <p className="text-sm">{v.visitas} {v.visitas === 1 ? "visita" : "visitas"} · última {fecha(v.ultimaVisita)}</p>
                 </div>
-                <p className="text-sm opacity-70">+{v.whatsapp} · desde {fecha(v.creadoEn)}{v.rechazos ? ` · ${v.rechazos} escaneos no válidos` : ""}</p>
+                <p className="text-sm opacity-70">C.I. {v.cedula ?? "sin cédula"} · +{v.whatsapp} · desde {fecha(v.creadoEn)}{v.rechazos ? ` · ${v.rechazos} escaneos no válidos` : ""}</p>
                 {v.bajaEn ? (
                   <p className="text-sm">De baja desde {fecha(v.bajaEn)}{v.bajaMotivo ? ` · ${v.bajaMotivo}` : ""}</p>
                 ) : (
