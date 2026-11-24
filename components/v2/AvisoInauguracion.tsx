@@ -25,9 +25,11 @@ export function AvisoInauguracion() {
   return (
     <div
       role="status"
-      className="pointer-events-none fixed inset-x-0 bottom-4 z-20 flex justify-center px-4 md:bottom-6"
+      // En el celular va debajo de los botones del menú (abajo lo tapa la barra
+      // de redes); desde tableta, arriba a la derecha, bajo el cartel de horario.
+      className="pointer-events-none fixed inset-x-0 top-[18rem] z-20 flex justify-center px-4 md:top-[5.25rem] md:justify-end md:px-6"
     >
-      <p className="pointer-events-auto max-w-xl rounded-2xl border border-amber-300/40 bg-slate-950/85 px-5 py-3 text-center text-sm font-medium text-amber-100 shadow-[0_8px_30px_rgba(0,0,0,0.45)] backdrop-blur-xl md:text-base">
+      <p className="pointer-events-auto max-w-xl md:max-w-sm lg:max-w-md rounded-2xl border border-amber-300/40 bg-slate-950/85 px-5 py-3 text-center text-sm font-medium text-amber-100 shadow-[0_8px_30px_rgba(0,0,0,0.45)] backdrop-blur-xl md:text-base">
         {avisoDeLaInauguracion()}
       </p>
     </div>
