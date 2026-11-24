@@ -75,13 +75,17 @@ export function ahoraEnLaCocina(): { dia: number; hora: number; minuto: number }
 export const APERTURA_TEMPORAL_DESDE = "2026-11-04T18:00:00Z"
 export const APERTURA_TEMPORAL_HASTA = "2026-11-04T21:04:00Z"
 
-/** 24-nov · Emilio: «apagar los pedidos de naufrago.ec hasta el miércoles» y avisar la fecha de inauguración.
- *  Antes de este instante NO se puede pedir, aunque sea día y hora de atención. Pasado, se abre SOLO
- *  y vuelve el horario de siempre: mañana nadie tiene que tocar nada. Para quitarlo, poner "". */
-export const INAUGURACION = "2026-11-25T12:00:00Z" // miércoles 25-nov · 7:00 en Guayaquil (UTC−5)
+/** La inauguración · UNA sola constante. Se cambia cuando Emilio dé la fecha.
+ *  - `null` · todavía sin fecha (Emilio, 24-nov 20:05 Zúrich: «abriremos pronto, sin fecha»).
+ *    NO se puede pedir y el aviso dice «Muy pronto abrimos en Guayaquil». No se abre sola.
+ *  - Una fecha ISO (p. ej. "2026-12-03T12:00:00Z" = jueves 3-dic, 7:00 en Guayaquil) · cerrado hasta ese
+ *    instante, aviso con la fecha, y a esa hora se abre SOLO con el horario de siempre.
+ *  - `""` · ya inauguramos: sin cierre ni aviso. */
+export const INAUGURACION: string | null = null
 
-/** Fechas de la cocina (AAAA-MM-DD) que abren aunque caigan en DIAS_CERRADOS. La inauguración cae en miércoles. */
-export const DIAS_EXTRA_ABIERTOS: readonly string[] = ["2026-11-25"]
+/** Fechas de la cocina (AAAA-MM-DD) que abren aunque caigan en DIAS_CERRADOS (p. ej. si se inaugura un miércoles).
+ *  24-nov: vacío · se quitó la apertura del miércoles 25. */
+export const DIAS_EXTRA_ABIERTOS: readonly string[] = []
 
 /** La fecha AHÍ, en la cocina · "2026-11-25". */
 export function fechaEnLaCocina(ms: number = Date.now()): string {
@@ -93,14 +97,16 @@ export function fechaEnLaCocina(ms: number = Date.now()): string {
   }).format(new Date(ms))
 }
 
-/** ¿Todavía no inauguramos? */
-export function antesDeLaInauguracion(ms: number = Date.now()): boolean {
-  return Boolean(INAUGURACION) && ms < Date.parse(INAUGURACION)
+/** ¿Todavía no inauguramos? Sin fecha (`null`), siempre sí. */
+export function antesDeLaInauguracion(ms: number = Date.now(), inauguracion: string | null = INAUGURACION): boolean {
+  if (inauguracion === null) return true
+  return Boolean(inauguracion) && ms < Date.parse(inauguracion)
 }
 
-/** Sale de INAUGURACION, no se escribe a mano · { dia: "miércoles 25 de noviembre", hora: "7:00" }. */
-export function textoDeLaInauguracion(): { dia: string; hora: string } {
-  const d = new Date(INAUGURACION)
+/** Sale de la fecha, no se escribe a mano · { dia: "miércoles 25 de noviembre", hora: "7:00" }. Sin fecha, null. */
+export function textoDeLaInauguracion(inauguracion: string | null = INAUGURACION): { dia: string; hora: string } | null {
+  if (!inauguracion) return null
+  const d = new Date(inauguracion)
   const dia = new Intl.DateTimeFormat("es-EC", {
     timeZone: ZONA_HORARIA,
     weekday: "long",
@@ -119,24 +125,39 @@ export function textoDeLaInauguracion(): { dia: string; hora: string } {
   return { dia, hora }
 }
 
-/** El aviso de una línea · «Inauguramos el miércoles 25 de noviembre · pedidos desde las 7:00». */
-export function avisoDeLaInauguracion(): string {
-  const { dia, hora } = textoDeLaInauguracion()
-  return `Inauguramos el ${dia} · pedidos desde las ${hora}`
+/** El texto sin fecha (Emilio, 24-nov). */
+export const AVISO_SIN_FECHA = "Muy pronto abrimos en Guayaquil"
+
+/** El aviso de una línea · sin fecha: «Muy pronto abrimos en Guayaquil · te esperamos»;
+ *  con fecha: «Inauguramos el miércoles 25 de noviembre · pedidos desde las 7:00». */
+export function avisoDeLaInauguracion(inauguracion: string | null = INAUGURACION): string {
+  const t = textoDeLaInauguracion(inauguracion)
+  if (!t) return `${AVISO_SIN_FECHA} · te esperamos`
+  return `Inauguramos el ${t.dia} · pedidos desde las ${t.hora}`
 }
 
 /** Lo que lee quien intenta pedir con la cocina cerrada (pantalla y servidor dicen lo mismo). */
-export function mensajeDeCerrado(ms: number = Date.now()): string {
-  if (antesDeLaInauguracion(ms)) return `${avisoDeLaInauguracion()}. ¡Te esperamos!`
+export function mensajeDeCerrado(ms: number = Date.now(), inauguracion: string | null = INAUGURACION): string {
+  if (antesDeLaInauguracion(ms, inauguracion)) {
+    const t = textoDeLaInauguracion(inauguracion)
+    if (!t) return `${AVISO_SIN_FECHA}. ¡Te esperamos!`
+    return `${avisoDeLaInauguracion(inauguracion)}. ¡Te esperamos!`
+  }
   return `Estamos cerrados · atendemos ${HORARIO_TEXTO}. ¡Te esperamos!`
 }
 
 export function cocinaAbierta(): boolean {
+  return cocinaAbiertaCon(INAUGURACION, DIAS_EXTRA_ABIERTOS)
+}
+
+/** La misma cuenta con la inauguración y los días extra a la vista: las pruebas miden el horario de siempre (`""`)
+ *  y el caso con fecha sin depender de lo que diga la constante hoy. */
+export function cocinaAbiertaCon(inauguracion: string | null, diasExtra: readonly string[]): boolean {
   const ahoraMs = Date.now()
   if (APERTURA_TEMPORAL_HASTA && ahoraMs >= Date.parse(APERTURA_TEMPORAL_DESDE) && ahoraMs < Date.parse(APERTURA_TEMPORAL_HASTA)) return true
-  if (antesDeLaInauguracion(ahoraMs)) return false
+  if (antesDeLaInauguracion(ahoraMs, inauguracion)) return false
   const { dia, hora } = ahoraEnLaCocina()
-  const diaExtra = DIAS_EXTRA_ABIERTOS.includes(fechaEnLaCocina(ahoraMs))
+  const diaExtra = diasExtra.includes(fechaEnLaCocina(ahoraMs))
   if (!diaExtra && (DIAS_CERRADOS as readonly number[]).includes(dia)) return false
   return hora >= COCINA_ABRE_H && hora < COCINA_CIERRA_H
 }

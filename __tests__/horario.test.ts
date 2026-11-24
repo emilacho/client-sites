@@ -12,6 +12,7 @@ import {
   DIAS_CERRADOS,
   HORARIO_TEXTO,
   cocinaAbierta,
+  cocinaAbiertaCon,
   INAUGURACION,
   DIAS_EXTRA_ABIERTOS,
   antesDeLaInauguracion,
@@ -43,112 +44,122 @@ describe("el horario que puso Emilio · R162", () => {
   })
 })
 
-describe("¿está abierta la cocina? · R162", () => {
+describe("¿está abierta la cocina? · R162 (el horario de siempre, ya inaugurado)", () => {
   // 2026-11-30 es lunes · 01-dic martes · 02-dic miércoles · 03-dic jueves (24-nov: fechas después de la inauguración; antes, todo cerrado)
   it("lunes a las 10 de la mañana · abierto", () => {
     congelar(enGuayaquil("2026-11-30", 10))
-    expect(cocinaAbierta()).toBe(true)
+    expect(cocinaAbiertaCon("", [])).toBe(true)
   })
 
   it("lunes a las 6 de la mañana · todavía cerrado", () => {
     congelar(enGuayaquil("2026-11-30", 6, 59))
-    expect(cocinaAbierta()).toBe(false)
+    expect(cocinaAbiertaCon("", [])).toBe(false)
   })
 
   it("justo a las 7 en punto · abre", () => {
     congelar(enGuayaquil("2026-11-30", 7, 0))
-    expect(cocinaAbierta()).toBe(true)
+    expect(cocinaAbiertaCon("", [])).toBe(true)
   })
 
   it("a las 14:59 todavía se puede pedir", () => {
     congelar(enGuayaquil("2026-11-30", 14, 59))
-    expect(cocinaAbierta()).toBe(true)
+    expect(cocinaAbiertaCon("", [])).toBe(true)
   })
 
   it("a las 15:00 en punto ya no", () => {
     congelar(enGuayaquil("2026-11-30", 15, 0))
-    expect(cocinaAbierta()).toBe(false)
+    expect(cocinaAbiertaCon("", [])).toBe(false)
   })
 
   it("martes al mediodía · cerrado aunque sea plena hora de almuerzo", () => {
     congelar(enGuayaquil("2026-12-01", 12))
-    expect(cocinaAbierta()).toBe(false)
+    expect(cocinaAbiertaCon("", [])).toBe(false)
   })
 
   it("miércoles al mediodía · cerrado", () => {
     congelar(enGuayaquil("2026-12-02", 12))
-    expect(cocinaAbierta()).toBe(false)
+    expect(cocinaAbiertaCon("", [])).toBe(false)
   })
 
   it("jueves al mediodía · vuelve a abrir", () => {
     congelar(enGuayaquil("2026-12-03", 12))
-    expect(cocinaAbierta()).toBe(true)
+    expect(cocinaAbiertaCon("", [])).toBe(true)
   })
 
   it("manda la hora de la COCINA, no la de quien mira", () => {
     // 2026-11-30 03:00 UTC = domingo 29-nov 22:00 en Guayaquil · cerrado acá,
     // aunque en el reloj UTC ya sea lunes de madrugada.
     congelar(new Date("2026-11-30T03:00:00Z"))
-    expect(cocinaAbierta()).toBe(false)
+    expect(cocinaAbiertaCon("", [])).toBe(false)
   })
 })
 
-describe("pedidos cerrados hasta la inauguración · 24-nov", () => {
-  it("la inauguración es el miércoles 25-nov a las 7:00 en Guayaquil, y ese miércoles abre aunque los miércoles cierren", () => {
-    expect(INAUGURACION).toBe("2026-11-25T12:00:00Z")
-    expect([...DIAS_EXTRA_ABIERTOS]).toEqual(["2026-11-25"])
+describe("abrimos pronto, sin fecha · 24-nov (Emilio 20:05 Zúrich)", () => {
+  it("hoy no hay fecha: la constante es null y no queda ningún miércoles extra", () => {
+    expect(INAUGURACION).toBeNull()
+    expect([...DIAS_EXTRA_ABIERTOS]).toEqual([])
   })
 
-  it("antes de inaugurar no se puede pedir, ni en día y hora de atención (lunes 23-nov a las 10)", () => {
+  it("sin fecha no se puede pedir: ni el miércoles 25 a las 7:00 (ya no abre sola), ni el jueves 26 al mediodía, ni en un año", () => {
+    for (const d of [enGuayaquil("2026-11-25", 7, 0), enGuayaquil("2026-11-26", 12), enGuayaquil("2027-11-25", 10)]) {
+      congelar(d)
+      expect(antesDeLaInauguracion()).toBe(true)
+      expect(cocinaAbierta()).toBe(false)
+    }
+  })
+
+  it("el aviso no tiene fecha ni hora", () => {
+    expect(avisoDeLaInauguracion()).toBe("Muy pronto abrimos en Guayaquil · te esperamos")
+    expect(avisoDeLaInauguracion()).not.toMatch(/\d/)
+  })
+
+  it("el mensaje al intentar pedir tampoco", () => {
+    expect(mensajeDeCerrado(Date.parse("2026-11-26T17:00:00Z"))).toBe("Muy pronto abrimos en Guayaquil. ¡Te esperamos!")
+  })
+})
+
+describe("cuando Emilio dé la fecha · la misma constante con una fecha", () => {
+  const FECHA = "2026-11-25T12:00:00Z" // ejemplo: miércoles 25-nov · 7:00 en Guayaquil
+  const MIERCOLES = ["2026-11-25"]
+
+  it("antes de la hora, cerrado aunque sea día y hora de atención (lunes 23-nov a las 10)", () => {
     congelar(enGuayaquil("2026-11-23", 10))
-    expect(antesDeLaInauguracion()).toBe(true)
-    expect(cocinaAbierta()).toBe(false)
+    expect(antesDeLaInauguracion(Date.now(), FECHA)).toBe(true)
+    expect(cocinaAbiertaCon(FECHA, MIERCOLES)).toBe(false)
   })
 
-  it("el miércoles 25 a las 6:59 todavía no", () => {
+  it("a las 6:59 todavía no; a las 7:00 en punto abre solo", () => {
     congelar(enGuayaquil("2026-11-25", 6, 59))
-    expect(cocinaAbierta()).toBe(false)
-  })
-
-  it("el miércoles 25 a las 7:00 en punto abre solo", () => {
+    expect(cocinaAbiertaCon(FECHA, MIERCOLES)).toBe(false)
     congelar(enGuayaquil("2026-11-25", 7, 0))
-    expect(antesDeLaInauguracion()).toBe(false)
-    expect(cocinaAbierta()).toBe(true)
+    expect(antesDeLaInauguracion(Date.now(), FECHA)).toBe(false)
+    expect(cocinaAbiertaCon(FECHA, MIERCOLES)).toBe(true)
   })
 
-  it("el miércoles 25 a las 14:59 se puede; a las 15:00 ya no", () => {
-    congelar(enGuayaquil("2026-11-25", 14, 59))
-    expect(cocinaAbierta()).toBe(true)
-    congelar(enGuayaquil("2026-11-25", 15, 0))
-    expect(cocinaAbierta()).toBe(false)
-  })
-
-  it("solo ese miércoles: el siguiente (2-dic) vuelve a cerrar", () => {
+  it("un día extra abre solo esa fecha: el miércoles siguiente vuelve a cerrar", () => {
     congelar(enGuayaquil("2026-12-02", 12))
-    expect(cocinaAbierta()).toBe(false)
-  })
-
-  it("el jueves 26 sigue el horario de siempre", () => {
-    congelar(enGuayaquil("2026-11-26", 12))
-    expect(cocinaAbierta()).toBe(true)
+    expect(cocinaAbiertaCon(FECHA, MIERCOLES)).toBe(false)
   })
 
   it("la fecha es la de la cocina: martes 24 a las 22:00 en Guayaquil ya es 25 en UTC, y sigue cerrado", () => {
     congelar(new Date("2026-11-25T03:00:00Z"))
     expect(fechaEnLaCocina()).toBe("2026-11-24")
-    expect(cocinaAbierta()).toBe(false)
+    expect(cocinaAbiertaCon(FECHA, MIERCOLES)).toBe(false)
   })
 
-  it("el aviso sale de la fecha, con tuteo y sin inventar nada", () => {
-    expect(avisoDeLaInauguracion()).toBe("Inauguramos el miércoles 25 de noviembre · pedidos desde las 7:00")
-  })
-
-  it("el mensaje al intentar pedir: antes, la inauguración; después, el horario de siempre", () => {
-    expect(mensajeDeCerrado(Date.parse("2026-11-24T17:00:00Z"))).toBe(
+  it("el aviso y el mensaje salen de la fecha", () => {
+    expect(avisoDeLaInauguracion(FECHA)).toBe("Inauguramos el miércoles 25 de noviembre · pedidos desde las 7:00")
+    expect(mensajeDeCerrado(Date.parse("2026-11-24T17:00:00Z"), FECHA)).toBe(
       "Inauguramos el miércoles 25 de noviembre · pedidos desde las 7:00. ¡Te esperamos!",
     )
-    expect(mensajeDeCerrado(Date.parse("2026-12-01T17:00:00Z"))).toBe(
+    expect(mensajeDeCerrado(Date.parse("2026-12-01T17:00:00Z"), FECHA)).toBe(
       "Estamos cerrados · atendemos jueves a lunes de 7:00 a 15:00. ¡Te esperamos!",
     )
+  })
+
+  it("ya inaugurado (\"\"): sin cierre ni aviso, manda el horario de siempre", () => {
+    congelar(enGuayaquil("2026-11-30", 10))
+    expect(antesDeLaInauguracion(Date.now(), "")).toBe(false)
+    expect(cocinaAbiertaCon("", [])).toBe(true)
   })
 })

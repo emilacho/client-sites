@@ -39,7 +39,7 @@ import { PaymentForm } from "./PaymentForm"
 import { track } from "@/lib/v2/posthog-track"
 import { esDispositivoDePrueba } from "@/lib/v2/es-prueba"
 import { useLoyaltyBalance } from "@/lib/v2/use-loyalty-balance"
-import { antesDeLaInauguracion, avisoDeLaInauguracion, cocinaAbierta, HORARIO_TEXTO } from "@/lib/horario"
+import { antesDeLaInauguracion, avisoDeLaInauguracion, cocinaAbierta, HORARIO_TEXTO, textoDeLaInauguracion } from "@/lib/horario"
 
 
 
@@ -814,7 +814,7 @@ function CartFooter() {
             {porInaugurar ? "Todavía no abrimos" : "Ahora estamos cerrados"}
           </p>
           <p className="mt-0.5 text-xs text-rose-100/80">
-            {porInaugurar ? `${avisoDeLaInauguracion()} · te esperamos` : `Atendemos ${HORARIO_TEXTO} · te esperamos`}
+            {porInaugurar ? (textoDeLaInauguracion() ? `${avisoDeLaInauguracion()} · te esperamos` : avisoDeLaInauguracion()) : `Atendemos ${HORARIO_TEXTO} · te esperamos`}
           </p>
         </div>
       ) : null}
