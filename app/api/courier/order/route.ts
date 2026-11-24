@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cocinaAbierta, HORARIO_TEXTO } from "@/lib/horario";
+import { cocinaAbierta, mensajeDeCerrado } from "@/lib/horario";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { cabecerasInternas } from "@/lib/llave-interna"
 import { origenPropio } from "@/lib/origen";
@@ -189,7 +189,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "local_cerrado",
-        message: `Estamos cerrados · atendemos ${HORARIO_TEXTO}. ¡Te esperamos!`,
+        message: mensajeDeCerrado(),
       },
       { status: 409 },
     );

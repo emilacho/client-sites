@@ -18,6 +18,7 @@ import { useLastOrder } from "@/lib/v2/use-last-order"
 import { useEasyOrder } from "@/lib/v2/use-easy-order"
 import { RotateCw } from "lucide-react"
 import { TopBar } from "./TopBar"
+import { AvisoInauguracion } from "./AvisoInauguracion"
 import { CartDrawer } from "./CartDrawer"
 import { OverlayPanels, type OverlayKind } from "./OverlayPanels"
 import { MenuModal } from "./MenuModal"
@@ -263,6 +264,7 @@ function LandingInner() {
   return (
     <main className="relative min-h-[100svh] overflow-hidden bg-slate-950 text-slate-100">
       <TopBar onOpenAccount={() => setAccountOpen(true)} />
+      <AvisoInauguracion />
 
       {/* 3D scene · full viewport · hero copy sits over it.
           Wrapped in SceneErrorBoundary so an unloadable asset doesn't

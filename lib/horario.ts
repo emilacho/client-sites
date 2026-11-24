@@ -75,10 +75,68 @@ export function ahoraEnLaCocina(): { dia: number; hora: number; minuto: number }
 export const APERTURA_TEMPORAL_DESDE = "2026-11-04T18:00:00Z"
 export const APERTURA_TEMPORAL_HASTA = "2026-11-04T21:04:00Z"
 
+/** 24-nov · Emilio: «apagar los pedidos de naufrago.ec hasta el miércoles» y avisar la fecha de inauguración.
+ *  Antes de este instante NO se puede pedir, aunque sea día y hora de atención. Pasado, se abre SOLO
+ *  y vuelve el horario de siempre: mañana nadie tiene que tocar nada. Para quitarlo, poner "". */
+export const INAUGURACION = "2026-11-25T12:00:00Z" // miércoles 25-nov · 7:00 en Guayaquil (UTC−5)
+
+/** Fechas de la cocina (AAAA-MM-DD) que abren aunque caigan en DIAS_CERRADOS. La inauguración cae en miércoles. */
+export const DIAS_EXTRA_ABIERTOS: readonly string[] = ["2026-11-25"]
+
+/** La fecha AHÍ, en la cocina · "2026-11-25". */
+export function fechaEnLaCocina(ms: number = Date.now()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: ZONA_HORARIA,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(ms))
+}
+
+/** ¿Todavía no inauguramos? */
+export function antesDeLaInauguracion(ms: number = Date.now()): boolean {
+  return Boolean(INAUGURACION) && ms < Date.parse(INAUGURACION)
+}
+
+/** Sale de INAUGURACION, no se escribe a mano · { dia: "miércoles 25 de noviembre", hora: "7:00" }. */
+export function textoDeLaInauguracion(): { dia: string; hora: string } {
+  const d = new Date(INAUGURACION)
+  const dia = new Intl.DateTimeFormat("es-EC", {
+    timeZone: ZONA_HORARIA,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(d).replace(",", "")
+  // «7:00», no «07:00»: el número de la hora va sin cero, como en el resto de la web.
+  const partes = new Intl.DateTimeFormat("en-US", {
+    timeZone: ZONA_HORARIA,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(d)
+  const parte = (tipo: string) => partes.find((p) => p.type === tipo)?.value ?? "0"
+  const hora = `${Number(parte("hour"))}:${parte("minute")}`
+  return { dia, hora }
+}
+
+/** El aviso de una línea · «Inauguramos el miércoles 25 de noviembre · pedidos desde las 7:00». */
+export function avisoDeLaInauguracion(): string {
+  const { dia, hora } = textoDeLaInauguracion()
+  return `Inauguramos el ${dia} · pedidos desde las ${hora}`
+}
+
+/** Lo que lee quien intenta pedir con la cocina cerrada (pantalla y servidor dicen lo mismo). */
+export function mensajeDeCerrado(ms: number = Date.now()): string {
+  if (antesDeLaInauguracion(ms)) return `${avisoDeLaInauguracion()}. ¡Te esperamos!`
+  return `Estamos cerrados · atendemos ${HORARIO_TEXTO}. ¡Te esperamos!`
+}
+
 export function cocinaAbierta(): boolean {
   const ahoraMs = Date.now()
   if (APERTURA_TEMPORAL_HASTA && ahoraMs >= Date.parse(APERTURA_TEMPORAL_DESDE) && ahoraMs < Date.parse(APERTURA_TEMPORAL_HASTA)) return true
+  if (antesDeLaInauguracion(ahoraMs)) return false
   const { dia, hora } = ahoraEnLaCocina()
-  if ((DIAS_CERRADOS as readonly number[]).includes(dia)) return false
+  const diaExtra = DIAS_EXTRA_ABIERTOS.includes(fechaEnLaCocina(ahoraMs))
+  if (!diaExtra && (DIAS_CERRADOS as readonly number[]).includes(dia)) return false
   return hora >= COCINA_ABRE_H && hora < COCINA_CIERRA_H
 }

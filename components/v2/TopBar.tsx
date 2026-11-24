@@ -84,7 +84,11 @@ export function TopBar({ onOpenAccount }: TopBarProps = {}) {
           {hours.isOpen ? (
             <>Abierto · hasta {hours.closesAtText}</>
           ) : (
-            <>Cerrado · {hours.opensAtText ? `vuelve ${hours.opensAtText}` : "vuelve pronto"}</>
+            hours.porInaugurar ? (
+              <>Abrimos {hours.opensAtText}</>
+            ) : (
+              <>Cerrado · {hours.opensAtText ? `vuelve ${hours.opensAtText}` : "vuelve pronto"}</>
+            )
           )}
         </span>
         {/* R96.119 · perlas chip animated count-up + click abre AccountModal */}
