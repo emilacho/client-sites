@@ -82,9 +82,10 @@ function findNextOpen(
 function evaluate(hours: BusinessHours): BusinessHoursState {
   // 24-nov · antes de la inauguración, cerrado, y la próxima apertura ES la inauguración (lib/horario.ts).
   if (antesDeLaInauguracion()) {
-    // Corto para que quepa en el cartel de la barra: «el miércoles 25 · 7:00».
-    const { dia, hora } = textoDeLaInauguracion()
-    return { isOpen: false, closesAtText: null, opensAtText: `el ${dia.split(" de ")[0]} · ${hora}`, porInaugurar: true }
+    // Corto para que quepa en el cartel de la barra: «el miércoles 25 · 7:00»; sin fecha, «muy pronto».
+    const t = textoDeLaInauguracion()
+    const cuando = t ? `el ${t.dia.split(" de ")[0]} · ${t.hora}` : "muy pronto"
+    return { isOpen: false, closesAtText: null, opensAtText: cuando, porInaugurar: true }
   }
   const { day, hour } = getLocalParts(CLIENTE_TZ)
   // Un día extra (la inauguración cae en miércoles) abre con el horario de siempre.

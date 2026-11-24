@@ -40,6 +40,8 @@ const {
   mockUpdate: vi.fn(),
 }))
 
+// 24-nov · naufrago.ec sigue cerrado hasta la inauguración (sin fecha): estas pruebas miden el pedido con la cocina abierta.
+vi.mock("@/lib/horario", async (original) => ({ ...(await original<typeof import("@/lib/horario")>()), cocinaAbierta: () => true }))
 vi.mock("@/lib/courier/para-rutas", () => ({
   createOrder: (...a: unknown[]) => mockCreateOrder(...a),
   getDeliveryQuote: (...a: unknown[]) => mockGetDeliveryQuote(...a),
