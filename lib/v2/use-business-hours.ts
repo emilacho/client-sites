@@ -14,11 +14,21 @@
  */
 import { useEffect, useState } from "react"
 import { CLIENTE_TZ, cliente, type BusinessHours } from "@/cliente.config"
+import {
+  COCINA_ABRE_H,
+  COCINA_CIERRA_H,
+  DIAS_EXTRA_ABIERTOS,
+  antesDeLaInauguracion,
+  fechaEnLaCocina,
+  textoDeLaInauguracion,
+} from "@/lib/horario"
 
 export interface BusinessHoursState {
   isOpen: boolean
   closesAtText: string | null
   opensAtText: string | null
+  /** 24-nov · todavía no inauguramos: el cartel dice «Abrimos el …» en vez de «vuelve». */
+  porInaugurar?: boolean
 }
 
 const DAY_NAMES = [
@@ -70,8 +80,17 @@ function findNextOpen(
 }
 
 function evaluate(hours: BusinessHours): BusinessHoursState {
+  // 24-nov · antes de la inauguración, cerrado, y la próxima apertura ES la inauguración (lib/horario.ts).
+  if (antesDeLaInauguracion()) {
+    // Corto para que quepa en el cartel de la barra: «el miércoles 25 · 7:00».
+    const { dia, hora } = textoDeLaInauguracion()
+    return { isOpen: false, closesAtText: null, opensAtText: `el ${dia.split(" de ")[0]} · ${hora}`, porInaugurar: true }
+  }
   const { day, hour } = getLocalParts(CLIENTE_TZ)
-  const slot = hours[day as keyof BusinessHours]
+  // Un día extra (la inauguración cae en miércoles) abre con el horario de siempre.
+  const slot = DIAS_EXTRA_ABIERTOS.includes(fechaEnLaCocina())
+    ? ([COCINA_ABRE_H, COCINA_CIERRA_H] as [number, number])
+    : hours[day as keyof BusinessHours]
 
   if (slot) {
     const [open, close] = slot

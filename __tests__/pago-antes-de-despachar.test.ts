@@ -128,7 +128,7 @@ const fichaReservada = (extra: Record<string, unknown> = {}) => ({
 
 beforeEach(() => {
   vi.useFakeTimers()
-  vi.setSystemTime(new Date("2026-09-07T15:00:00Z")) // lunes 10:00 en la cocina
+  vi.setSystemTime(new Date("2026-11-30T15:00:00Z")) // lunes 10:00 en la cocina (24-nov: después de la inauguración del 25-nov; antes de esa fecha la cocina está cerrada)
   vi.clearAllMocks()
   vi.stubGlobal("fetch", vi.fn(async () => new Response("{}")))
   filaPedido.valor = null

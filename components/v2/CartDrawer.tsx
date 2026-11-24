@@ -39,7 +39,7 @@ import { PaymentForm } from "./PaymentForm"
 import { track } from "@/lib/v2/posthog-track"
 import { esDispositivoDePrueba } from "@/lib/v2/es-prueba"
 import { useLoyaltyBalance } from "@/lib/v2/use-loyalty-balance"
-import { cocinaAbierta, HORARIO_TEXTO } from "@/lib/horario"
+import { antesDeLaInauguracion, avisoDeLaInauguracion, cocinaAbierta, HORARIO_TEXTO } from "@/lib/horario"
 
 
 
@@ -393,8 +393,12 @@ function CartFooter() {
   // El estado se recalcula cada minuto para que a las 15:00 en punto la
   // pantalla se cierre sola sin que nadie recargue.
   const [abierto, setAbierto] = useState(true)
+  const [porInaugurar, setPorInaugurar] = useState(false)
   useEffect(() => {
-    const revisar = () => setAbierto(cocinaAbierta())
+    const revisar = () => {
+      setAbierto(cocinaAbierta())
+      setPorInaugurar(antesDeLaInauguracion())
+    }
     revisar()
     const id = window.setInterval(revisar, 60_000)
     return () => window.clearInterval(id)
@@ -807,10 +811,10 @@ function CartFooter() {
       {!abierto ? (
         <div className="mb-2 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2.5 text-center">
           <p className="text-sm font-semibold text-rose-200">
-            Ahora estamos cerrados
+            {porInaugurar ? "Todavía no abrimos" : "Ahora estamos cerrados"}
           </p>
           <p className="mt-0.5 text-xs text-rose-100/80">
-            Atendemos {HORARIO_TEXTO} · te esperamos
+            {porInaugurar ? `${avisoDeLaInauguracion()} · te esperamos` : `Atendemos ${HORARIO_TEXTO} · te esperamos`}
           </p>
         </div>
       ) : null}

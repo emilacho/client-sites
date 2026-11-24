@@ -76,7 +76,7 @@ const cobrado = () => mockCreateOrder.mock.calls.at(-1)?.[0]?.collectMoneyUsd
 // mañana en Guayaquil (UTC-5 todo el año).
 beforeEach(() => {
   vi.useFakeTimers()
-  vi.setSystemTime(new Date("2026-09-07T15:00:00Z")) // lunes 10:00 en la cocina
+  vi.setSystemTime(new Date("2026-11-30T15:00:00Z")) // lunes 10:00 en la cocina (24-nov: después de la inauguración del 25-nov; antes de esa fecha la cocina está cerrada)
   vi.clearAllMocks()
   mockGetDeliveryQuote.mockResolvedValue({
     quoteToken: "tok-1", priceUsd: 2.5, etaMinutes: 0,
